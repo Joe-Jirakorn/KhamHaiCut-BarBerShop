@@ -2,6 +2,35 @@
 <html lang="th" class="dark">
 
 <head>
+    <!-- นำเข้า Firebase SDK -->
+    <script type="module">
+        // นำเข้า Firebase App และ Firestore จาก CDN ที่ถูกต้อง
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getFirestore, collection, addDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-analytics.js";
+
+        // 1. 🔑 ค่า config ของคุณ
+        const firebaseConfig = {
+            apiKey: "AIzaSyDVenyDbUvNMGdvgDxoqLuUCHl0jzBw_jA",
+            authDomain: "khamhaicut.firebaseapp.com",
+            projectId: "khamhaicut",
+            storageBucket: "khamhaicut.firebasestorage.app",
+            messagingSenderId: "359072565539",
+            appId: "1:359072565539:web:6fc05e9b75c1fd5147a496",
+            measurementId: "G-4YVB4GBKLL"
+        };
+
+        // 2. เริ่มต้นเชื่อมต่อ Firebase
+        const app = initializeApp(firebaseConfig);
+        const analytics = getAnalytics(app);
+        const db = getFirestore(app);
+
+        // เก็บไว้ให้ฟังก์ชันจองคิวเรียกใช้งาน
+        window.db = db;
+        window.firebaseModules = { collection, addDoc, onSnapshot };
+
+        console.log("Firebase Connected Successfully!");
+    </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>THE CUT & CRAFT - Premium Barber Shop</title>
@@ -88,22 +117,24 @@
 
     <!-- Navigation Header -->
     <header class="bg-dark-800 border-b border-dark-700 sticky top-0 z-40 shadow-xl">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
             <div class="flex justify-between items-center h-20">
                 <!-- Brand Logo -->
-                <div class="flex items-center gap-3 cursor-pointer" onclick="navigateTo('home')">
+                <div class="flex items-center gap-2 cursor-pointer" onclick="navigateTo('home')">
                     <div
-                        class="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-500 to-amber-700 flex items-center justify-center text-dark-900 font-bold text-2xl shadow-lg shadow-amber-500/20">
+                        class="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-br from-amber-500 to-amber-700 flex items-center justify-center text-dark-900 font-bold text-xl sm:text-2xl shadow-lg shadow-amber-500/20">
                         <i class="fa-solid fa-scissors"></i>
                     </div>
                     <div>
-                        <span class="text-xl font-bold tracking-wider text-white block leading-tight">KhamHai Cut</span>
-                        <span class="text-xs text-amber-500 font-medium tracking-widest uppercase">BARBER SHOP</span>
+                        <span
+                            class="text-base sm:text-xl font-bold tracking-wider text-white block leading-tight">KhamHai</span>
+                        <span
+                            class="text-[10px] sm:text-xs text-amber-500 font-medium tracking-widest uppercase">BARBER</span>
                     </div>
                 </div>
 
-                <!-- Desktop Navigation Links -->
-                <nav class="hidden md:flex items-center gap-6">
+                <!-- Desktop Navigation Links (ซ่อนในมือถือ) -->
+                <nav class="hidden lg:flex items-center gap-6">
                     <button onclick="navigateTo('home')"
                         class="nav-link text-gray-300 hover:text-amber-500 font-medium transition py-2">หน้าหลัก</button>
                     <button onclick="navigateTo('booking')"
@@ -114,77 +145,74 @@
                         class="nav-link text-gray-300 hover:text-amber-500 font-medium transition py-2">ประวัติการจอง</button>
                 </nav>
 
-                <!-- Right Actions / User Info -->
-                <div class="flex items-center gap-3">
-                    <!-- Quick Role Switcher (Demo Feature) -->
+                <!-- Right Actions / Controls -->
+                <div class="flex items-center gap-2">
+                    <!-- Quick Role Switcher (ย่อขนาดให้พอดีมือถือ) -->
                     <div id="role-switcher"
-                        class="bg-dark-900 border border-dark-600 rounded-lg p-1 flex items-center text-xs">
-                        <span class="px-2 text-gray-400 font-medium hidden sm:inline">โหมด:</span>
+                        class="bg-dark-900 border border-dark-600 rounded-lg p-0.5 sm:p-1 flex items-center text-[11px] sm:text-xs">
                         <button id="role-user-btn" onclick="switchRole('user')"
-                            class="px-2.5 py-1 rounded-md font-semibold transition bg-amber-500 text-dark-900">User</button>
-                        <!-- 🛑 เพิ่มปุ่มโหมด Barber ตรงนี้ -->
+                            class="px-2 py-1 rounded-md font-semibold transition bg-amber-500 text-dark-900">User</button>
                         <button id="role-barber-btn" onclick="switchRole('barber')"
-                            class="px-2.5 py-1 rounded-md font-semibold text-gray-400 hover:text-white transition">Barber</button>
+                            class="px-2 py-1 rounded-md font-semibold text-gray-400 hover:text-white transition">Barber</button>
                         <button id="role-admin-btn" onclick="switchRole('admin')"
-                            class="px-2.5 py-1 rounded-md font-semibold text-gray-400 hover:text-white transition">Admin</button>
+                            class="px-2 py-1 rounded-md font-semibold text-gray-400 hover:text-white transition">Admin</button>
                     </div>
-                </div>
 
-                <!-- User Profile / Login Button -->
-                <div id="auth-buttons">
-                    <button onclick="openModal('auth-modal')"
-                        class="bg-amber-500 hover:bg-amber-600 text-dark-900 font-semibold px-4 py-2.5 rounded-lg shadow-md transition flex items-center gap-2">
-                        <i class="fa-solid fa-right-to-bracket"></i>
-                        <span>เข้าสู่ระบบ</span>
-                    </button>
-                </div>
-
-                <div id="user-profile-menu" class="hidden relative">
-                    <button onclick="toggleUserDropdown()"
-                        class="flex items-center gap-3 bg-dark-700 hover:bg-dark-600 p-1.5 pr-3 rounded-full border border-dark-600 transition">
-                        <img id="user-avatar"
-                            src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&auto=format&fit=crop&q=80"
-                            class="w-9 h-9 rounded-full object-cover border border-amber-500" alt="Avatar">
-                        <span id="user-display-name"
-                            class="font-medium text-sm text-gray-200 max-w-[100px] truncate">User</span>
-                        <i class="fa-solid fa-chevron-down text-xs text-gray-400"></i>
-                    </button>
-                    <!-- Dropdown Menu -->
-                    <div id="user-dropdown"
-                        class="hidden absolute right-0 mt-2 w-48 bg-dark-800 border border-dark-600 rounded-xl shadow-2xl py-2 z-50">
-                        <div class="px-4 py-2 border-b border-dark-700">
-                            <p class="text-xs text-gray-400">เข้าสู่ระบบด้วย</p>
-                            <p id="user-email-text" class="text-sm font-semibold truncate text-amber-500">
-                                user@example.com</p>
-                        </div>
-                        <button onclick="navigateTo('my-bookings')"
-                            class="w-full text-left px-4 py-2.5 text-sm text-gray-300 hover:bg-dark-700 flex items-center gap-2">
-                            <i class="fa-solid fa-calendar-check text-amber-500"></i> ประวัติคิวของฉัน
+                    <!-- User Profile / Login -->
+                    <div id="auth-buttons">
+                        <button onclick="openModal('auth-modal')"
+                            class="bg-amber-500 hover:bg-amber-600 text-dark-900 font-semibold px-3 py-2 rounded-lg text-xs transition flex items-center gap-1">
+                            <i class="fa-solid fa-right-to-bracket"></i>
+                            <span class="hidden sm:inline">เข้าสู่ระบบ</span>
                         </button>
-                        <div id="admin-menu-option" class="hidden">
-                            <button onclick="navigateTo('admin')"
-                                class="w-full text-left px-4 py-2.5 text-sm text-amber-400 hover:bg-dark-700 flex items-center gap-2">
-                                <i class="fa-solid fa-chart-line"></i> แผงควบคุม Admin
+                    </div>
+
+                    <div id="user-profile-menu" class="hidden relative">
+                        <button onclick="toggleUserDropdown()"
+                            class="flex items-center gap-2 bg-dark-700 hover:bg-dark-600 p-1 pr-2 rounded-full border border-dark-600 transition">
+                            <img id="user-avatar"
+                                src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&auto=format&fit=crop&q=80"
+                                class="w-8 h-8 rounded-full object-cover border border-amber-500" alt="Avatar">
+                            <i class="fa-solid fa-chevron-down text-xs text-gray-400"></i>
+                        </button>
+                        <!-- Dropdown Menu -->
+                        <div id="user-dropdown"
+                            class="hidden absolute right-0 mt-2 w-48 bg-dark-800 border border-dark-600 rounded-xl shadow-2xl py-2 z-50">
+                            <div class="px-4 py-2 border-b border-dark-700">
+                                <p class="text-xs text-gray-400">เข้าสู่ระบบด้วย</p>
+                                <p id="user-email-text" class="text-sm font-semibold truncate text-amber-500">
+                                    user@example.com</p>
+                            </div>
+                            <button onclick="navigateTo('my-bookings')"
+                                class="w-full text-left px-4 py-2.5 text-sm text-gray-300 hover:bg-dark-700 flex items-center gap-2">
+                                <i class="fa-solid fa-calendar-check text-amber-500"></i> ประวัติคิวของฉัน
+                            </button>
+                            <div id="admin-menu-option" class="hidden">
+                                <button onclick="navigateTo('admin')"
+                                    class="w-full text-left px-4 py-2.5 text-sm text-amber-400 hover:bg-dark-700 flex items-center gap-2">
+                                    <i class="fa-solid fa-chart-line"></i> แผงควบคุม Admin
+                                </button>
+                            </div>
+                            <hr class="border-dark-700 my-1">
+                            <button onclick="logout()"
+                                class="w-full text-left px-4 py-2.5 text-sm text-red-400 hover:bg-dark-700 flex items-center gap-2">
+                                <i class="fa-solid fa-right-from-bracket"></i> ออกจากระบบ
                             </button>
                         </div>
-                        <hr class="border-dark-700 my-1">
-                        <button onclick="logout()"
-                            class="w-full text-left px-4 py-2.5 text-sm text-red-400 hover:bg-dark-700 flex items-center gap-2">
-                            <i class="fa-solid fa-right-from-bracket"></i> ออกจากระบบ
-                        </button>
                     </div>
-                </div>
 
-                <!-- Mobile Menu Toggle -->
-                <button onclick="toggleMobileMenu()" class="md:hidden text-gray-300 hover:text-white p-2">
-                    <i class="fa-solid fa-bars text-xl"></i>
-                </button>
+                    <!-- Mobile Menu Button (ปุ่มขีด 3 ขีด สำหรับเปิดเมนูด้านล่าง) -->
+                    <!-- Mobile Menu Button (เดิม) -->
+                    <!-- Mobile Menu Button (แก้ไขให้ขยับเข้ามาด้านใน) -->
+                    <button onclick="toggleMobileMenu()" class="lg:hidden text-gray-300 hover:text-white p-2 mr-2">
+                        <i class="fa-solid fa-bars text-xl"></i>
+                    </button>
+                </div>
             </div>
         </div>
-        </div>
 
-        <!-- Mobile Navigation Menu -->
-        <div id="mobile-menu" class="hidden md:hidden bg-dark-800 border-b border-dark-700 px-4 pt-2 pb-4 space-y-2">
+        <!-- Mobile Navigation Menu (เมนูที่จะแสดงตอนกดปุ่มขีด 3 ขีด) -->
+        <div id="mobile-menu" class="hidden lg:hidden bg-dark-800 border-b border-dark-700 px-4 pt-2 pb-4 space-y-2">
             <button onclick="navigateTo('home'); toggleMobileMenu()"
                 class="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-gray-300 hover:bg-dark-700 hover:text-amber-500">หน้าหลัก</button>
             <button onclick="navigateTo('booking'); toggleMobileMenu()"
@@ -788,7 +816,7 @@
                 { id: 'h5', name: 'Crop (คร็อป)', basePrice: 80, desc: 'ตัดสั้นมีเท็กซ์เจอร์ เหมาะกับรูปหน้าทุกแบบ', img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ6Guw3ZWQGQcL7HrNuqMFnuG1fZEzwrMCtryCaWMCWGw&s' },
                 { id: 'h6', name: 'Taper Fade (เทเปอร์เฟด)', basePrice: 80, desc: 'แพ็กเกจตัดผม + กันโกนแต่งหนวดเคราครบสูตร', img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSlDNvXNEFYNoi7XJihOgu_bMONxbaI8wwiZFak-NYQpA&s=10' },
                 { id: 'h7', name: 'Slicked Back (สลิคแบล็ค)', basePrice: 80, desc: 'การเซ็ตผมแบบเสยปาดเรียบไปด้านหลัง ผมด้านหน้าค่อนข้างยาว ไถด้านข้างให้สั้นแบบอันเดอร์คัต', img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSDcc_xa4XfLvmCBgsDekU5QLkkdAwybZj_CXcOzmbR2g&s=10' },
-                { id: 'h8', name: 'Undercut (สลิคเเบ็ค)', basePrice: 80, desc: 'ตัดด้านข้างให้สั้นกว่าตรงกลาง เป็นทรงที่ดูแลง่าย ไม่ร้อนเหมาะกับอากาศบ้านเรามาก ๆ เซ็ตง่ายทำได้หลายลุค', img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQcFjL5ges-lJ42L_yUxjp_3ihUmsh4I9OiCZKxzpYw1w&s=10' },
+                { id: 'h8', name: 'Undercut (อันเดอร์คัต)', basePrice: 80, desc: 'ตัดด้านข้างให้สั้นกว่าตรงกลาง เป็นทรงที่ดูแลง่าย ไม่ร้อนเหมาะกับอากาศบ้านเรามาก ๆ เซ็ตง่ายทำได้หลายลุค', img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQcFjL5ges-lJ42L_yUxjp_3ihUmsh4I9OiCZKxzpYw1w&s=10' },
                 { id: 'h9', name: 'Skinhead Fade (สกินเฟด)', basePrice: 80, desc: 'ไล่ลำดับความเข้มลงไปจากด้านข้างถึงท้ายทอย เป็นทรงที่ทำแล้วได้ลุคเท่ๆ กวนๆ ดูเป็นหนุ่มอารมณ์ดี ที่มีความเอาจริง เอาจัง', img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTpSrZp93j6-r3OYOnZA_GpYD08F2EpeifVG8Jnu9I0YA&s=10' },
                 { id: 'h10', name: 'Skinhead (สกินเฮด)', basePrice: 80, desc: 'คลาสสิค และเป็นที่นิยมของหนุ่ม ๆ มาอย่างยาวนาน พักหลัง ๆ มานี้ก็จะได้เห็นไอดอลหนุ่มชาวจีนทำผมทรงนี้', img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQhhwsGbfYZsEmf8yjyYKL9eNALIaisgnzOdaiibNmg4g&s=10' },
                 { id: 'h11', name: 'Side Part (ไซด์พาท,ปัดเป๋)', basePrice: 80, desc: 'ทรงผมผู้ชายที่เรียบง่าย ดูดี ไม่เคยตกยุค ทรงนี้มีความนิยมมาตั้งแต่ศตวรรษที่ 19 แล้ว ดังนั้นจึงเป็นอีกทรงผมชายที่คลาสสิก', img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRUbANz7vI2Vc6uL4O8XiCoXufd_easMpSHZAFJFgHGPw&s=10' },
@@ -1605,7 +1633,7 @@
         }
 
         /* ================= BOOKING SUBMISSION ================= */
-        function submitBooking() {
+        async function submitBooking() {
             // 1. ดึงค่าไอดีที่เลือกจาก bookingForm หรือ state หลัก (รองรับทั้ง 2 แบบเพื่อกันพลาด)
             const styleId = state.bookingForm?.selectedStyleId || state.selectedStyle;
             const ageId = state.bookingForm?.selectedAgeId || state.selectedAgeGroup;
@@ -1659,29 +1687,29 @@
                 createdAt: new Date().toISOString()
             };
 
-            // บันทึกลง state และ LocalStorage
-            if (!Array.isArray(state.bookings)) {
-                state.bookings = [];
-            }
-            state.bookings.push(newBooking);
-            localStorage.setItem('barber_bookings', JSON.stringify(state.bookings));
+            try {
+                // 🚀 บันทึกลง Firebase Cloud Firestore แทน LocalStorage เพื่อให้ซิงค์ข้ามเครื่อง
+                if (window.firebaseModules && window.db) {
+                    await window.firebaseModules.addDoc(
+                        window.firebaseModules.collection(window.db, "bookings"),
+                        newBooking
+                    );
+                } else {
+                    // สำรองเผื่อกรณีเชื่อมต่อ Firebase ไม่สำเร็จ ให้เก็บลง LocalStorage ชั่วคราว
+                    if (!Array.isArray(state.bookings)) state.bookings = [];
+                    state.bookings.push(newBooking);
+                    localStorage.setItem('barber_bookings', JSON.stringify(state.bookings));
+                }
 
-            // 🛑 เพิ่มส่วนนี้: สั่งอัปเดตตารางและข้อมูลของทุกหน้าทันที ป้องกันข้อมูลไม่ซิงค์กัน
-            if (typeof renderUserBookingsTable === 'function') {
-                renderUserBookingsTable();
-            }
-            if (typeof renderAdminBookingsTable === 'function') {
-                renderAdminBookingsTable();
-            }
-            if (typeof updateRevenueStats === 'function') {
-                updateRevenueStats();
-            }
+                alert(`จองคิวสำเร็จ! รหัสจองของคุณคือ ${newBooking.id}`);
 
-            alert(`จองคิวสำเร็จ! รหัสจองของคุณคือ ${newBooking.id}`);
-
-            // ย้ายไปหน้าประวัติการจอง
-            if (typeof navigateTo === 'function') {
-                navigateTo('my-bookings');
+                // ย้ายไปหน้าประวัติการจอง
+                if (typeof navigateTo === 'function') {
+                    navigateTo('my-bookings');
+                }
+            } catch (error) {
+                console.error("Error saving booking to Firebase: ", error);
+                alert("เกิดข้อผิดพลาดในการบันทึกข้อมูล กรุณาลองใหม่อีกครั้ง");
             }
         }
 
@@ -2323,6 +2351,39 @@
                 phoneInput.value = currentUser.phone;
             }
         }
+
+        // ฟังก์ชันฟังข้อมูลการจองแบบ Real-time จาก Firebase
+        function initRealtimeBookings() {
+            if (!window.db || !window.firebaseModules) return;
+
+            window.firebaseModules.onSnapshot(
+                window.firebaseModules.collection(window.db, "bookings"),
+                (snapshot) => {
+                    state.bookings = [];
+                    snapshot.forEach((doc) => {
+                        state.bookings.push({ firestoreId: doc.id, ...doc.data() });
+                    });
+
+                    // สั่งอัปเดตตารางและสถิติของทุกหน้าทันที
+                    if (typeof renderUserBookingsTable === 'function') {
+                        renderUserBookingsTable();
+                    }
+                    if (typeof renderAdminBookingsTable === 'function') {
+                        renderAdminBookingsTable();
+                    }
+                    if (typeof updateRevenueStats === 'function') {
+                        updateRevenueStats();
+                    }
+                }
+            );
+        }
+
+        // เรียกใช้งานเมื่อหน้าเว็บโหลดเสร็จ
+        window.addEventListener('DOMContentLoaded', () => {
+            setTimeout(() => {
+                initRealtimeBookings();
+            }, 1200);
+        });
     </script>
 </body>
 
