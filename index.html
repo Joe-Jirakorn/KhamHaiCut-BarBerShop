@@ -2353,9 +2353,14 @@
         }
 
         // ฟังก์ชันฟังข้อมูลการจองแบบ Real-time จาก Firebase
+        // ฟังก์ชันฟังข้อมูลแบบเรียลไทม์จาก Firebase
         function initRealtimeBookings() {
-            if (!window.db || !window.firebaseModules) return;
+            if (!window.db || !window.firebaseModules) {
+                console.warn("Firebase ยังไม่พร้อมใช้งาน");
+                return;
+            }
 
+            // ดึงข้อมูลจาก Collection "bookings" แบบเรียลไทม์
             window.firebaseModules.onSnapshot(
                 window.firebaseModules.collection(window.db, "bookings"),
                 (snapshot) => {
@@ -2364,19 +2369,31 @@
                         state.bookings.push({ firestoreId: doc.id, ...doc.data() });
                     });
 
-                    // สั่งอัปเดตตารางและสถิติของทุกหน้าทันที
-                    if (typeof renderUserBookingsTable === 'function') {
-                        renderUserBookingsTable();
-                    }
+                    // สั่งอัปเดตตารางและสถิติในหน้าจอทันที
                     if (typeof renderAdminBookingsTable === 'function') {
                         renderAdminBookingsTable();
+                    }
+                    if (typeof renderUserBookingsTable === 'function') {
+                        renderUserBookingsTable();
                     }
                     if (typeof updateRevenueStats === 'function') {
                         updateRevenueStats();
                     }
+
+                    console.log("ซิงค์ข้อมูลเรียลไทม์สำเร็จ จำนวนคิวทั้งหมด:", state.bookings.length);
+                },
+                (error) => {
+                    console.error("เกิดข้อผิดพลาดในการดึงข้อมูลเรียลไทม์:", error);
                 }
             );
         }
+
+        // สั่งให้ทำงานหลังจากโหลดหน้าเว็บเสร็จ
+        window.addEventListener('DOMContentLoaded', () => {
+            setTimeout(() => {
+                initRealtimeBookings();
+            }, 1500);
+        });
 
         // เรียกใช้งานเมื่อหน้าเว็บโหลดเสร็จ
         window.addEventListener('DOMContentLoaded', () => {
