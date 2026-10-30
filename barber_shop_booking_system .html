@@ -1,0 +1,2329 @@
+<!DOCTYPE html>
+<html lang="th" class="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>THE CUT & CRAFT - Premium Barber Shop</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        amber: {
+                            500: '#f59e0b',
+                            600: '#d97706',
+                            700: '#b45309',
+                        },
+                        dark: {
+                            900: '#0f1115',
+                            800: '#181b20',
+                            700: '#22272e',
+                            600: '#2d333b'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Kanit', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Google Fonts: Kanit -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: 'Kanit', sans-serif;
+            background-color: #0f1115;
+            color: #e6edf3;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #181b20;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #333a45;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #f59e0b;
+        }
+
+        .barber-stripe {
+            background: repeating-linear-gradient(45deg,
+                    #ef4444,
+                    #ef4444 10px,
+                    #ffffff 10px,
+                    #ffffff 20px,
+                    #3b82f6 20px,
+                    #3b82f6 30px,
+                    #ffffff 30px,
+                    #ffffff 40px);
+        }
+    </style>
+</head>
+
+<body class="min-h-screen flex flex-col justify-between">
+
+    <!-- Notification / Toast Container -->
+    <div id="toast-container" class="fixed top-5 right-5 z-50 flex flex-col gap-3 max-w-sm w-full pointer-events-none">
+    </div>
+
+    <!-- Navigation Header -->
+    <header class="bg-dark-800 border-b border-dark-700 sticky top-0 z-40 shadow-xl">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-20">
+                <!-- Brand Logo -->
+                <div class="flex items-center gap-3 cursor-pointer" onclick="navigateTo('home')">
+                    <div
+                        class="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-500 to-amber-700 flex items-center justify-center text-dark-900 font-bold text-2xl shadow-lg shadow-amber-500/20">
+                        <i class="fa-solid fa-scissors"></i>
+                    </div>
+                    <div>
+                        <span class="text-xl font-bold tracking-wider text-white block leading-tight">KhamHai Cut</span>
+                        <span class="text-xs text-amber-500 font-medium tracking-widest uppercase">BARBER SHOP</span>
+                    </div>
+                </div>
+
+                <!-- Desktop Navigation Links -->
+                <nav class="hidden md:flex items-center gap-6">
+                    <button onclick="navigateTo('home')"
+                        class="nav-link text-gray-300 hover:text-amber-500 font-medium transition py-2">หน้าหลัก</button>
+                    <button onclick="navigateTo('booking')"
+                        class="nav-link text-gray-300 hover:text-amber-500 font-medium transition py-2">จองคิวตัดผม</button>
+                    <button onclick="navigateTo('barbers')"
+                        class="nav-link text-gray-300 hover:text-amber-500 font-medium transition py-2">ช่างของเรา</button>
+                    <button onclick="navigateTo('my-bookings')"
+                        class="nav-link text-gray-300 hover:text-amber-500 font-medium transition py-2">ประวัติการจอง</button>
+                </nav>
+
+                <!-- Right Actions / User Info -->
+                <div class="flex items-center gap-3">
+                    <!-- Quick Role Switcher (Demo Feature) -->
+                    <div id="role-switcher"
+                        class="bg-dark-900 border border-dark-600 rounded-lg p-1 flex items-center text-xs">
+                        <span class="px-2 text-gray-400 font-medium hidden sm:inline">โหมด:</span>
+                        <button id="role-user-btn" onclick="switchRole('user')"
+                            class="px-2.5 py-1 rounded-md font-semibold transition bg-amber-500 text-dark-900">User</button>
+                        <!-- 🛑 เพิ่มปุ่มโหมด Barber ตรงนี้ -->
+                        <button id="role-barber-btn" onclick="switchRole('barber')"
+                            class="px-2.5 py-1 rounded-md font-semibold text-gray-400 hover:text-white transition">Barber</button>
+                        <button id="role-admin-btn" onclick="switchRole('admin')"
+                            class="px-2.5 py-1 rounded-md font-semibold text-gray-400 hover:text-white transition">Admin</button>
+                    </div>
+                </div>
+
+                <!-- User Profile / Login Button -->
+                <div id="auth-buttons">
+                    <button onclick="openModal('auth-modal')"
+                        class="bg-amber-500 hover:bg-amber-600 text-dark-900 font-semibold px-4 py-2.5 rounded-lg shadow-md transition flex items-center gap-2">
+                        <i class="fa-solid fa-right-to-bracket"></i>
+                        <span>เข้าสู่ระบบ</span>
+                    </button>
+                </div>
+
+                <div id="user-profile-menu" class="hidden relative">
+                    <button onclick="toggleUserDropdown()"
+                        class="flex items-center gap-3 bg-dark-700 hover:bg-dark-600 p-1.5 pr-3 rounded-full border border-dark-600 transition">
+                        <img id="user-avatar"
+                            src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&auto=format&fit=crop&q=80"
+                            class="w-9 h-9 rounded-full object-cover border border-amber-500" alt="Avatar">
+                        <span id="user-display-name"
+                            class="font-medium text-sm text-gray-200 max-w-[100px] truncate">User</span>
+                        <i class="fa-solid fa-chevron-down text-xs text-gray-400"></i>
+                    </button>
+                    <!-- Dropdown Menu -->
+                    <div id="user-dropdown"
+                        class="hidden absolute right-0 mt-2 w-48 bg-dark-800 border border-dark-600 rounded-xl shadow-2xl py-2 z-50">
+                        <div class="px-4 py-2 border-b border-dark-700">
+                            <p class="text-xs text-gray-400">เข้าสู่ระบบด้วย</p>
+                            <p id="user-email-text" class="text-sm font-semibold truncate text-amber-500">
+                                user@example.com</p>
+                        </div>
+                        <button onclick="navigateTo('my-bookings')"
+                            class="w-full text-left px-4 py-2.5 text-sm text-gray-300 hover:bg-dark-700 flex items-center gap-2">
+                            <i class="fa-solid fa-calendar-check text-amber-500"></i> ประวัติคิวของฉัน
+                        </button>
+                        <div id="admin-menu-option" class="hidden">
+                            <button onclick="navigateTo('admin')"
+                                class="w-full text-left px-4 py-2.5 text-sm text-amber-400 hover:bg-dark-700 flex items-center gap-2">
+                                <i class="fa-solid fa-chart-line"></i> แผงควบคุม Admin
+                            </button>
+                        </div>
+                        <hr class="border-dark-700 my-1">
+                        <button onclick="logout()"
+                            class="w-full text-left px-4 py-2.5 text-sm text-red-400 hover:bg-dark-700 flex items-center gap-2">
+                            <i class="fa-solid fa-right-from-bracket"></i> ออกจากระบบ
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Mobile Menu Toggle -->
+                <button onclick="toggleMobileMenu()" class="md:hidden text-gray-300 hover:text-white p-2">
+                    <i class="fa-solid fa-bars text-xl"></i>
+                </button>
+            </div>
+        </div>
+        </div>
+
+        <!-- Mobile Navigation Menu -->
+        <div id="mobile-menu" class="hidden md:hidden bg-dark-800 border-b border-dark-700 px-4 pt-2 pb-4 space-y-2">
+            <button onclick="navigateTo('home'); toggleMobileMenu()"
+                class="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-gray-300 hover:bg-dark-700 hover:text-amber-500">หน้าหลัก</button>
+            <button onclick="navigateTo('booking'); toggleMobileMenu()"
+                class="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-gray-300 hover:bg-dark-700 hover:text-amber-500">จองคิวตัดผม</button>
+            <button onclick="navigateTo('barbers'); toggleMobileMenu()"
+                class="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-gray-300 hover:bg-dark-700 hover:text-amber-500">ช่างของเรา</button>
+            <button onclick="navigateTo('my-bookings'); toggleMobileMenu()"
+                class="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-gray-300 hover:bg-dark-700 hover:text-amber-500">ประวัติการจอง</button>
+        </div>
+    </header>
+
+    <!-- Main Dynamic Content Wrapper -->
+    <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+        <!-- ================= PAGE: HOME ================= -->
+        <section id="page-home" class="page-section space-y-12">
+            <!-- Hero Banner -->
+            <div class="relative rounded-3xl overflow-hidden border border-dark-700 bg-dark-800 shadow-2xl">
+                <div class="absolute inset-0 bg-cover bg-center opacity-30"
+                    style="background-image: url('https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=1200&auto=format&fit=crop&q=80');">
+                </div>
+                <div class="absolute inset-0 bg-gradient-to-r from-dark-900 via-dark-900/90 to-transparent"></div>
+                <div class="relative z-10 p-8 sm:p-12 lg:p-16 max-w-2xl space-y-6">
+                    <div
+                        class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-sm font-medium">
+                        <span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span> เปิดบริการทุกวัน 09:00 -
+                        20:00 น.
+                    </div>
+                    <h1 class="text-4xl sm:text-5xl font-extrabold text-white tracking-tight leading-none">
+                        สร้างสรรค์สไตล์ <br><span
+                            class="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-amber-600">ที่เป็นตัวคุณ</span>
+                    </h1>
+                    <p class="text-gray-300 text-base sm:text-lg">
+                        บริการตัดผม เซ็ตทรง ชโลมหนวดเครา โดยช่างผู้เชี่ยวชาญระดับมืออาชีพ บรรยากาศพรีเมียม
+                        จองคิวออนไลน์ง่ายๆ ไม่ต้องรอนาน
+                    </p>
+                    <div class="flex flex-wrap gap-4 pt-2">
+                        <button onclick="navigateTo('booking')"
+                            class="bg-amber-500 hover:bg-amber-600 text-dark-900 font-bold px-8 py-4 rounded-xl shadow-lg shadow-amber-500/20 transition transform hover:-translate-y-0.5 flex items-center gap-2 text-lg">
+                            <i class="fa-solid fa-calendar-plus"></i> จองคิวทันที
+                        </button>
+                        <button onclick="navigateTo('barbers')"
+                            class="bg-dark-700 hover:bg-dark-600 text-white font-semibold px-6 py-4 rounded-xl border border-dark-600 transition flex items-center gap-2 text-lg">
+                            <i class="fa-solid fa-users"></i> เช็คสถานะช่าง
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Barbers Real-time Status Strip -->
+            <div>
+                <div class="flex justify-between items-end mb-6">
+                    <div>
+                        <h2 class="text-2xl font-bold text-white flex items-center gap-2">
+                            <i class="fa-solid fa-user-clock text-amber-500"></i> สถานะช่างตัดผมวันนี้
+                        </h2>
+                        <p class="text-gray-400 text-sm">ตรวจสอบสถานะคิวของช่างแต่ละท่านก่อนทำการจอง</p>
+                    </div>
+                    <button onclick="renderBarbersHomeStatus()"
+                        class="text-sm text-amber-500 hover:underline flex items-center gap-1">
+                        <i class="fa-solid fa-rotate-right"></i> อัปเดตข้อมูล
+                    </button>
+                </div>
+
+                <div id="home-barbers-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <!-- Dynamic Barber Status Cards Loaded by JS -->
+                </div>
+            </div>
+
+            <!-- Highlights / Why Choose Us -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div
+                    class="bg-dark-800 p-6 rounded-2xl border border-dark-700 flex flex-col items-center text-center space-y-3">
+                    <div
+                        class="w-14 h-14 rounded-full bg-amber-500/10 text-amber-500 flex items-center justify-center text-2xl">
+                        <i class="fa-solid fa-scissors"></i>
+                    </div>
+                    <h3 class="text-lg font-bold text-white">ช่างฝีมือประณีต</h3>
+                    <p class="text-gray-400 text-sm">ช่างทุกคนผ่านการฝึกอบรมระดับสากล
+                        เชี่ยวชาญทุกสไตล์ทั้งคลาสสิกและโมเดิร์น</p>
+                </div>
+                <div
+                    class="bg-dark-800 p-6 rounded-2xl border border-dark-700 flex flex-col items-center text-center space-y-3">
+                    <div
+                        class="w-14 h-14 rounded-full bg-amber-500/10 text-amber-500 flex items-center justify-center text-2xl">
+                        <i class="fa-solid fa-clock"></i>
+                    </div>
+                    <h3 class="text-lg font-bold text-white">ตรงต่อเวลา ไม่ต้องรอนาน</h3>
+                    <p class="text-gray-400 text-sm">ระบบจองคิวที่มีประสิทธิภาพการันตีเวลาของคุณ
+                        เมื่อมาถึงร้านจะได้ตัดทันที</p>
+                </div>
+                <div
+                    class="bg-dark-800 p-6 rounded-2xl border border-dark-700 flex flex-col items-center text-center space-y-3">
+                    <div
+                        class="w-14 h-14 rounded-full bg-amber-500/10 text-amber-500 flex items-center justify-center text-2xl">
+                        <i class="fa-solid fa-wine-glass-stripe"></i>
+                    </div>
+                    <h3 class="text-lg font-bold text-white">บรรยากาศพรีเมียมผ่อนคลาย</h3>
+                    <p class="text-gray-400 text-sm">พร้อมเครื่องดื่มต้อนรับฟรี ดนตรีฟังสบาย
+                        และเก้าอี้ตัดผมปรับนอนระดับเฟิร์สคลาส</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= PAGE: BOOKING SYSTEM ================= -->
+        <section id="page-booking" class="page-section hidden space-y-8">
+            <div class="border-b border-dark-700 pb-5">
+                <h1 class="text-3xl font-extrabold text-white flex items-center gap-3">
+                    <i class="fa-solid fa-calendar-check text-amber-500"></i> จองคิวตัดผมออนไลน์
+                </h1>
+                <p class="text-gray-400 mt-1">เลือกทรงผม กลุ่มอายุ ช่างตัดผม และวันเวลาที่สะดวกได้ในไม่กี่ขั้นตอน</p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <!-- Step Form Area (Left 2 Columns) -->
+                <div class="lg:col-span-2 space-y-8">
+
+                    <!-- STEP 1: Select Hairstyle -->
+                    <div class="bg-dark-800 rounded-2xl border border-dark-700 p-6 shadow-lg space-y-4">
+                        <div class="flex items-center justify-between border-b border-dark-700 pb-3">
+                            <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                                <span
+                                    class="w-7 h-7 rounded-full bg-amber-500 text-dark-900 flex items-center justify-center text-sm font-bold">1</span>
+                                เลือกทรงผม / บริการ
+                            </h2>
+                            <span class="text-xs text-amber-500 font-medium">* จำเป็นต้องเลือก</span>
+                        </div>
+
+                        <div id="hairstyle-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                            <!-- Hairstyle Cards Loaded by JS -->
+                        </div>
+                    </div>
+
+                    <!-- STEP 2: Select Age Group -->
+                    <div class="bg-dark-800 rounded-2xl border border-dark-700 p-6 shadow-lg space-y-4">
+                        <div class="flex items-center justify-between border-b border-dark-700 pb-3">
+                            <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                                <span
+                                    class="w-7 h-7 rounded-full bg-amber-500 text-dark-900 flex items-center justify-center text-sm font-bold">2</span>
+                                เลือกกลุ่มอายุลูกค้า (ราคาเฉพาะกลุ่ม)
+                            </h2>
+                        </div>
+
+                        <div id="age-group-grid" class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            <!-- Age Group Options Loaded by JS -->
+                        </div>
+                    </div>
+
+                    <!-- STEP 3: Select Barber & Date/Time -->
+                    <div class="bg-dark-800 rounded-2xl border border-dark-700 p-6 shadow-lg space-y-6">
+                        <div class="flex items-center justify-between border-b border-dark-700 pb-3">
+                            <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                                <span
+                                    class="w-7 h-7 rounded-full bg-amber-500 text-dark-900 flex items-center justify-center text-sm font-bold">3</span>
+                                เลือกช่างและวันเวลาที่ต้องการ
+                            </h2>
+                        </div>
+
+                        <!-- Barber Selection -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-3">เลือกช่างตัดผม:</label>
+                            <div id="barber-select-grid" class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                                <!-- Barber options by JS -->
+                            </div>
+                        </div>
+
+                        <!-- Date & Time Picker -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300 mb-2">วันที่บริการ:</label>
+                                <input type="date" id="booking-date"
+                                    class="w-full bg-dark-900 border border-dark-600 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-amber-500 transition">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300 mb-2">ช่วงเวลา:</label>
+                                <select id="booking-time"
+                                    class="w-full bg-dark-900 border border-dark-600 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-amber-500 transition">
+                                    <option value="">-- เลือกเวลา --</option>
+                                    <option value="09:00">09:00 - 10:00 น.</option>
+                                    <option value="10:00">10:00 - 11:00 น.</option>
+                                    <option value="11:00">11:00 - 12:00 น.</option>
+                                    <option value="13:00">13:00 - 14:00 น.</option>
+                                    <option value="14:00">14:00 - 15:00 น.</option>
+                                    <option value="15:00">15:00 - 16:00 น.</option>
+                                    <option value="16:00">16:00 - 17:00 น.</option>
+                                    <option value="17:00">17:00 - 18:00 น.</option>
+                                    <option value="18:00">18:00 - 19:00 น.</option>
+                                    <option value="19:00">19:00 - 20:00 น.</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Customer Info Form -->
+                        <div class="border-t border-dark-700 pt-4 space-y-4">
+                            <h3 class="text-sm font-semibold text-gray-300">ข้อมูลติดต่อลูกค้า:</h3>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-xs text-gray-400 mb-1">ชื่อผู้จอง:</label>
+                                    <input type="text" id="cust-name" placeholder="ระบุชื่อ-นามสกุล"
+                                        class="w-full bg-dark-900 border border-dark-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500">
+                                </div>
+                                <div>
+                                    <label class="block text-xs text-gray-400 mb-1">เบอร์โทรศัพท์:</label>
+                                    <input type="tel" id="cust-phone" placeholder="08X-XXX-XXXX"
+                                        class="w-full bg-dark-900 border border-dark-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500">
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-xs text-gray-400 mb-1">หมายเหตุเพิ่มเติม (ถ้ามี):</label>
+                                <textarea id="cust-notes" rows="2"
+                                    placeholder="เช่น ขอทรงสั้นพิเศษ, มีรอยแผลเป็นบนหนังศีรษะ"
+                                    class="w-full bg-dark-900 border border-dark-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Summary Sidebar (Right 1 Column) -->
+                <div class="space-y-6">
+                    <div class="bg-dark-800 rounded-2xl border border-dark-700 p-6 shadow-xl sticky top-28 space-y-6">
+                        <h3 class="text-xl font-bold text-white border-b border-dark-700 pb-3 flex items-center gap-2">
+                            <i class="fa-solid fa-receipt text-amber-500"></i> สรุปรายการจอง
+                        </h3>
+
+                        <!-- Selected Item Details -->
+                        <div class="space-y-4 text-sm">
+                            <div class="flex justify-between items-start">
+                                <span class="text-gray-400">ทรงผม/บริการ:</span>
+                                <span id="summary-style"
+                                    class="font-semibold text-white text-right">ยังไม่ได้เลือก</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-gray-400">กลุ่มอายุ:</span>
+                                <span id="summary-age"
+                                    class="font-semibold text-amber-400 text-right">ยังไม่ได้เลือก</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-gray-400">ช่างตัดผม:</span>
+                                <span id="summary-barber"
+                                    class="font-semibold text-white text-right">ยังไม่ได้เลือก</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-gray-400">วันเวลา:</span>
+                                <span id="summary-datetime" class="font-semibold text-gray-300 text-right">-</span>
+                            </div>
+
+                            <hr class="border-dark-700">
+
+                            <!-- Calculation Breakdown -->
+                            <div class="space-y-2">
+                                <div class="flex justify-between text-xs text-gray-400">
+                                    <span>ราคาปกติ:</span>
+                                    <span id="summary-base-price">฿0</span>
+                                </div>
+                                <div class="flex justify-between text-xs text-gray-400">
+                                    <span>ตัวคูณกลุ่มอายุ:</span>
+                                    <span id="summary-age-rate">-</span>
+                                </div>
+                                <div
+                                    class="flex justify-between text-base font-bold text-white pt-2 border-t border-dark-700/50">
+                                    <span>ราคาสุทธิ (Net):</span>
+                                    <span id="summary-net-price" class="text-2xl text-amber-500">฿0</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Confirm Booking Button -->
+                        <button onclick="submitBooking()"
+                            class="w-full bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-dark-900 font-extrabold py-4 rounded-xl shadow-lg shadow-amber-500/20 transition transform hover:-translate-y-0.5 text-center block text-lg">
+                            <i class="fa-solid fa-check-circle"></i> ยืนยันการจองคิว
+                        </button>
+                        <p class="text-xs text-center text-gray-500">ชำระเงินที่ร้านเมื่อรับบริการเสร็จสิ้น</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= PAGE: BARBERS LIST & STATUS ================= -->
+        <section id="page-barbers" class="page-section hidden space-y-8">
+            <div class="border-b border-dark-700 pb-5">
+                <h1 class="text-3xl font-extrabold text-white flex items-center gap-3">
+                    <i class="fa-solid fa-id-card-clip text-amber-500"></i> ช่างของเรา
+                </h1>
+                <p class="text-gray-400 mt-1">ตารางช่างพร้อมสถานะการรับคิวแบบ Real-time</p>
+            </div>
+
+            <div id="full-barbers-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Barber Cards loaded by JS -->
+            </div>
+        </section>
+
+        <!-- ================= PAGE: MY BOOKINGS (USER) ================= -->
+        <section id="page-my-bookings" class="page-section hidden space-y-8">
+            <div
+                class="border-b border-dark-700 pb-5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <div>
+                    <h1 class="text-3xl font-extrabold text-white flex items-center gap-3">
+                        <i class="fa-solid fa-clock-rotate-left text-amber-500"></i> ประวัติการจองคิวของฉัน
+                    </h1>
+                    <p class="text-gray-400 mt-1">ตรวจสอบรายการคิวที่จองไว้และสถานะการรับบริการ</p>
+                </div>
+                <button onclick="navigateTo('booking')"
+                    class="bg-amber-500 hover:bg-amber-600 text-dark-900 font-semibold px-4 py-2 rounded-lg text-sm flex items-center gap-2">
+                    <i class="fa-solid fa-plus"></i> จองคิวเพิ่ม
+                </button>
+            </div>
+
+            <div class="bg-dark-800 rounded-2xl border border-dark-700 overflow-hidden shadow-xl">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm text-gray-300">
+                        <thead
+                            class="bg-dark-900 text-gray-400 text-xs uppercase tracking-wider border-b border-dark-700">
+                            <tr>
+                                <th class="px-6 py-4">รหัสจอง</th>
+                                <th class="px-6 py-4">ทรงผม/บริการ</th>
+                                <th class="px-6 py-4">ช่างตัดผม</th>
+                                <th class="px-6 py-4">วันและเวลา</th>
+                                <th class="px-6 py-4">ราคารวม</th>
+                                <th class="px-6 py-4">สถานะ</th>
+                                <th class="px-6 py-4 text-center">จัดการ</th>
+                            </tr>
+                        </thead>
+                        <tbody id="user-bookings-table-body" class="divide-y divide-dark-700">
+                            <!-- Table Rows Generated by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= PAGE: ADMIN DASHBOARD ================= -->
+        <section id="page-admin" class="page-section hidden space-y-8">
+            <div
+                class="border-b border-dark-700 pb-5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <div>
+                    <div class="flex items-center gap-2">
+                        <span class="bg-amber-500 text-dark-900 text-xs font-bold px-2.5 py-0.5 rounded">ADMIN
+                            CONTROL</span>
+                        <h1 class="text-3xl font-extrabold text-white">ระบบหลังบ้านร้านตัดผม</h1>
+                    </div>
+                    <p class="text-gray-400 mt-1">สรุปรายได้ การจัดการคิวลูกค้า และเปลี่ยนสถานะช่างตัดผม</p>
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="seedDemoData()"
+                        class="bg-dark-700 hover:bg-dark-600 text-amber-400 text-xs font-semibold px-3 py-2 rounded-lg border border-dark-600">
+                        <i class="fa-solid fa-database"></i> สุ่มข้อมูลตัวอย่าง
+                    </button>
+                </div>
+            </div>
+
+            <!-- Revenue Summary Cards (Daily, Weekly, Monthly) -->
+            <!-- 🛑 เพิ่ม id="revenue-cards-container" ไว้ที่ div นอกสุดตรงนี้ครับ -->
+            <div id="revenue-cards-container" class="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                <!-- Daily Revenue -->
+                <div class="bg-dark-800 p-6 rounded-2xl border border-dark-700 shadow-lg relative overflow-hidden">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-xs text-gray-400 font-medium uppercase tracking-wider">รายได้วันนี้ (Daily)
+                            </p>
+                            <h3 id="stat-daily-revenue" class="text-3xl font-extrabold text-white mt-1">฿0</h3>
+                            <p id="stat-daily-count" class="text-xs text-amber-500 mt-2">0 คิวที่เสร็จสิ้น</p>
+                        </div>
+                        <div
+                            class="w-12 h-12 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center text-xl">
+                            <i class="fa-solid fa-sun"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Weekly Revenue -->
+                <div class="bg-dark-800 p-6 rounded-2xl border border-dark-700 shadow-lg relative overflow-hidden">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-xs text-gray-400 font-medium uppercase tracking-wider">รายได้สัปดาห์นี้
+                                (Weekly)</p>
+                            <h3 id="stat-weekly-revenue" class="text-3xl font-extrabold text-white mt-1">฿0</h3>
+                            <p id="stat-weekly-count" class="text-xs text-amber-500 mt-2">0 คิวที่เสร็จสิ้น</p>
+                        </div>
+                        <div
+                            class="w-12 h-12 rounded-xl bg-blue-500/10 text-blue-400 flex items-center justify-center text-xl">
+                            <i class="fa-solid fa-calendar-week"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Monthly Revenue -->
+                <div class="bg-dark-800 p-6 rounded-2xl border border-dark-700 shadow-lg relative overflow-hidden">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-xs text-gray-400 font-medium uppercase tracking-wider">รายได้เดือนนี้
+                                (Monthly)</p>
+                            <h3 id="stat-monthly-revenue" class="text-3xl font-extrabold text-white mt-1">฿0</h3>
+                            <p id="stat-monthly-count" class="text-xs text-amber-500 mt-2">0 คิวที่เสร็จสิ้น</p>
+                        </div>
+                        <div
+                            class="w-12 h-12 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-xl">
+                            <i class="fa-solid fa-chart-line"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Revenue Analytics Chart Section -->
+            <!-- 🛑 เพิ่ม id="revenue-section-wrapper" ไว้ที่ div ตัวแม่สุดตรงนี้ -->
+            <div id="revenue-section-wrapper"
+                class="bg-dark-800 p-6 rounded-2xl border border-dark-700 shadow-xl space-y-4">
+                <div
+                    class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-dark-700 pb-4">
+
+                    <!-- 1. ส่วนหัวข้อและกล่องกราฟ -->
+                    <div id="admin-revenue-chart-section"
+                        class="bg-dark-800 p-6 rounded-2xl border border-dark-600 mb-6 w-full">
+                        <div>
+                            <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                                <i class="fa-solid fa-chart-column text-amber-500"></i> กราฟวิเคราะห์รายได้ (Revenue
+                                Chart)
+                            </h2>
+                            <p class="text-xs text-gray-400">แสดงผลเปรียบเทียบยอดขายย้อนหลัง</p>
+                        </div>
+
+                        <div class="mt-4">
+                            <!-- โค้ดกราฟ -->
+                        </div>
+                    </div>
+
+                    <!-- กล่องปุ่มเลือก รายวัน/รายสัปดาห์/รายเดือน -->
+                    <div id="revenue-filters"
+                        class="bg-dark-900 border border-dark-600 rounded-lg p-1 flex items-center self-start sm:self-auto">
+                        <button id="chart-filter-day" onclick="updateChartFilter('daily')"
+                            class="px-3 py-1.5 rounded-md text-xs font-semibold transition bg-amber-500 text-dark-900">รายวัน</button>
+                        <button id="chart-filter-week" onclick="updateChartFilter('weekly')"
+                            class="px-3 py-1.5 rounded-md text-xs font-semibold text-gray-400 hover:text-white transition">รายสัปดาห์</button>
+                        <button id="chart-filter-month" onclick="updateChartFilter('monthly')"
+                            class="px-3 py-1.5 rounded-md text-xs font-semibold text-gray-400 hover:text-white transition">รายเดือน</button>
+                    </div>
+                </div>
+
+                <!-- Canvas Container -->
+                <div id="revenue-canvas-container" class="relative h-72 sm:h-80 w-full">
+                    <canvas id="revenueChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Admin Section: Barber Status Management -->
+            <!-- 🛑 เติม id="barber-status-control" ไว้ที่ div ตัวแม่สุดตรงนี้ -->
+            <div id="barber-status-control"
+                class="bg-dark-800 p-6 rounded-2xl border border-dark-700 shadow-xl space-y-4">
+                <h2 class="text-xl font-bold text-white flex items-center gap-2 border-b border-dark-700 pb-3">
+                    <i class="fa-solid fa-user-gear text-amber-500"></i> จัดการสถานะช่างตัดผม
+                </h2>
+                <div id="admin-barber-control-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <!-- Admin Barber Toggle Cards loaded JS -->
+                </div>
+            </div>
+
+            <!-- Admin Section: Booking Queue Management Table -->
+            <div class="bg-dark-800 rounded-2xl border border-dark-700 overflow-hidden shadow-xl space-y-4 p-6">
+                <!-- 🛑 เติม id="admin-bookings-table" ไว้ที่ div ตัวแม่สุดตรงนี้ -->
+                <div id="admin-bookings-table"
+                    class="bg-dark-800 p-6 rounded-2xl border border-dark-700 shadow-xl space-y-4">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                        <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                            <i class="fa-solid fa-list-check text-amber-500"></i> รายการคิวทั้งหมดในระบบ
+                        </h2>
+                        <div class="flex gap-2 w-full sm:w-auto">
+                            <select id="admin-queue-filter" onchange="renderAdminBookingsTable()"
+                                class="bg-dark-900 border border-dark-600 rounded-lg px-3 py-1.5 text-xs text-white">
+                                <option value="all">ทุกสถานะ</option>
+                                <option value="pending">รอดำเนินการ (Pending)</option>
+                                <option value="completed">เสร็จสิ้น (Completed)</option>
+                                <option value="cancelled">ยกเลิก (Cancelled)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <!-- ส่วนตารางข้อมูลคิวข้างใน (ถ้ามี) -->
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm text-gray-300">
+                        <thead
+                            class="bg-dark-900 text-gray-400 text-xs uppercase tracking-wider border-b border-dark-700">
+                            <tr>
+                                <th class="px-4 py-3">รหัส</th>
+                                <th class="px-4 py-3">ชื่อลูกค้า</th>
+                                <th class="px-4 py-3">บริการ / ทรงผม</th>
+                                <th class="px-4 py-3">ช่าง</th>
+                                <th class="px-4 py-3">วัน-เวลา</th>
+                                <th class="px-4 py-3">ยอดรวม</th>
+                                <th class="px-4 py-3">สถานะ</th>
+                                <th class="px-4 py-3 text-center">จัดการสถานะคิว</th>
+                            </tr>
+                        </thead>
+                        <tbody id="admin-bookings-table-body" class="divide-y divide-dark-700">
+                            <!-- JS loaded queue list -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-dark-800 border-t border-dark-700 mt-16 py-8">
+        <div
+            class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row justify-between items-center gap-4 text-center sm:text-left">
+            <div>
+                <p class="text-white font-bold tracking-wider">KhamHai Cut BarBer Shop</p>
+            </div>
+            <div class="flex items-center gap-4 text-gray-400 text-sm">
+                <span class="hover:text-amber-500 cursor-pointer"><i class="fa-brands fa-facebook"></i></span>
+                <span class="hover:text-amber-500 cursor-pointer"><i class="fa-brands fa-instagram"></i></span>
+                <span class="hover:text-amber-500 cursor-pointer"><i class="fa-brands fa-line"></i></span>
+            </div>
+        </div>
+    </footer>
+
+    <!-- ================= MODAL: AUTHENTICATION (LOGIN / REGISTER) ================= -->
+    <div id="auth-modal"
+        class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-dark-800 border border-dark-700 w-full max-w-md rounded-2xl p-6 shadow-2xl relative space-y-6">
+            <button onclick="closeModal('auth-modal')" class="absolute top-4 right-4 text-gray-400 hover:text-white">
+                <i class="fa-solid fa-xmark text-xl"></i>
+            </button>
+
+            <!-- Tabs -->
+            <div class="flex border-b border-dark-700">
+                <button id="auth-tab-login" onclick="switchAuthTab('login')"
+                    class="flex-1 py-3 text-center font-bold text-amber-500 border-b-2 border-amber-500">เข้าสู่ระบบ</button>
+                <button id="auth-tab-register" onclick="switchAuthTab('register')"
+                    class="flex-1 py-3 text-center font-bold text-gray-400 border-b-2 border-transparent">ลงทะเบียน</button>
+            </div>
+            <!-- Login Form -->
+            <form id="form-login" onsubmit="handleEmailAuth(event, 'login')" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-medium text-gray-400 mb-1">อีเมล:</label>
+                    <input type="email" id="login-email" required placeholder="name@example.com"
+                        class="w-full bg-dark-900 border border-dark-600 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-400 mb-1">รหัสผ่าน:</label>
+                    <input type="password" id="login-password" required placeholder="••••••••"
+                        class="w-full bg-dark-900 border border-dark-600 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500">
+                </div>
+                <button type="submit"
+                    class="w-full bg-amber-500 hover:bg-amber-600 text-dark-900 font-bold py-3 rounded-xl shadow transition">
+                    เข้าสู่ระบบ
+                </button>
+            </form>
+
+            <!-- Register Form -->
+            <form id="form-register" onsubmit="handleEmailAuth(event, 'register')" class="space-y-4 hidden">
+                <div>
+                    <label class="block text-xs font-medium text-gray-400 mb-1">ชื่อ-นามสกุล:</label>
+                    <input type="text" id="reg-name" required placeholder="สมชาย ใจดี"
+                        class="w-full bg-dark-900 border border-dark-600 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-400 mb-1">เบอร์โทรศัพท์</label>
+                    <input type="tel" id="register-phone" placeholder="08XXXXXXXX"
+                        class="w-full bg-dark-900 border border-dark-600 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-400 mb-1">อีเมล:</label>
+                    <input type="email" id="reg-email" required placeholder="name@example.com"
+                        class="w-full bg-dark-900 border border-dark-600 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-400 mb-1">รหัสผ่าน:</label>
+                    <input type="password" id="reg-password" required placeholder="อย่างน้อย 6 ตัวอักษร"
+                        class="w-full bg-dark-900 border border-dark-600 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500">
+                </div>
+                <button type="submit"
+                    class="w-full bg-amber-500 hover:bg-amber-600 text-dark-900 font-bold py-3 rounded-xl shadow transition">
+                    สร้างบัญชีผู้ใช้
+                </button>
+            </form>
+        </div>
+    </div>
+
+
+    <!-- JavaScript Application Logic -->
+    <script>
+        /* ================= STATE MANAGEMENT ================= */
+        const state = {
+            // รองรับการเก็บเบอร์โทรศัพท์ใน currentUser (ดึงจาก LocalStorage)
+            currentUser: JSON.parse(localStorage.getItem('barber_current_user')) || null,
+
+            // รายชื่อบัญชีผู้ใช้ทั้งหมดในระบบ (เก็บข้อมูลสำหรับตรวจสอบการสมัครและการดึงเบอร์โทร)
+            users: JSON.parse(localStorage.getItem('barber_users')) || [],
+
+            currentRole: 'user', // 'user' or 'admin'
+            currentPage: 'home',
+
+            // Hairstyle Catalog
+            hairstyles: [
+                { id: 'h1', name: 'Comma (คอมม่า)', basePrice: 80, desc: 'ตัดด้านข้างแบบอันเดอร์คัทหรือเฟด ให้ลุคที่ดูทันสมัย ละมุน และช่วยปรับรูปหน้าให้ดูโดดเด่น', img: 'https://i.postimg.cc/cCYKFkFv/images.jpg' },
+                { id: 'h2', name: 'Two-Block (ทูบล็อค)', basePrice: 80, desc: 'ทรงผมชายสไตล์เกาหลีที่แบ่งผมออกเป็น 2 ส่วนชัดเจน โดยตัดผมด้านข้างและด้านหลังให้สั้น', img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQCp6Tuel1CAr2mPE6arIbV4voCHP47vS-fc37_5uz8qg&s=10' },
+                { id: 'h3', name: 'Mullet (มัลเล็ต)', basePrice: 80, desc: 'ทรงเสยเนี๊ยบ ลุคสมาร์ท หล่อสุขุม', img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQSuJIHAi7jO-IZbgsrCb5B0xRfa0Ap0TXW5vPkF7zIyw&s=10' },
+                { id: 'h4', name: 'Buzz Cut (บัสคัต)', basePrice: 80, desc: 'สกินเฮดแกะลาย ลุคสปอร์ต ดูแลรักษาง่าย', img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSYy8eNpUcaf4IDAYYgT430c87UzmHEHf6pv2WrdNVqCw&s=10' },
+                { id: 'h5', name: 'Crop (คร็อป)', basePrice: 80, desc: 'ตัดสั้นมีเท็กซ์เจอร์ เหมาะกับรูปหน้าทุกแบบ', img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ6Guw3ZWQGQcL7HrNuqMFnuG1fZEzwrMCtryCaWMCWGw&s' },
+                { id: 'h6', name: 'Taper Fade (เทเปอร์เฟด)', basePrice: 80, desc: 'แพ็กเกจตัดผม + กันโกนแต่งหนวดเคราครบสูตร', img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSlDNvXNEFYNoi7XJihOgu_bMONxbaI8wwiZFak-NYQpA&s=10' },
+                { id: 'h7', name: 'Slicked Back (สลิคแบล็ค)', basePrice: 80, desc: 'การเซ็ตผมแบบเสยปาดเรียบไปด้านหลัง ผมด้านหน้าค่อนข้างยาว ไถด้านข้างให้สั้นแบบอันเดอร์คัต', img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSDcc_xa4XfLvmCBgsDekU5QLkkdAwybZj_CXcOzmbR2g&s=10' },
+                { id: 'h8', name: 'Undercut (สลิคเเบ็ค)', basePrice: 80, desc: 'ตัดด้านข้างให้สั้นกว่าตรงกลาง เป็นทรงที่ดูแลง่าย ไม่ร้อนเหมาะกับอากาศบ้านเรามาก ๆ เซ็ตง่ายทำได้หลายลุค', img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQcFjL5ges-lJ42L_yUxjp_3ihUmsh4I9OiCZKxzpYw1w&s=10' },
+                { id: 'h9', name: 'Skinhead Fade (สกินเฟด)', basePrice: 80, desc: 'ไล่ลำดับความเข้มลงไปจากด้านข้างถึงท้ายทอย เป็นทรงที่ทำแล้วได้ลุคเท่ๆ กวนๆ ดูเป็นหนุ่มอารมณ์ดี ที่มีความเอาจริง เอาจัง', img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTpSrZp93j6-r3OYOnZA_GpYD08F2EpeifVG8Jnu9I0YA&s=10' },
+                { id: 'h10', name: 'Skinhead (สกินเฮด)', basePrice: 80, desc: 'คลาสสิค และเป็นที่นิยมของหนุ่ม ๆ มาอย่างยาวนาน พักหลัง ๆ มานี้ก็จะได้เห็นไอดอลหนุ่มชาวจีนทำผมทรงนี้', img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQhhwsGbfYZsEmf8yjyYKL9eNALIaisgnzOdaiibNmg4g&s=10' },
+                { id: 'h11', name: 'Side Part (ไซด์พาท,ปัดเป๋)', basePrice: 80, desc: 'ทรงผมผู้ชายที่เรียบง่าย ดูดี ไม่เคยตกยุค ทรงนี้มีความนิยมมาตั้งแต่ศตวรรษที่ 19 แล้ว ดังนั้นจึงเป็นอีกทรงผมชายที่คลาสสิก', img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRUbANz7vI2Vc6uL4O8XiCoXufd_easMpSHZAFJFgHGPw&s=10' },
+                { id: 'h12', name: 'Pompadour (ปอมปาดัว)', basePrice: 80, desc: 'ตัดผมด้านข้างและด้านหลังสั้น ด้านบนยาว เสยผมด้านหน้าขึ้นสูง  ปาดโหนก', img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTNYrsQ07w4lEOV5i21sWknnaOzCbvihURfMTkBMrOoKw&s=10' },
+            ],
+
+            // Age Categories & Rate Multipliers
+            ageGroups: [
+                { id: 'a1', label: 'เด็ก (Kids)', minAge: '1-12 ปี', rate: 0.625, discountLabel: 'ราคาปกติ', icon: 'fa-child' },
+                { id: 'a2', label: 'ผู้ใหญ่ (Adults)', minAge: '13-59 ปี', rate: 1.0, discountLabel: 'ราคาปกติ', icon: 'fa-user' },
+                // { id: 'a3', label: 'ผู้สูงอายุ (Seniors)', minAge: '60 ปีขึ้นไป', rate: 1.0, discountLabel: 'ราคาปกติ', icon: 'fa-person-cane' }
+            ],
+
+            // Barbers Data
+            barbers: [
+                { id: 'b1', name: 'ช่างก้อง (เจ้าของร้าน)', status: 'available', exp: 'ประสบการณ์ 1 ปี ชื่นชอบด้านการเฟด', avatar: 'https://i.postimg.cc/8FR1mMtP/858525001-1129326712975883-8607776798710260414-n.jpg' },
+                { id: 'b2', name: 'ช่างโจ (ช่างประจำร้าน)', status: 'available', exp: 'ประสบการณ์ 5 ปี เชี่ยวชาญเฟดสายอเมริกัน', avatar: 'https://i.postimg.cc/qMrLWY3v/863844196-1134350642473490-5849783856972700037-n.jpg' },
+            ],
+
+            // Booking Form State
+            bookingForm: {
+                selectedStyleId: 'h1',
+                selectedAgeId: 'a2',
+                selectedBarberId: 'b1',
+                date: new Date().toISOString().split('T')[0],
+                time: '14:00'
+            },
+            bookings: JSON.parse(localStorage.getItem('barber_bookings')) || [
+                {
+                    id: 'BK-1001',
+                    userId: 'u1',
+                    userName: 'สมชาย ชัยชนะ',
+                    userPhone: '081-234-5678',
+                    styleName: 'Fade & Undercut',
+                    ageGroupLabel: 'ผู้ใหญ่ (Adults)',
+                    barberName: 'ช่างก้อง (เจ้าของร้าน)',
+                    date: new Date().toISOString().split('T')[0],
+                    time: '11:00',
+                    price: 350,
+                    status: 'completed',
+                    createdAt: new Date().toISOString()
+                }
+            ],
+
+            chartFilter: 'daily',
+            revenueChartInstance: null
+        };
+        /* ================= INITIALIZATION ================= */
+        window.addEventListener('DOMContentLoaded', () => {
+            // 1. ตรวจสอบและกู้คืนสถานะการเข้าสู่ระบบจาก LocalStorage ป้องกันการรีเฟรชแล้วเด้งออก
+            const savedUser = localStorage.getItem('current_user');
+            if (savedUser) {
+                try {
+                    state.currentUser = JSON.parse(savedUser);
+                } catch (e) {
+                    console.error("Failed to parse saved user:", e);
+                    state.currentUser = null;
+                }
+            }
+            const bookingDateInput = document.getElementById('booking-date');
+            if (bookingDateInput) {
+                bookingDateInput.value = state.bookingForm.date;
+                bookingDateInput.min = new Date().toISOString().split('T')[0];
+            }
+            if (state.currentUser) {
+                const nameInput = document.getElementById('cust-name');
+                const phoneInput = document.getElementById('cust-phone');
+
+                if (nameInput) {
+                    nameInput.value = state.currentUser.name || '';
+                    nameInput.readOnly = true;
+                }
+                if (phoneInput) {
+                    phoneInput.value = state.currentUser.phone || '';
+                    phoneInput.readOnly = true;
+                }
+            }
+            if (typeof updateUserUI === 'function') updateUserUI();
+            if (typeof renderUI === 'function') renderUI();
+            if (typeof renderHairstylesGrid === 'function') renderHairstylesGrid();
+            if (typeof renderAgeGroupsGrid === 'function') renderAgeGroupsGrid();
+            if (typeof renderBarberSelectGrid === 'function') renderBarberSelectGrid();
+            if (typeof renderBarbersHomeStatus === 'function') renderBarbersHomeStatus();
+            if (typeof renderFullBarbersList === 'function') renderFullBarbersList();
+            if (typeof renderUserBookingsTable === 'function') renderUserBookingsTable();
+            if (typeof renderAdminBookingsTable === 'function') renderAdminBookingsTable();
+            if (typeof renderAdminBarberControls === 'function') renderAdminBarberControls();
+            if (typeof updateBookingSummary === 'function') updateBookingSummary();
+            if (typeof initChart === 'function') initChart();
+            if (typeof updateRevenueStats === 'function') updateRevenueStats();
+        });
+
+        /* ================= NAVIGATION & ROUTING ================= */
+        // ฟังก์ชันกลางสำหรับจัดการการคลิกเมนูด้านบน
+        function navigateTo(target) {
+            const pageHome = document.getElementById('page-home');
+            const pageAdmin = document.getElementById('page-admin');
+            const bookingSection = document.getElementById('booking-section') || document.getElementById('page-booking');
+            const barbersSection = document.getElementById('page-barbers') || document.getElementById('barbers-section');
+            const historySection = document.getElementById('page-my-bookings') || document.getElementById('my-bookings-section') || document.getElementById('history-section');
+
+            // 🌟 ฟังก์ชันซ่อนหน้าหลังบ้าน (Admin) แบบเด็ดขาด
+            const hideAdminView = () => {
+                if (pageAdmin) {
+                    pageAdmin.classList.add('hidden');
+                    pageAdmin.style.display = 'none';
+                }
+            };
+
+            // ฟังก์ชันซ่อนหน้าฝั่ง User ทั้งหมด
+            const hideAllUserViews = () => {
+                if (pageHome) { pageHome.style.display = 'none'; }
+                if (bookingSection) { bookingSection.style.display = 'none'; }
+                if (barbersSection) { barbersSection.style.display = 'none'; }
+                if (historySection) { historySection.style.display = 'none'; }
+            };
+
+            // 1. หน้าหลัก
+            if (target === 'home') {
+                hideAdminView(); // ซ่อนแอดมินก่อน
+                hideAllUserViews();
+                if (pageHome) { pageHome.style.display = 'block'; }
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+
+            // 2. จองคิวตัดผม
+            else if (target === 'booking') {
+                hideAdminView();
+                hideAllUserViews();
+                if (bookingSection) {
+                    bookingSection.style.display = 'block';
+                    bookingSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+                showToast('เข้าสู่หน้าจองคิว', 'success');
+            }
+
+            // 3. ช่างของเรา (เปิดหน้า และสั่ง Render ข้อมูลการ์ดช่าง)
+            else if (target === 'barbers') {
+                hideAdminView(); // 🌟 บังคับซ่อนหน้าแอดมิน/กราฟไม่ให้โผล่มาด้านล่าง
+                hideAllUserViews();
+
+                if (barbersSection) {
+                    barbersSection.style.display = 'block';
+                    barbersSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+                    if (typeof renderBarbersPage === 'function') {
+                        renderBarbersPage();
+                    }
+
+                    showToast('แสดงข้อมูลช่างทั้งหมด', 'success');
+                } else {
+                    if (pageHome) { pageHome.style.display = 'block'; }
+                    window.scrollTo({ top: 800, behavior: 'smooth' });
+                    showToast('แสดงข้อมูลช่าง', 'success');
+                }
+            }
+
+            // 4. ประวัติการจอง (เปิดหน้า และสั่ง Render ข้อมูลประวัติ)
+            else if (target === 'my-bookings') {
+                const isLoggedIn = (state.currentUser && (state.currentUser.email || state.currentUser.uid)) || localStorage.getItem('barber_current_user') || localStorage.getItem('currentUser') || localStorage.getItem('user');
+
+                if (!isLoggedIn) {
+                    showToast('กรุณาเข้าสู่ระบบเพื่อดูประวัติการจอง', 'info');
+                    return;
+                }
+
+                hideAdminView();
+                hideAllUserViews();
+
+                if (historySection) {
+                    historySection.style.display = 'block';
+                    historySection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+                    if (typeof renderUserBookingsPage === 'function') {
+                        renderUserBookingsPage();
+                    }
+
+                    showToast('แสดงประวัติการจองของคุณ', 'success');
+                } else {
+                    if (pageHome) { pageHome.style.display = 'block'; }
+                    showToast('เข้าสู่ระบบสำเร็จ', 'success');
+                }
+            }
+        }
+
+        function toggleMobileMenu() {
+            const menu = document.getElementById('mobile-menu');
+            menu.classList.toggle('hidden');
+        }
+
+        /* ================= AUTHENTICATION & ROLE SWITCHER ================= */
+        function switchRole(role) {
+            const userRole = state.currentUser && state.currentUser.role ? state.currentUser.role.toLowerCase() : 'customer';
+
+            if (userRole !== 'admin' && userRole !== role && role !== 'user') {
+                showToast('คุณไม่มีสิทธิ์ใช้งานโหมดนี้', 'error');
+                return;
+            }
+
+            state.currentMode = role;
+
+            // 1. ดึงข้อมูล Element ของฝั่ง User และ Admin/Barber ทั้งหมด
+            const pageHome = document.getElementById('page-home');
+            const bookingSection = document.getElementById('booking-section') || document.getElementById('page-booking');
+            const barbersSection = document.getElementById('barbers-section') || document.getElementById('page-barbers');
+            const historySection = document.getElementById('my-bookings-section') || document.getElementById('history-section') || document.getElementById('page-my-bookings');
+
+            const pageAdmin = document.getElementById('page-admin');
+            const revenueSection = document.getElementById('admin-revenue-chart-section');
+            const barberStatusControl = document.getElementById('barber-status-control');
+            const allBookingsTable = document.getElementById('admin-bookings-table');
+
+            // ส่วนปุ่มเลือกช่วงเวลาและตัวแคนวาสกราฟ
+            const revenueFilters = document.getElementById('revenue-filters') || document.querySelector('.revenue-filter-buttons') || document.querySelector('.flex.space-x-2');
+            const revenueCanvas = document.getElementById('revenueChart') || document.getElementById('revenue-chart-canvas');
+
+            // 🌟 เพิ่มตัวแปรดึง "การ์ดรายได้ 3 กล่องด้านบน" และ "ก้อนแม่สุดของกราฟ"
+            const revenueCardsContainer = document.getElementById('revenue-cards-container') || document.querySelector('.grid.grid-cols-1.md\\:grid-cols-3');
+            const revenueSectionWrapper = document.getElementById('revenue-section-wrapper') || revenueSection?.closest('.bg-dark-800.p-6');
+
+            // 2. ควบคุมการแสดงผลแบบ "สลับหน้า" อย่างเด็ดขาด
+            if (role === 'admin') {
+                // 👑 โหมด Admin: เปิดครบทุกส่วน
+                if (pageHome) { pageHome.classList.add('hidden'); pageHome.style.display = 'none'; }
+                if (bookingSection) { bookingSection.classList.add('hidden'); bookingSection.style.display = 'none'; }
+                if (barbersSection) { barbersSection.classList.add('hidden'); barbersSection.style.display = 'none'; }
+                if (historySection) { historySection.classList.add('hidden'); historySection.style.display = 'none'; }
+
+                if (pageAdmin) { pageAdmin.classList.remove('hidden'); pageAdmin.style.display = 'block'; }
+                if (revenueCardsContainer) { revenueCardsContainer.classList.remove('hidden'); revenueCardsContainer.style.display = 'grid'; }
+                if (revenueSectionWrapper) { revenueSectionWrapper.classList.remove('hidden'); revenueSectionWrapper.style.display = 'block'; }
+                if (revenueSection) { revenueSection.classList.remove('hidden'); revenueSection.style.display = 'block'; }
+                if (revenueFilters) { revenueFilters.classList.remove('hidden'); revenueFilters.style.display = 'flex'; }
+                if (revenueCanvas) { revenueCanvas.classList.remove('hidden'); revenueCanvas.style.display = 'block'; }
+                if (barberStatusControl) { barberStatusControl.classList.remove('hidden'); barberStatusControl.style.display = 'block'; }
+                if (allBookingsTable) { allBookingsTable.classList.remove('hidden'); allBookingsTable.style.display = 'block'; }
+
+                showToast('สลับเป็นโหมด Admin สำเร็จ', 'success');
+
+            } else if (role === 'barber') {
+                // ✂️ โหมด Barber: ซ่อนหน้า User -> เปิดหลังบ้าน (ซ่อนการ์ดรายได้, กราฟ, และปุ่มเลือกช่วงเวลาทั้งหมด)
+                if (pageHome) { pageHome.classList.add('hidden'); pageHome.style.display = 'none'; }
+                if (bookingSection) { bookingSection.classList.add('hidden'); bookingSection.style.display = 'none'; }
+                if (barbersSection) { barbersSection.classList.add('hidden'); barbersSection.style.display = 'none'; }
+                if (historySection) { historySection.classList.add('hidden'); historySection.style.display = 'none'; }
+
+                if (pageAdmin) { pageAdmin.classList.remove('hidden'); pageAdmin.style.display = 'block'; }
+
+                // 🛑 สั่งซ่อนการ์ดรายได้ 3 กล่องด้านบนแบบเด็ดขาด
+                if (revenueCardsContainer) { revenueCardsContainer.classList.add('hidden'); revenueCardsContainer.style.display = 'none'; }
+
+                // 🛑 สั่งซ่อนก้อนกล่องกราฟและพื้นที่ว่างทั้งหมด เพื่อดึงพื้นที่ออกให้หัวข้อด้านล่างเลื่อนขึ้น
+                if (revenueSectionWrapper) { revenueSectionWrapper.classList.add('hidden'); revenueSectionWrapper.style.display = 'none'; }
+                if (revenueSection) { revenueSection.classList.add('hidden'); revenueSection.style.display = 'none'; }
+                if (revenueFilters) { revenueFilters.classList.add('hidden'); revenueFilters.style.display = 'none'; }
+                if (revenueCanvas) { revenueCanvas.classList.add('hidden'); revenueCanvas.style.display = 'none'; }
+
+                if (barberStatusControl) { barberStatusControl.classList.remove('hidden'); barberStatusControl.style.display = 'block'; }
+                if (allBookingsTable) { allBookingsTable.classList.remove('hidden'); allBookingsTable.style.display = 'block'; }
+
+                showToast('สลับเป็นโหมด Barber สำเร็จ', 'success');
+
+            } else {
+                // 👤 โหมด User: เปิดหน้าแรกปกติ -> ซ่อนส่วนหลังบ้านทั้งหมด
+                if (pageHome) {
+                    pageHome.classList.remove('hidden');
+                    pageHome.style.display = 'block';
+                }
+
+                if (pageAdmin) { pageAdmin.classList.add('hidden'); pageAdmin.style.display = 'none'; }
+                if (revenueCardsContainer) { revenueCardsContainer.classList.add('hidden'); revenueCardsContainer.style.display = 'none'; }
+                if (revenueSectionWrapper) { revenueSectionWrapper.classList.add('hidden'); revenueSectionWrapper.style.display = 'none'; }
+                if (revenueSection) { revenueSection.classList.add('hidden'); revenueSection.style.display = 'none'; }
+                if (revenueFilters) { revenueFilters.classList.add('hidden'); revenueFilters.style.display = 'none'; }
+                if (revenueCanvas) { revenueCanvas.classList.add('hidden'); revenueCanvas.style.display = 'none'; }
+                if (barberStatusControl) { barberStatusControl.classList.add('hidden'); barberStatusControl.style.display = 'none'; }
+                if (allBookingsTable) { allBookingsTable.classList.add('hidden'); allBookingsTable.style.display = 'none'; }
+
+                showToast('สลับเป็นโหมด User สำเร็จ', 'success');
+            }
+
+            // อัปเดตไฮไลท์ปุ่มสถานะด้านบน
+            if (typeof updateRoleButtonStyles === 'function') {
+                updateRoleButtonStyles(role);
+            } else {
+                document.querySelectorAll('.role-btn, [onclick*="switchRole"]').forEach(btn => {
+                    const onclickAttr = btn.getAttribute('onclick') || '';
+                    if (onclickAttr.includes(`'${role}'`) || onclickAttr.includes(`"${role}"`)) {
+                        btn.classList.add('bg-amber-500', 'text-dark-900');
+                    } else {
+                        btn.classList.remove('bg-amber-500', 'text-dark-900');
+                    }
+                });
+            }
+
+            // เลื่อนหน้าจอ
+            if (role === 'user') {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            } else if (pageAdmin) {
+                pageAdmin.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        }
+        function updateRoleButtonStyles(activeRole) {
+            const btnUser = document.getElementById('role-user-btn');
+            const btnBarber = document.getElementById('role-barber-btn');
+            const btnAdmin = document.getElementById('role-admin-btn');
+
+            // รีเซ็ตสไตล์ปุ่มทั้งหมดเป็นค่าปกติ
+            [btnUser, btnBarber, btnAdmin].forEach(btn => {
+                if (btn) {
+                    btn.className = "px-2.5 py-1 rounded-md font-semibold text-gray-400 hover:text-white transition";
+                }
+            });
+
+            // ใส่สีไฮไลต์ให้ปุ่มที่กำลังใช้งาน
+            if (activeRole === 'user' && btnUser) {
+                btnUser.className = "px-2.5 py-1 rounded-md font-semibold transition bg-amber-500 text-dark-900";
+            } else if (activeRole === 'barber' && btnBarber) {
+                btnBarber.className = "px-2.5 py-1 rounded-md font-semibold transition bg-amber-500 text-dark-900";
+            } else if (activeRole === 'admin' && btnAdmin) {
+                btnAdmin.className = "px-2.5 py-1 rounded-md font-semibold transition bg-amber-500 text-dark-900";
+            }
+        }
+        function handleEmailAuth(event, type) {
+            event.preventDefault();
+
+            // กำหนดอีเมลแอดมินและช่างตัดผม
+            const ADMIN_EMAILS = ["phongsakorn2115@gmail.com"];
+            const BARBER_EMAILS = ["phongsakorn7420@gmail.com"];
+
+            // ดึงรายชื่อผู้ใช้ทั้งหมดที่เคยบันทึกไว้ใน LocalStorage
+            let users = JSON.parse(localStorage.getItem('barber_users')) || [];
+
+            if (type === 'login') {
+                const email = document.getElementById('login-email').value.trim();
+                const password = document.getElementById('login-password').value.trim();
+
+                // ค้นหาผู้ใช้จากอีเมลและรหัสผ่านที่สมัครไว้
+                const foundUser = users.find(u => u.email === email && u.password === password);
+
+                if (foundUser) {
+                    // 🌟 เช็กอัปเดตสิทธิ์และรูปภาพให้ตรงกับอาเรย์อีเมลล่าสุดเสมอ
+                    if (ADMIN_EMAILS.includes(email)) {
+                        foundUser.role = 'admin';
+                    } else if (BARBER_EMAILS.includes(email)) {
+                        foundUser.role = 'barber';
+                        foundUser.avatar = 'https://i.postimg.cc/qMrLWY3v/863844196-1134350642473490-5849783856972700037-n.jpg'; // รูปช่างโจ
+                    }
+
+                    state.currentUser = foundUser;
+                    localStorage.setItem('barber_current_user', JSON.stringify(foundUser));
+
+                    showToast('เข้าสู่ระบบสำเร็จ', 'success');
+                } else {
+                    showToast('อีเมลหรือรหัสผ่านไม่ถูกต้อง หรือยังไม่ได้สมัครสมาชิก', 'error');
+                    return;
+                }
+
+            } else {
+                const name = document.getElementById('reg-name').value.trim();
+                const email = document.getElementById('reg-email').value.trim();
+
+                const phoneInput = document.getElementById('register-phone');
+                const phone = phoneInput ? phoneInput.value.trim() : '';
+
+                const passwordInput = document.getElementById('reg-password');
+                const password = passwordInput ? passwordInput.value.trim() : '';
+
+                if (!name || !email || !password) {
+                    showToast('กรุณากรอกข้อมูลให้ครบถ้วน', 'error');
+                    return;
+                }
+
+                // ตรวจสอบว่าอีเมลนี้เคยสมัครไปแล้วหรือยัง
+                if (users.some(u => u.email === email)) {
+                    showToast('อีเมลนี้ถูกใช้งานแล้ว กรุณาใช้อีเมลอื่น', 'error');
+                    return;
+                }
+
+                // 🌟 กำหนดสิทธิ์และรูปภาพตามอีเมลที่สมัคร
+                let assignedRole = 'customer';
+                let assignedAvatar = 'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=100&auto=format&fit=crop&q=80';
+
+                if (ADMIN_EMAILS.includes(email)) {
+                    assignedRole = 'admin';
+                } else if (BARBER_EMAILS.includes(email)) {
+                    assignedRole = 'barber';
+                    assignedAvatar = 'https://i.postimg.cc/qMrLWY3v/863844196-1134350642473490-5849783856972700037-n.jpg'; // รูปช่างโจ
+                }
+
+                // สร้าง Object ผู้ใช้ใหม่
+                const newUser = {
+                    id: 'u-' + Date.now(),
+                    name: name,
+                    email: email,
+                    phone: phone,
+                    password: password,
+                    role: assignedRole,
+                    avatar: assignedAvatar,
+                    provider: 'Email'
+                };
+
+                // บันทึกลงฐานข้อมูล LocalStorage
+                users.push(newUser);
+                localStorage.setItem('barber_users', JSON.stringify(users));
+
+                state.currentUser = newUser;
+                localStorage.setItem('barber_current_user', JSON.stringify(newUser));
+
+                showToast('ลงทะเบียนบัญชีใหม่สำเร็จ!', 'success');
+            }
+
+            // ตั้งค่าโหมดเริ่มต้นตามสิทธิ์ของ User ทันทีที่เข้าสู่ระบบ
+            const userRole = state.currentUser.role ? state.currentUser.role.toLowerCase() : 'customer';
+            if (userRole === 'admin') {
+                state.currentMode = 'admin';
+            } else if (userRole === 'barber') {
+                state.currentMode = 'barber';
+            } else {
+                state.currentMode = 'user';
+            }
+
+            // อัปเดตหน้าจอ ปิดโมดัล และรีเฟรชข้อมูล
+            updateUserUI();
+            closeModal('auth-modal');
+
+            // สั่งรัน switchRole เพื่อกางหน้าจอหลังบ้านตามสิทธิ์ทันที
+            if (typeof switchRole === 'function') {
+                switchRole(state.currentMode);
+            }
+
+            if (typeof initBookingForm === 'function') {
+                initBookingForm();
+            }
+        }
+
+        function updateUserUI() {
+            // 🛑 1. ดึงข้อมูลผู้ใช้ปัจจุบันจาก LocalStorage กลับเข้ามาใน state ก่อนเสมอ
+            const savedUser = localStorage.getItem('barber_current_user');
+            if (savedUser) {
+                try {
+                    state.currentUser = JSON.parse(savedUser);
+                } catch (e) {
+                    console.error("Error parsing saved user:", e);
+                }
+            }
+
+            const authBtns = document.getElementById('auth-buttons');
+            const userMenu = document.getElementById('user-profile-menu');
+            const roleSwitcher = document.getElementById('role-switcher');
+
+            if (state.currentUser) {
+                // 🟢 กรณีเข้าสู่ระบบสำเร็จ
+                if (authBtns) {
+                    authBtns.classList.add('hidden');
+                    authBtns.style.display = 'none'; // บังคับซ่อน
+                }
+                if (userMenu) {
+                    userMenu.classList.remove('hidden');
+                    userMenu.style.display = 'flex'; // บังคับแสดงผล
+                }
+
+                const avatarImg = document.getElementById('user-avatar');
+                if (avatarImg) {
+                    avatarImg.src = state.currentUser.avatar || 'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=100&auto=format&fit=crop&q=80';
+                }
+
+                const displayName = document.getElementById('user-display-name');
+                if (displayName) displayName.textContent = state.currentUser.name || '';
+
+                const emailText = document.getElementById('user-email-text');
+                if (emailText) emailText.textContent = state.currentUser.email || '';
+
+                const nameInput = document.getElementById('cust-name');
+                if (nameInput) nameInput.value = state.currentUser.name || '';
+
+                // แสดงสวิตช์โหมดเฉพาะแอดมินหรือช่าง
+                if (roleSwitcher) {
+                    const userRole = state.currentUser.role ? state.currentUser.role.toLowerCase() : 'customer';
+                    if (userRole === 'admin' || userRole === 'barber') {
+                        roleSwitcher.classList.remove('hidden');
+                        roleSwitcher.style.display = 'flex';
+                    } else {
+                        roleSwitcher.classList.add('hidden');
+                        roleSwitcher.style.display = 'none';
+                    }
+                }
+
+            } else {
+                // 🔴 กรณียังไม่ได้ล็อกอิน (หรือออกจากระบบ)
+                if (authBtns) {
+                    authBtns.classList.remove('hidden');
+                    authBtns.style.display = 'flex';
+                }
+                if (userMenu) {
+                    userMenu.classList.add('hidden');
+                    userMenu.style.display = 'none';
+                }
+                if (roleSwitcher) {
+                    roleSwitcher.classList.add('hidden');
+                    roleSwitcher.style.display = 'none';
+                }
+            }
+        }
+
+
+        function logout() {
+            // 1. ลบข้อมูลผู้ใช้ออกจาก LocalStorage ทุกคีย์ที่เกี่ยวข้องเพื่อความชัวร์ (ป้องกันข้อมูลตีกัน)
+            localStorage.removeItem('barber_current_user');
+            localStorage.removeItem('current_user');
+
+            // 2. เคลียร์ค่าใน State ของระบบ
+            state.currentUser = null;
+
+            // 3. อัปเดตหน้าจอ UI ให้กลับมาเป็นสถานะยังไม่เข้าสู่ระบบ
+            if (typeof updateUserUI === 'function') updateUserUI();
+            if (typeof renderUI === 'function') renderUI();
+
+            // 4. เคลียร์ช่อง Input ในฟอร์มจองทันที
+            const nameInput = document.getElementById('cust-name');
+            const phoneInput = document.getElementById('cust-phone');
+            if (nameInput) { nameInput.value = ''; nameInput.readOnly = false; }
+            if (phoneInput) { phoneInput.value = ''; phoneInput.readOnly = false; }
+
+            // แจ้งเตือนผู้ใช้
+            showToast('ออกจากระบบเรียบร้อยแล้ว', 'info');
+
+            // 5. สั่งรีเฟรชหน้าเว็บ 1 ครั้งทันที เพื่อเคลียร์ค่าในหน่วยความจำและตัดวงจร Auto-login
+            setTimeout(() => {
+                window.location.reload();
+            }, 500);
+        }
+        function toggleUserDropdown() {
+            document.getElementById('user-dropdown').classList.toggle('hidden');
+        }
+
+        function switchAuthTab(tab) {
+            const loginBtn = document.getElementById('auth-tab-login');
+            const regBtn = document.getElementById('auth-tab-register');
+            const loginForm = document.getElementById('form-login');
+            const regForm = document.getElementById('form-register');
+
+            if (tab === 'login') {
+                loginBtn.className = 'flex-1 py-3 text-center font-bold text-amber-500 border-b-2 border-amber-500';
+                regBtn.className = 'flex-1 py-3 text-center font-bold text-gray-400 border-b-2 border-transparent';
+                loginForm.classList.remove('hidden');
+                regForm.classList.add('hidden');
+            } else {
+                regBtn.className = 'flex-1 py-3 text-center font-bold text-amber-500 border-b-2 border-amber-500';
+                loginBtn.className = 'flex-1 py-3 text-center font-bold text-gray-400 border-b-2 border-transparent';
+                regForm.classList.remove('hidden');
+                loginForm.classList.add('hidden');
+            }
+        }
+
+        function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
+        function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+
+        /* ================= RENDER FUNCTIONS ================= */
+
+        // 1. Hairstyle Grid Selection
+        function renderHairstylesGrid() {
+            const container = document.getElementById('hairstyle-grid');
+            if (!container) return;
+
+            container.innerHTML = state.hairstyles.map(h => {
+                const isSelected = state.bookingForm.selectedStyleId === h.id;
+                return `
+                    <div onclick="selectHairstyle('${h.id}')" 
+                        class="cursor-pointer rounded-xl overflow-hidden border-2 transition transform hover:-translate-y-1 ${isSelected ? 'border-amber-500 bg-dark-700/80 shadow-lg shadow-amber-500/10' : 'border-dark-700 bg-dark-900/50 hover:border-dark-600'
+                    }">
+                        <div class="h-40 overflow-hidden relative w-full">
+                            <img src="${h.img}" class="w-full h-full object-contain object-center" alt="${h.name}">
+                            <span class="absolute top-2 right-2 bg-dark-900/80 backdrop-blur-md text-amber-400 text-xs font-bold px-2.5 py-1 rounded-full border border-amber-500/30">
+                                ฿${h.basePrice}
+                            </span>
+                        </div>
+                        <div class="p-3">
+                            <h3 class="font-bold text-white text-sm flex items-center justify-between">
+                                <span>${h.name}</span>
+                                ${isSelected ? '<i class="fa-solid fa-circle-check text-amber-500"></i>' : ''}
+                            </h3>
+                            <p class="text-xs text-gray-400 mt-1 line-clamp-2">${h.desc}</p>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function selectHairstyle(id) {
+            state.bookingForm.selectedStyleId = id;
+            renderHairstylesGrid();
+            updateBookingSummary();
+        }
+
+        // 2. Age Group Grid Selection
+        function renderAgeGroupsGrid() {
+            const container = document.getElementById('age-group-grid');
+            if (!container) return;
+
+            container.innerHTML = state.ageGroups.map(a => {
+                const isSelected = state.bookingForm.selectedAgeId === a.id;
+                return `
+                    <div onclick="selectAgeGroup('${a.id}')"
+                        class="cursor-pointer p-4 rounded-xl border-2 transition text-center flex flex-col items-center space-y-2 ${isSelected ? 'border-amber-500 bg-amber-500/10 shadow-md' : 'border-dark-700 bg-dark-900/50 hover:border-dark-600'
+                    }">
+                        <div class="w-10 h-10 rounded-full ${isSelected ? 'bg-amber-500 text-dark-900' : 'bg-dark-700 text-amber-500'} flex items-center justify-center text-lg">
+                            <i class="fa-solid ${a.icon}"></i>
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-sm text-white">${a.label}</h4>
+                            <p class="text-xs text-gray-400">ช่วงอายุ ${a.minAge}</p>
+                        </div>
+                        <span class="inline-block text-xs font-semibold px-2 py-0.5 rounded-full ${isSelected ? 'bg-amber-500 text-dark-900' : 'bg-dark-700 text-amber-400'}">
+                            ${a.discountLabel}
+                        </span>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function selectAgeGroup(id) {
+            state.bookingForm.selectedAgeId = id;
+            renderAgeGroupsGrid();
+            updateBookingSummary();
+        }
+
+        // 3. Barber Select Grid for Booking
+        function renderBarberSelectGrid() {
+            const container = document.getElementById('barber-select-grid');
+            if (!container) return;
+
+            container.innerHTML = state.barbers.map(b => {
+                const isSelected = state.bookingForm.selectedBarberId === b.id;
+                const isAvailable = b.status === 'available';
+
+                return `
+                    <div onclick="selectBarber('${b.id}')"
+                        class="cursor-pointer p-3 rounded-xl border-2 transition text-center flex flex-col items-center gap-2 ${isSelected ? 'border-amber-500 bg-amber-500/10' : 'border-dark-700 bg-dark-900/50 hover:border-dark-600'
+                    }">
+                        <div class="relative">
+                            <img src="${b.avatar}" class="w-12 h-12 rounded-full object-cover border border-dark-600" alt="${b.name}">
+                            <span class="absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full border-2 border-dark-800 ${isAvailable ? 'bg-emerald-500' : 'bg-red-500'}"></span>
+                        </div>
+                        <span class="text-xs font-bold text-white max-w-full truncate">${b.name.split(' ')[0]}</span>
+                        <span class="text-[10px] px-2 py-0.5 rounded-full ${isAvailable ? 'text-emerald-400 bg-emerald-500/10' : 'text-red-400 bg-red-500/10'}">
+                            ${isAvailable ? 'คิวว่าง' : 'ติดคิวอยู่'}
+                        </span>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function selectBarber(id) {
+            state.bookingForm.selectedBarberId = id;
+            renderBarberSelectGrid();
+            updateBookingSummary();
+        }
+
+        // Update Summary Calculations
+        function updateBookingSummary() {
+            const style = state.hairstyles.find(h => h.id === state.bookingForm.selectedStyleId);
+            const ageGroup = state.ageGroups.find(a => a.id === state.bookingForm.selectedAgeId);
+            const barber = state.barbers.find(b => b.id === state.bookingForm.selectedBarberId);
+
+            const dateInput = document.getElementById('booking-date')?.value || state.bookingForm.date;
+            const timeSelect = document.getElementById('booking-time')?.value || '14:00';
+
+            state.bookingForm.date = dateInput;
+            state.bookingForm.time = timeSelect;
+
+            if (style) {
+                document.getElementById('summary-style').textContent = style.name;
+                document.getElementById('summary-base-price').textContent = `฿${style.basePrice}`;
+            }
+
+            let netPrice = 0;
+            if (style && ageGroup) {
+                netPrice = Math.round(style.basePrice * ageGroup.rate);
+                document.getElementById('summary-age').textContent = ageGroup.label;
+                document.getElementById('summary-age-rate').textContent = `${ageGroup.rate * 100}% (${ageGroup.discountLabel})`;
+                document.getElementById('summary-net-price').textContent = `฿${netPrice}`;
+            }
+
+            if (barber) {
+                document.getElementById('summary-barber').textContent = barber.name;
+            }
+
+            document.getElementById('summary-datetime').textContent = `${dateInput} เวลา ${timeSelect} น.`;
+        }
+
+        // Attach Event Listeners to date/time inputs
+        document.getElementById('booking-date')?.addEventListener('change', updateBookingSummary);
+        document.getElementById('booking-time')?.addEventListener('change', updateBookingSummary);
+
+        // 4. Barbers Real-time Status Card (Home Page)
+        function renderBarbersHomeStatus() {
+            const container = document.getElementById('home-barbers-grid');
+            if (!container) return;
+
+            container.innerHTML = state.barbers.map(b => {
+                const isAvailable = b.status === 'available';
+                return `
+                    <div class="bg-dark-800 rounded-2xl border border-dark-700 p-5 shadow-lg flex items-center gap-4 relative overflow-hidden">
+                        <div class="relative flex-shrink-0">
+                            <img src="${b.avatar}" class="w-16 h-16 rounded-full object-cover border-2 border-amber-500/50" alt="${b.name}">
+                            <span class="absolute bottom-0 right-0 w-4 h-4 rounded-full border-2 border-dark-800 ${isAvailable ? 'bg-emerald-500 animate-pulse' : 'bg-red-500'}"></span>
+                        </div>
+                        <div class="flex-grow">
+                            <h3 class="font-bold text-white text-base">${b.name}</h3>
+                            <p class="text-xs text-gray-400 mt-0.5">${b.exp}</p>
+                            <div class="mt-2 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${isAvailable ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-red-500/10 text-red-400 border border-red-500/20'
+                    }">
+                                <span class="w-1.5 h-1.5 rounded-full ${isAvailable ? 'bg-emerald-400' : 'bg-red-400'}"></span>
+                                <span>${isAvailable ? 'คิวว่าง (Available)' : 'ติดคิว (Busy)'}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // 5. Full Barbers Page List
+        function renderFullBarbersList() {
+            const container = document.getElementById('full-barbers-grid');
+            if (!container) return;
+
+            container.innerHTML = state.barbers.map(b => {
+                const isAvailable = b.status === 'available';
+                return `
+                    <div class="bg-dark-800 rounded-2xl border border-dark-700 p-6 shadow-xl flex flex-col items-center text-center space-y-4">
+                        <div class="relative">
+                            <img src="${b.avatar}" class="w-24 h-24 rounded-full object-cover border-4 border-amber-500/30" alt="${b.name}">
+                            <span class="absolute bottom-1 right-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold ${isAvailable ? 'bg-emerald-500 text-dark-900' : 'bg-red-500 text-white'
+                    }">${isAvailable ? 'ว่าง' : 'ติดคิว'}</span>
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-bold text-white">${b.name}</h3>
+                            <p class="text-xs text-amber-500 font-medium mt-0.5">${b.exp}</p>
+                        </div>
+                        <p class="text-xs text-gray-400">เชี่ยวชาญการตัดแต่งทรงผมชายสไตล์คลาสสิก ออกแบบทรงผมเข้ากับรูปหน้า และบริการกันโกนหนวดระดับพรีเมียม</p>
+                        <button onclick="selectBarberAndBook('${b.id}')" class="w-full bg-dark-700 hover:bg-amber-500 hover:text-dark-900 text-white font-semibold py-2.5 rounded-xl border border-dark-600 transition text-sm flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-calendar-plus"></i> จองคิวกับช่างท่านนี้
+                        </button>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function selectBarberAndBook(barberId) {
+            state.bookingForm.selectedBarberId = barberId;
+            renderBarberSelectGrid();
+            updateBookingSummary();
+            navigateTo('booking');
+        }
+
+        // 6. User Bookings Table
+        function renderUserBookings() {
+            const tbody = document.getElementById('user-bookings-table-body');
+            if (!tbody) return;
+
+            // กรองเฉพาะการจองของผู้ใช้ปัจจุบัน (หรือแสดงทั้งหมดถ้าไม่ได้ล็อกอิน)
+            const userBookings = state.currentUser
+                ? state.bookings.filter(b => b.userId === state.currentUser.id || b.userName === state.currentUser.name)
+                : state.bookings;
+
+            if (userBookings.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" class="px-6 py-8 text-center text-gray-500">ยังไม่มีประวัติการจองคิว</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = userBookings.map(b => `
+        <tr class="hover:bg-dark-700/50 transition">
+            <td class="px-6 py-4 font-mono text-amber-400 font-semibold">${b.id}</td>
+            <td class="px-6 py-4 text-white">${b.styleName}</td>
+            <td class="px-6 py-4">${b.barberName}</td>
+            <td class="px-6 py-4">${b.date} (${b.time})</td>
+            <td class="px-6 py-4 font-semibold text-amber-500">฿${b.price}</td>
+            <td class="px-6 py-4">
+                <span class="px-2.5 py-1 rounded-full text-xs font-medium ${b.status === 'pending' ? 'bg-blue-500/10 text-blue-400 border border-blue-500/30' :
+                    b.status === 'completed' ? 'bg-green-500/10 text-green-400 border border-green-500/30' :
+                        'bg-red-500/10 text-red-400 border border-red-500/30'
+                }">
+                    ${b.status === 'pending' ? 'รอรับบริการ' : b.status === 'completed' ? 'เสร็จสิ้น' : 'ยกเลิก'}
+                </span>
+            </td>
+            <td class="px-6 py-4 text-center">
+                ${b.status === 'pending' ? `<button onclick="cancelBooking('${b.id}')" class="text-xs text-red-400 hover:underline">ยกเลิก</button>` : '-'}
+            </td>
+        </tr>
+    `).join('');
+        }
+
+        function cancelBooking(id) {
+            const item = state.bookings.find(b => b.id === id);
+            if (item) {
+                item.status = 'cancelled';
+
+                // 🛑 เพิ่มคำสั่งบันทึกลง LocalStorage ตรงนี้เพื่อให้ข้อมูลอัปเดตอย่างถาวร
+                localStorage.setItem('barber_bookings', JSON.stringify(state.bookings));
+
+                // เรียกฟังก์ชันเรนเดอร์หน้าจออัปเดต
+                if (typeof renderUserBookingsTable === 'function') renderUserBookingsTable();
+                if (typeof renderAdminBookingsTable === 'function') renderAdminBookingsTable();
+                if (typeof updateRevenueStats === 'function') updateRevenueStats();
+
+                // แจ้งเตือนผู้ใช้ (ถ้ามีฟังก์ชัน showToast ถ้าไม่มีจะใช้ alert แทนได้ครับ)
+                if (typeof showToast === 'function') {
+                    showToast('ยกเลิกรายการจองคิวเรียบร้อยแล้ว', 'info');
+                } else {
+                    alert('ยกเลิกรายการจองคิวเรียบร้อยแล้ว');
+                }
+            }
+        }
+
+        /* ================= BOOKING SUBMISSION ================= */
+        function submitBooking() {
+            // 1. ดึงค่าไอดีที่เลือกจาก bookingForm หรือ state หลัก (รองรับทั้ง 2 แบบเพื่อกันพลาด)
+            const styleId = state.bookingForm?.selectedStyleId || state.selectedStyle;
+            const ageId = state.bookingForm?.selectedAgeId || state.selectedAgeGroup;
+            const barberId = state.bookingForm?.selectedBarberId || state.selectedBarber;
+
+            // ค้นหาข้อมูลจริงจากอาเรย์ใน state (hairstyles, ageGroups, barbers)
+            const selectedStyleObj = state.hairstyles.find(h => h.id === styleId || h === state.selectedStyle);
+            const selectedAgeObj = state.ageGroups.find(a => a.id === ageId || a === state.selectedAgeGroup);
+            const selectedBarberObj = state.barbers.find(b => b.id === barberId || b === state.selectedBarber);
+
+            // ตรวจสอบว่าเลือกครบถ้วนหรือไม่
+            if (!selectedStyleObj || !selectedAgeObj || !selectedBarberObj) {
+                alert("กรุณาเลือกทรงผม กลุ่มอายุ และช่างตัดผมให้ครบถ้วนครับ");
+                return;
+            }
+
+            // ดึงค่าจากฟอร์ม Input
+            const dateInput = document.getElementById('booking-date');
+            const timeInput = document.getElementById('booking-time');
+            const nameInput = document.getElementById('cust-name');
+            const phoneInput = document.getElementById('cust-phone');
+
+            const date = dateInput ? dateInput.value : '';
+            const time = timeInput ? timeInput.value : '';
+            const name = nameInput ? nameInput.value.trim() : '';
+            const phone = phoneInput ? phoneInput.value.trim() : '';
+
+            if (!date || !time || !name || !phone) {
+                alert("กรุณากรอกข้อมูลวันที่ เวลา และข้อมูลติดต่อให้ครบถ้วน");
+                return;
+            }
+
+            // คำนวณราคา (รองรับทั้ง basePrice/price และ rate/multiplier)
+            const base = selectedStyleObj.basePrice || selectedStyleObj.price || 80;
+            const mult = selectedAgeObj.rate !== undefined ? selectedAgeObj.rate : (selectedAgeObj.multiplier || 1.0);
+            const net = Math.round(base * mult);
+
+            // สร้าง Object การจองใหม่
+            const newBooking = {
+                id: 'BK-' + Math.floor(1000 + Math.random() * 9000),
+                userId: state.currentUser ? (state.currentUser.id || 'u-user') : 'guest',
+                userName: name,
+                userPhone: phone,
+                styleName: selectedStyleObj.name,
+                ageGroupLabel: selectedAgeObj.label || selectedAgeObj.name,
+                barberName: selectedBarberObj.name,
+                date: date,
+                time: time,
+                price: net,
+                status: 'pending', // 'pending', 'completed', 'cancelled'
+                createdAt: new Date().toISOString()
+            };
+
+            // บันทึกลง state และ LocalStorage
+            if (!Array.isArray(state.bookings)) {
+                state.bookings = [];
+            }
+            state.bookings.push(newBooking);
+            localStorage.setItem('barber_bookings', JSON.stringify(state.bookings));
+
+            // 🛑 เพิ่มส่วนนี้: สั่งอัปเดตตารางและข้อมูลของทุกหน้าทันที ป้องกันข้อมูลไม่ซิงค์กัน
+            if (typeof renderUserBookingsTable === 'function') {
+                renderUserBookingsTable();
+            }
+            if (typeof renderAdminBookingsTable === 'function') {
+                renderAdminBookingsTable();
+            }
+            if (typeof updateRevenueStats === 'function') {
+                updateRevenueStats();
+            }
+
+            alert(`จองคิวสำเร็จ! รหัสจองของคุณคือ ${newBooking.id}`);
+
+            // ย้ายไปหน้าประวัติการจอง
+            if (typeof navigateTo === 'function') {
+                navigateTo('my-bookings');
+            }
+        }
+
+        /* ================= ADMIN MANAGEMENT ================= */
+        // 1. Admin Barber Status Toggle Controls
+        function renderAdminBarberControls() {
+            const container = document.getElementById('admin-barber-control-grid');
+            if (!container) return;
+
+            container.innerHTML = state.barbers.map(b => {
+                const isAvailable = b.status === 'available';
+                return `
+                    <div class="bg-dark-900 border border-dark-700 p-4 rounded-xl flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <img src="${b.avatar}" class="w-10 h-10 rounded-full object-cover" alt="${b.name}">
+                            <div>
+                                <p class="text-xs font-bold text-white max-w-[100px] truncate">${b.name}</p>
+                                <span class="text-[10px] ${isAvailable ? 'text-emerald-400' : 'text-red-400'} font-semibold">
+                                    ${isAvailable ? 'คิวว่าง' : 'ติดคิวอยู่'}
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Toggle Button -->
+                        <button onclick="toggleBarberStatus('${b.id}')" 
+                            class="px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${isAvailable
+                        ? 'bg-red-500/20 text-red-400 hover:bg-red-500 hover:text-white border border-red-500/30'
+                        : 'bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500 hover:text-dark-900 border border-emerald-500/30'
+                    }">
+                            <i class="fa-solid ${isAvailable ? 'fa-user-slash' : 'fa-user-check'}"></i>
+                            <span>${isAvailable ? 'เปลี่ยนเป็น ติดคิว' : 'เปลี่ยนเป็น ว่าง'}</span>
+                        </button>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function toggleBarberStatus(id) {
+            const barber = state.barbers.find(b => b.id === id);
+            if (barber) {
+                barber.status = barber.status === 'available' ? 'busy' : 'available';
+                renderAdminBarberControls();
+                renderBarbersHomeStatus();
+                renderFullBarbersList();
+                renderBarberSelectGrid();
+                showToast(`อัปเดตสถานะของ ${barber.name} เรียบร้อยแล้ว`, 'info');
+            }
+        }
+
+        // 2. Admin Queue Management Table
+        function renderAdminBookingsTable() {
+            const body = document.getElementById('admin-bookings-table-body');
+            const filter = document.getElementById('admin-queue-filter')?.value || 'all';
+            if (!body) return;
+
+            let list = state.bookings;
+            if (filter !== 'all') {
+                list = list.filter(b => b.status === filter);
+            }
+
+            if (list.length === 0) {
+                body.innerHTML = `<tr><td colspan="8" class="text-center py-8 text-gray-500">ไม่พบคิวในสถานะนี้</td></tr>`;
+                return;
+            }
+
+            body.innerHTML = list.map(bk => {
+                let statusBadge = '';
+                if (bk.status === 'completed') {
+                    statusBadge = '<span class="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded text-xs font-semibold">เสร็จสิ้น</span>';
+                } else if (bk.status === 'pending') {
+                    statusBadge = '<span class="bg-amber-500/10 text-amber-400 border border-amber-500/20 px-2 py-0.5 rounded text-xs font-semibold">รอดำเนินการ</span>';
+                } else {
+                    statusBadge = '<span class="bg-red-500/10 text-red-400 border border-red-500/20 px-2 py-0.5 rounded text-xs font-semibold">ยกเลิกแล้ว</span>';
+                }
+
+                return `
+            <tr class="hover:bg-dark-700/50 transition text-xs">
+                <td class="px-4 py-3 font-mono text-amber-400 font-bold">${bk.id}</td>
+                <td class="px-4 py-3 font-semibold text-white">
+                    ${bk.userName}
+                    <div class="text-[10px] text-gray-400">${bk.userPhone}</div>
+                </td>
+                <td class="px-4 py-3 text-gray-300">${bk.styleName} (${bk.ageGroupLabel.split(' ')[0]})</td>
+                <td class="px-4 py-3 text-gray-300">${bk.barberName}</td>
+                <td class="px-4 py-3 text-gray-300">${bk.date} <span class="text-amber-500 font-medium">${bk.time} น.</span></td>
+                <td class="px-4 py-3 font-bold text-white">฿${bk.price}</td>
+                <td class="px-4 py-3">${statusBadge}</td>
+                <td class="px-4 py-3 text-center">
+                    <div class="flex items-center justify-center gap-1">
+                        ${bk.status === 'pending' ? `
+                            <!-- ถ้ายังรอดำเนินการ ให้แสดงปุ่ม "เสร็จสิ้น" และ "ยกเลิก" ได้ตามปกติ -->
+                            <button onclick="updateQueueStatus('${bk.id}', 'completed')" class="bg-emerald-500/20 hover:bg-emerald-500 text-emerald-400 hover:text-dark-900 border border-emerald-500/30 px-2 py-1 rounded font-semibold transition" title="ทำรายการเสร็จสิ้น">
+                                <i class="fa-solid fa-check"></i> เสร็จสิ้น
+                            </button>
+                            <button onclick="updateQueueStatus('${bk.id}', 'cancelled')" class="bg-red-500/20 hover:bg-red-500 text-red-400 hover:text-white border border-red-500/30 px-2 py-1 rounded font-semibold transition" title="ยกเลิก">
+                                <i class="fa-solid fa-xmark"></i> ยกเลิก
+                            </button>
+                        ` : bk.status === 'completed' ? `
+                            <!-- 🛑 ถ้าเสร็จสิ้นแล้ว จะแสดงข้อความล็อกไว้เฉยๆ ไม่มีปุ่มยกเลิกให้กดซ้ำอีก -->
+                            <span class="text-emerald-400 font-medium text-xs bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded">
+                                <i class="fa-solid fa-circle-check"></i> เสร็จสิ้นแล้ว (ล็อก)
+                            </span>
+                        ` : `
+                            <!-- ถ้าถูกยกเลิกแล้ว -->
+                            <span class="text-gray-500 text-xs">ยกเลิกแล้ว</span>
+                        `}
+                    </div>
+                </td>
+            </tr>
+        `;
+            }).join('');
+        }
+
+        function updateQueueStatus(id, newStatus) {
+            const bk = state.bookings.find(b => b.id === id);
+            if (bk) {
+                // 🛑 เพิ่มการป้องกัน: ถ้าสถานะเดิมเป็น 'completed' แล้ว และพยายามจะกดเปลี่ยนเป็น 'cancelled' (ยกเลิก) ให้บล็อกทันที!
+                if (bk.status === 'completed' && newStatus === 'cancelled') {
+                    alert("รายการนี้ทำเสร็จสิ้นแล้ว ไม่สามารถกดยกเลิกได้ครับ");
+                    return;
+                }
+
+                bk.status = newStatus;
+
+                // บันทึกลง LocalStorage
+                localStorage.setItem('barber_bookings', JSON.stringify(state.bookings));
+
+                // อัปเดตหน้าจอทั้งหมด
+                renderAdminBookingsTable();
+                renderUserBookingsTable();
+                updateRevenueStats();
+
+                if (typeof showToast === 'function') {
+                    showToast(`อัปเดตสถานะคิว ${id} เป็น '${newStatus}' สำเร็จ`, 'success');
+                } else {
+                    alert(`อัปเดตสถานะคิว ${id} สำเร็จ`);
+                }
+            }
+        }
+
+        /* ================= REVENUE ANALYTICS & CHART.JS ================= */
+        function updateRevenueStats() {
+            // Filter completed bookings for revenue
+            const completed = state.bookings.filter(b => b.status === 'completed');
+
+            // Daily (Today)
+            const todayStr = new Date().toISOString().split('T')[0];
+            const dailyList = completed.filter(b => b.date === todayStr);
+            const dailyRev = dailyList.reduce((sum, b) => sum + b.price, 0);
+
+            // Weekly (Mock computation based on list)
+            const weeklyRev = completed.reduce((sum, b) => sum + b.price, 0);
+
+            // Monthly
+            const monthlyRev = weeklyRev + 12500; // Adding mock historical total
+
+            document.getElementById('stat-daily-revenue').textContent = `฿${dailyRev.toLocaleString()}`;
+            document.getElementById('stat-daily-count').textContent = `${dailyList.length} คิวที่เสร็จสิ้นวันนี้`;
+
+            document.getElementById('stat-weekly-revenue').textContent = `฿${weeklyRev.toLocaleString()}`;
+            document.getElementById('stat-weekly-count').textContent = `${completed.length} คิวในสัปดาห์นี้`;
+
+            document.getElementById('stat-monthly-revenue').textContent = `฿${monthlyRev.toLocaleString()}`;
+            document.getElementById('stat-monthly-count').textContent = `${completed.length + 35} คิวในเดือนนี้`;
+
+            // Update Chart Data
+            if (state.revenueChartInstance) {
+                refreshChartData();
+            }
+        }
+
+        function initChart() {
+            const ctx = document.getElementById('revenueChart')?.getContext('2d');
+            if (!ctx) return;
+
+            const gradient = ctx.createLinearGradient(0, 0, 0, 300);
+            gradient.addColorStop(0, 'rgba(245, 158, 11, 0.4)');
+            gradient.addColorStop(1, 'rgba(245, 158, 11, 0.0)');
+
+            state.revenueChartInstance = new Chart(ctx, {
+                type: 'line',
+                data: getChartDataByFilter('daily'),
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: '#181b20',
+                            titleColor: '#f59e0b',
+                            bodyColor: '#ffffff',
+                            borderColor: '#333a45',
+                            borderWidth: 1,
+                            padding: 12,
+                            displayColors: false,
+                            callbacks: {
+                                label: function (context) {
+                                    return `รายได้: ฿${context.parsed.y.toLocaleString()}`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: { color: '#22272e' },
+                            ticks: { color: '#9ca3af' }
+                        },
+                        y: {
+                            grid: { color: '#22272e' },
+                            ticks: {
+                                color: '#9ca3af',
+                                callback: function (value) { return '฿' + value; }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateChartFilter(filterType) {
+            state.chartFilter = filterType;
+
+            // Toggle Button Styles
+            ['day', 'week', 'month'].forEach(f => {
+                const btn = document.getElementById(`chart-filter-${f}`);
+                if (!btn) return;
+                btn.className = 'px-3 py-1.5 rounded-md text-xs font-semibold text-gray-400 hover:text-white transition';
+            });
+
+            const activeBtnMap = { 'daily': 'chart-filter-day', 'weekly': 'chart-filter-week', 'monthly': 'chart-filter-month' };
+            const activeBtn = document.getElementById(activeBtnMap[filterType]);
+            if (activeBtn) {
+                activeBtn.className = 'px-3 py-1.5 rounded-md text-xs font-semibold transition bg-amber-500 text-dark-900';
+            }
+
+            refreshChartData();
+        }
+
+        function refreshChartData() {
+            if (!state.revenueChartInstance) return;
+            const newData = getChartDataByFilter(state.chartFilter);
+            state.revenueChartInstance.data = newData;
+            state.revenueChartInstance.update();
+        }
+
+        function getChartDataByFilter(filter) {
+            const ctx = document.getElementById('revenueChart')?.getContext('2d');
+            let gradient = 'rgba(245, 158, 11, 0.2)';
+            if (ctx) {
+                gradient = ctx.createLinearGradient(0, 0, 0, 300);
+                gradient.addColorStop(0, 'rgba(245, 158, 11, 0.5)');
+                gradient.addColorStop(1, 'rgba(245, 158, 11, 0.0)');
+            }
+
+            if (filter === 'daily') {
+                return {
+                    labels: ['10:00', '12:00', '14:00', '16:00', '18:00', '20:00'],
+                    datasets: [{
+                        label: 'รายได้รายวัน',
+                        data: [700, 1200, 950, 1800, 2100, 1500],
+                        borderColor: '#f59e0b',
+                        backgroundColor: gradient,
+                        borderWidth: 3,
+                        fill: true,
+                        tension: 0.4,
+                        pointBackgroundColor: '#f59e0b'
+                    }]
+                };
+            } else if (filter === 'weekly') {
+                return {
+                    labels: ['จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์', 'เสาร์', 'อาทิตย์'],
+                    datasets: [{
+                        label: 'รายได้รายสัปดาห์',
+                        data: [3500, 4200, 3900, 4800, 6200, 8500, 9100],
+                        borderColor: '#f59e0b',
+                        backgroundColor: gradient,
+                        borderWidth: 3,
+                        fill: true,
+                        tension: 0.4,
+                        pointBackgroundColor: '#f59e0b'
+                    }]
+                };
+            } else {
+                return {
+                    labels: ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.'],
+                    datasets: [{
+                        label: 'รายได้รายเดือน',
+                        data: [45000, 52000, 48000, 61000, 58000, 67000],
+                        borderColor: '#f59e0b',
+                        backgroundColor: gradient,
+                        borderWidth: 3,
+                        fill: true,
+                        tension: 0.4,
+                        pointBackgroundColor: '#f59e0b'
+                    }]
+                };
+            }
+        }
+
+        /* ================= DEMO HELPER ================= */
+        function seedDemoData() {
+            const styles = ['Fade & Undercut', 'Two-Block Classic', 'Beard Trim & Haircut', 'Pompadour / Slick Back'];
+            const barbers = ['ช่างเอก (Master Barber)', 'ช่างบอย (Fade Specialist)', 'ช่างต้น (K-Style Expert)'];
+            const ages = ['ผู้ใหญ่ (Adults)', 'เด็ก (Kids)', 'ผู้สูงอายุ (Seniors)'];
+            const names = ['วิชัย เมตตา', 'ชลทิตย์ บุญมี', 'พีระพงษ์ สุขสันต์', 'ธนกฤต ชัยยะ'];
+
+            const randomItem = {
+                id: 'BK-' + Math.floor(1000 + Math.random() * 9000),
+                userId: 'demo@user.com',
+                userName: names[Math.floor(Math.random() * names.length)],
+                userPhone: '081-' + Math.floor(1000000 + Math.random() * 9000000),
+                styleName: styles[Math.floor(Math.random() * styles.length)],
+                ageGroupLabel: ages[Math.floor(Math.random() * ages.length)],
+                barberName: barbers[Math.floor(Math.random() * barbers.length)],
+                date: new Date().toISOString().split('T')[0],
+                time: '16:00',
+                price: Math.floor(Math.random() * 3 + 2) * 100,
+                status: 'completed',
+                createdAt: new Date().toISOString()
+            };
+
+            state.bookings.unshift(randomItem);
+            updateRevenueStats();
+            renderAdminBookingsTable();
+            renderUserBookingsTable();
+            showToast('สุ่มเพิ่มคิวตัวอย่างสถิติเรียบร้อย', 'success');
+        }
+
+        /* ================= TOAST NOTIFICATION SYSTEM ================= */
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            if (!container) return;
+
+            const toast = document.createElement('div');
+            toast.className = `p-4 rounded-xl shadow-2xl border text-sm font-medium flex items-center justify-between gap-3 transform transition duration-300 translate-x-full opacity-0 pointer-events-auto ${type === 'success' ? 'bg-dark-800 border-emerald-500/50 text-emerald-400' :
+                type === 'warning' ? 'bg-dark-800 border-amber-500/50 text-amber-400' :
+                    'bg-dark-800 border-blue-500/50 text-blue-400'
+                }`;
+
+            toast.innerHTML = `
+                <div class="flex items-center gap-2">
+                    <i class="fa-solid ${type === 'success' ? 'fa-circle-check' : type === 'warning' ? 'fa-triangle-exclamation' : 'fa-circle-info'} text-lg"></i>
+                    <span>${message}</span>
+                </div>
+                <button onclick="this.parentElement.remove()" class="text-gray-400 hover:text-white">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            `;
+
+            container.appendChild(toast);
+
+            // Animate in
+            setTimeout(() => {
+                toast.classList.remove('translate-x-full', 'opacity-0');
+            }, 10);
+
+            // Auto dismiss
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-x-full');
+                setTimeout(() => toast.remove(), 300);
+            }, 4000);
+        }
+        function renderRevenueChart() {
+            const ctx = document.getElementById('revenueChart');
+            if (!ctx) return;
+
+            // กรองเอาเฉพาะคิวที่เสร็จสิ้น (completed)
+            const completedBookings = state.bookings.filter(b => b.status === 'completed');
+
+            // จัดกลุ่มข้อมูลตามช่วงเวลา (ตัวอย่างแบบ รายวัน / daily)
+            const labels = [];
+            const revenueData = [];
+
+            // รวบรวมวันที่และคำนวณยอดรวมรายได้ของแต่ละวัน
+            const dailyMap = {};
+            completedBookings.forEach(b => {
+                const dateKey = b.date;
+                dailyMap[dateKey] = (dailyMap[dateKey] || 0) + (b.price || 0);
+            });
+
+            for (const [date, total] of Object.entries(dailyMap)) {
+                labels.push(date);
+                revenueData.push(total);
+            }
+
+            // ทำลาย Chart เดิมก่อนวาดใหม่ (ป้องกัน Chart ซ้อนทับ)
+            if (state.revenueChartInstance) {
+                state.revenueChartInstance.destroy();
+            }
+
+            // สร้าง Chart ใหม่จากข้อมูลจริง
+            state.revenueChartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels.length > 0 ? labels : ['ไม่มีข้อมูล'],
+                    datasets: [{
+                        label: 'รายได้สุทธิ (บาท)',
+                        data: revenueData.length > 0 ? revenueData : [0],
+                        backgroundColor: '#f59e0b',
+                        borderRadius: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { labels: { color: '#e6edf3' } }
+                    },
+                    scales: {
+                        x: { ticks: { color: '#9ca3af' }, grid: { color: '#22272e' } },
+                        y: { ticks: { color: '#9ca3af' }, grid: { color: '#22272e' } }
+                    }
+                }
+            });
+        }
+        function initBookingForm() {
+            // 1. ตรวจสอบว่ามีผู้ใช้เข้าสู่ระบบอยู่หรือไม่
+            if (state.currentUser) {
+                const nameInput = document.getElementById('cust-name');
+                const phoneInput = document.getElementById('cust-phone');
+
+                // 2. นำชื่อและเบอร์โทรจากตอนสมัครสมาชิกมาใส่ในช่องกรอกให้อัตโนมัติ
+                if (nameInput) {
+                    nameInput.value = state.currentUser.name || '';
+                    nameInput.readOnly = true; // ล็อคไว้ไม่ให้แก้ (ถ้าต้องการให้แก้ได้ เอาบรรทัดนี้ออกครับ)
+                    nameInput.classList.add('bg-dark-950', 'text-gray-400'); // ปรับสีให้รู้ว่าล็อคอยู่
+                }
+
+                if (phoneInput) {
+                    phoneInput.value = state.currentUser.phone || '';
+                    phoneInput.readOnly = true; // ล็อคไว้ไม่ให้แก้
+                    phoneInput.classList.add('bg-dark-950', 'text-gray-400');
+                }
+            }
+        }
+
+        // อย่าลืมเรียกใช้ฟังก์ชันนี้ตอนโหลดหน้าเว็บ หรือตอนเปลี่ยนหน้ามาที่หน้าจอง (navigateTo('booking'))
+        window.addEventListener('DOMContentLoaded', () => {
+            initBookingForm();
+        });
+
+        function renderUserBookingsTable() {
+            // 1. โหลดข้อมูลการจองทั้งหมดจาก LocalStorage
+            state.bookings = JSON.parse(localStorage.getItem('barber_bookings')) || [];
+
+            // 2. ค้นหาตารางโดยอ้างอิงจาก id="user-bookings-table-body" ใน HTML ของคุณ
+            const tableContainer = document.getElementById('user-bookings-table-body');
+
+            if (!tableContainer) {
+                console.warn("ไม่พบ Element ที่มี id='user-bookings-table-body'");
+                return;
+            }
+
+            // เคลียร์ข้อมูลเก่าทิ้งก่อนเรนเดอร์ใหม่
+            tableContainer.innerHTML = '';
+
+            // 3. ดึงข้อมูลการจองทั้งหมดมาแสดง
+            const userBookings = state.bookings;
+
+            // ถ้าไม่มีประวัติการจอง
+            if (userBookings.length === 0) {
+                tableContainer.innerHTML = `
+            <tr>
+                <td colspan="7" class="text-center py-8 text-gray-400">
+                    ยังไม่มีประวัติการจองคิวในระบบ
+                </td>
+            </tr>
+        `;
+                return;
+            }
+
+            // 4. วนลูปสร้างแถวข้อมูลลงในตาราง
+            userBookings.forEach(booking => {
+                const row = document.createElement('tr');
+                row.className = 'border-b border-dark-700 hover:bg-dark-900/50 transition-colors';
+
+                let statusBadge = '';
+                if (booking.status === 'pending') {
+                    statusBadge = '<span class="px-2 py-1 bg-yellow-500/20 text-yellow-400 rounded-full text-xs">รอดำเนินการ</span>';
+                } else if (booking.status === 'completed') {
+                    statusBadge = '<span class="px-2 py-1 bg-green-500/20 text-green-400 rounded-full text-xs">เสร็จสิ้น</span>';
+                } else {
+                    statusBadge = '<span class="px-2 py-1 bg-red-500/20 text-red-400 rounded-full text-xs">ยกเลิกแล้ว</span>';
+                }
+
+                // 🛑 กำหนดการแสดงผลปุ่มจัดการฝั่ง User ตามสถานะจริง
+                let actionButtonHTML = '';
+                if (booking.status === 'pending') {
+                    // ถ้ายังรอดำเนินการ ให้แสดงปุ่มยกเลิกได้ตามปกติ
+                    actionButtonHTML = `
+                <button onclick="cancelBooking('${booking.id}')" class="px-3 py-1 bg-red-600/30 hover:bg-red-600 text-red-300 hover:text-white rounded text-xs transition-colors">
+                    ยกเลิก
+                </button>
+            `;
+                } else if (booking.status === 'completed') {
+                    // ถ้าแอดมินกดเสร็จสิ้นแล้ว ล็อกไม่ให้ User กดยกเลิกซ้ำ
+                    actionButtonHTML = `
+                <span class="text-emerald-400 text-xs font-semibold">เสร็จสิ้นแล้ว</span>
+            `;
+                } else {
+                    // ถ้าถูกยกเลิกไปแล้ว
+                    actionButtonHTML = `
+                <span class="text-gray-500 text-xs">-</span>
+            `;
+                }
+
+                row.innerHTML = `
+            <td class="px-6 py-4 font-mono text-sm text-amber-400">${booking.id}</td>
+            <td class="px-6 py-4 text-gray-200">${booking.styleName} <span class="text-xs text-gray-400">(${booking.ageGroupLabel})</span></td>
+            <td class="px-6 py-4 text-gray-200">${booking.barberName}</td>
+            <td class="px-6 py-4 text-gray-300">${booking.date} ${booking.time}</td>
+            <td class="px-6 py-4 text-green-400 font-semibold">฿${booking.price}</td>
+            <td class="px-6 py-4">${statusBadge}</td>
+            <td class="px-6 py-4 text-center">
+                ${actionButtonHTML}
+            </td>
+        `;
+                tableContainer.appendChild(row);
+            });
+        }
+
+        function updateBookingStatus(bookingId, newStatus) {
+            // ค้นหารายการจองจาก state.bookings
+            const booking = state.bookings.find(b => b.id === bookingId);
+
+            if (booking) {
+                // เปลี่ยนสถานะใหม่ (เช่น 'completed' คือเสร็จสิ้น)
+                booking.status = newStatus;
+
+                // 🛑 บันทึกลง LocalStorage เพื่อให้ข้อมูลจำฝั่งเครื่อง
+                localStorage.setItem('barber_bookings', JSON.stringify(state.bookings));
+
+                // 🛑 สั่งรีเฟรชตารางของทั้งฝั่ง User และ Admin พร้อมกันทันที
+                if (typeof renderUserBookingsTable === 'function') {
+                    renderUserBookingsTable(); // อัปเดตหน้าประวัติการจองของ User
+                }
+                if (typeof renderAdminBookingsTable === 'function') {
+                    renderAdminBookingsTable(); // อัปเดตหน้าแอดมิน
+                }
+                if (typeof updateRevenueStats === 'function') {
+                    updateRevenueStats(); // อัปเดตตัวเลขรายได้ (ถ้ามี)
+                }
+
+                alert(`อัปเดตสถานะการจองรหัส ${bookingId} เรียบร้อยแล้ว`);
+            }
+        }
+        const ADMIN_EMAILS = ["phongsakorn2115@gmail.com"];
+        const BARBER_EMAILS = ["phongsakorn7420@gmail.com"];
+        function getUserRole(email) {
+            if (!email) return 'user';
+            const cleanEmail = email.toLowerCase().trim();
+            if (ADMIN_EMAILS.includes(cleanEmail)) {
+                return 'admin';
+            }
+            if (BARBER_EMAILS.includes(cleanEmail)) {
+                return 'barber';
+            }
+            return 'user';
+        }
+        function renderRoleSwitcher() {
+            const currentUser = JSON.parse(localStorage.getItem('barber_current_user')) || {};
+            const roleSwitcherContainer = document.getElementById('role-switcher-container');
+            const role = getUserRole(currentUser.email);
+            if (role === 'admin') {
+                roleSwitcherContainer.style.display = 'flex';
+            } else {
+                roleSwitcherContainer.style.display = 'none';
+            }
+        }
+        function checkAdminAccess() {
+            const currentUser = JSON.parse(localStorage.getItem('barber_current_user')) || {};
+            const role = getUserRole(currentUser.email);
+            if (role !== 'admin') {
+                alert("คุณไม่มีสิทธิ์เข้าถึงหน้าแอดมินหรือกราฟหลังบ้านครับ");
+                navigateTo('home');
+                return false;
+            }
+            return true;
+        }
+        function renderRevenueStats() {
+            if (!checkAdminAccess()) return;
+        }
+
+        function saveUserSession(userData) {
+            // 1. ดึงเบอร์โทร: เช็คจาก userData ก่อน ถ้าไม่มีค่อยไปหาจากช่อง Input ในฟอร์ม
+            let phoneValue = userData.phone || '';
+            if (!phoneValue) {
+                const phoneInput = document.getElementById('register-phone') || document.getElementById('login-phone') || document.getElementById('cust-phone');
+                phoneValue = phoneInput ? phoneInput.value : '';
+            }
+
+            const userToSave = {
+                id: userData.id || 'u_' + Date.now(), // สร้าง ID เผื่อไว้ถ้ายังไม่มี
+                name: userData.name || 'สมาชิก',
+                email: userData.email || '',
+                phone: phoneValue,
+                role: getUserRole(userData.email)
+            };
+
+            // 2. บันทึกลง Session ปัจจุบัน
+            localStorage.setItem('barber_current_user', JSON.stringify(userToSave));
+            state.currentUser = userToSave;
+
+            // 3. 🌟 บันทึกสะสมลงในรายชื่อผู้ใช้ทั้งหมดของระบบ (barber_users) ด้วย เพื่อไม่ให้ข้อมูลบัญชีหายตอน Logout
+            if (!state.users) {
+                state.users = JSON.parse(localStorage.getItem('barber_users')) || [];
+            }
+
+            // ตรวจสอบว่ามีอีเมลหรือเบอร์นี้ในระบบหรือยัง ถ้ายังให้เพิ่มเข้าไปใหม่
+            const existingIndex = state.users.findIndex(u =>
+                (u.email && u.email === userToSave.email) || (u.phone && u.phone === userToSave.phone)
+            );
+
+            if (existingIndex >= 0) {
+                // อัปเดตข้อมูลให้เป็นปัจจุบัน
+                state.users[existingIndex] = { ...state.users[existingIndex], ...userToSave };
+            } else {
+                // เพิ่มผู้ใช้ใหม่เข้าไปในลิสต์
+                state.users.push(userToSave);
+            }
+
+            // บันทึกลง LocalStorage แบบถาวร
+            localStorage.setItem('barber_users', JSON.stringify(state.users));
+        }
+
+        // ฟังก์ชันดึงข้อมูลชื่อและเบอร์โทรมาเติมในฟอร์มจองอัตโนมัติ
+        function populateBookingUserInfo() {
+            // ลองดึงจาก barber_current_user ก่อน ถ้าไม่มีให้ลองดึงจาก current_user
+            const currentUser = JSON.parse(localStorage.getItem('barber_current_user')) ||
+                JSON.parse(localStorage.getItem('current_user')) || {};
+
+            const nameInput = document.getElementById('cust-name');
+            const phoneInput = document.getElementById('cust-phone');
+
+            if (nameInput && currentUser.name) {
+                nameInput.value = currentUser.name;
+            }
+
+            if (phoneInput && currentUser.phone) {
+                phoneInput.value = currentUser.phone;
+            }
+        }
+    </script>
+</body>
+
+</html>
