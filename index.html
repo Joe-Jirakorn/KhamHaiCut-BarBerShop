@@ -807,6 +807,11 @@
                         class="w-full bg-dark-900 border border-dark-600 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500">
                 </div>
                 <div>
+                    <label class="block text-xs text-gray-400 mb-1">อายุ (ปี)</label>
+                    <input type="number" id="cust-age" placeholder="ระบุอายุของคุณ" min="1" max="120"
+                        class="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2 text-white text-sm focus:border-amber-500 focus:outline-none">
+                </div>
+                <div>
                     <label class="block text-xs font-medium text-gray-400 mb-1">อีเมล:</label>
                     <input type="email" id="reg-email" required placeholder="name@example.com"
                         class="w-full bg-dark-900 border border-dark-600 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500">
@@ -858,7 +863,7 @@
             ageGroups: [
                 { id: 'a1', label: 'เด็ก ', minAge: '1-14 ปี', rate: 0.625, discountLabel: 'ราคาปกติ', icon: 'fa-child' },
                 { id: 'a2', label: 'วัยรุ่น ', minAge: '15-18 ปี', rate: 0.750, discountLabel: 'ราคาปกติ', icon: 'fa-user' },
-                { id: 'a3', label: 'ผู้สูงอายุ', minAge: '18-80 ปีขึ้นไป', rate: 1.0, discountLabel: 'ราคาปกติ', icon: 'fa-person-cane' }
+                { id: 'a3', label: 'ผู้ใหญ่', minAge: '18-80 ปีขึ้นไป', rate: 1.0, discountLabel: 'ราคาปกติ', icon: 'fa-person-cane' }
             ],
 
             // Barbers Data
@@ -924,6 +929,7 @@
             if (state.currentUser) {
                 const nameInput = document.getElementById('cust-name');
                 const phoneInput = document.getElementById('cust-phone');
+                const ageInput = document.getElementById('cust-age'); // 👈 เพิ่มช่องอายุ
 
                 if (nameInput) {
                     nameInput.value = state.currentUser.name || '';
@@ -933,6 +939,24 @@
                     phoneInput.value = state.currentUser.phone || '';
                     phoneInput.readOnly = true;
                 }
+
+                // ถ้าในข้อมูล User มีอายุบันทึกไว้ ให้ดึงมาใส่และเลือกกลุ่มอายุให้อัตโนมัติ
+                if (ageInput && state.currentUser.age) {
+                    ageInput.value = state.currentUser.age;
+                    if (typeof handleAgeAutoSelect === 'function') {
+                        handleAgeAutoSelect(state.currentUser.age);
+                    }
+                }
+            }
+
+            // 🛑 ผูก Event Listener สำหรับช่องกรอกอายุ (เพื่อให้พิมพ์เปลี่ยนอายุแล้วเลือกการ์ดให้อัตโนมัติ)
+            const ageInputEl = document.getElementById('cust-age');
+            if (ageInputEl) {
+                ageInputEl.addEventListener('input', (e) => {
+                    if (typeof handleAgeAutoSelect === 'function') {
+                        handleAgeAutoSelect(e.target.value);
+                    }
+                });
             }
 
             // 2. เรนเดอร์หน้าจอทั่วไป
@@ -940,7 +964,7 @@
             if (typeof renderUI === 'function') renderUI();
             if (typeof renderHairstylesGrid === 'function') renderHairstylesGrid();
 
-            // 🛑 เพิ่มการสั่งเรนเดอร์การ์ดบริการเสริมตรงนี้
+            // เรนเดอร์การ์ดบริการเสริม
             if (typeof renderAddonsGrid === 'function') renderAddonsGrid();
 
             if (typeof renderAgeGroupsGrid === 'function') renderAgeGroupsGrid();
@@ -1262,6 +1286,10 @@
                 const phoneInput = document.getElementById('register-phone');
                 const phone = phoneInput ? phoneInput.value.trim() : '';
 
+                // ดึงค่าอายุจากหน้าสมัครสมาชิก (ถ้าในฟอร์มมีช่อง reg-age)
+                const ageInputReg = document.getElementById('reg-age');
+                const age = ageInputReg ? ageInputReg.value.trim() : '';
+
                 const passwordInput = document.getElementById('reg-password');
                 const password = passwordInput ? passwordInput.value.trim() : '';
 
@@ -1291,12 +1319,13 @@
                         assignedAvatar = 'https://i.postimg.cc/qMrLWY3v/863844196-1134350642473490-5849783856972700037-n.jpg'; // รูปช่างโจ
                     }
 
-                    // สร้าง Object ผู้ใช้ใหม่ (บันทึกอีเมลเป็นตัวพิมพ์เล็กเสมอเพื่อความเสถียร)
+                    // สร้าง Object ผู้ใช้ใหม่ (เพิ่มฟิลด์ age เข้าไปด้วย)
                     const newUser = {
                         id: 'u-' + Date.now(),
                         name: name,
                         email: email,
                         phone: phone,
+                        age: age, // 👈 บันทึกอายุลง Firebase
                         password: password,
                         role: assignedRole,
                         avatar: assignedAvatar,
@@ -1327,6 +1356,15 @@
                 state.currentMode = 'barber';
             } else {
                 state.currentMode = 'user';
+            }
+
+            // 🛑 เติมข้อมูลอายุลงในช่อง Input ของฟอร์มจอง และสั่งเลือกการ์ดกลุ่มอายุอัตโนมัติทันที
+            const ageInput = document.getElementById('cust-age');
+            if (ageInput && state.currentUser.age) {
+                ageInput.value = state.currentUser.age;
+                if (typeof handleAgeAutoSelect === 'function') {
+                    handleAgeAutoSelect(state.currentUser.age);
+                }
             }
 
             // อัปเดตหน้าจอ ปิดโมดัล และรีเฟรชข้อมูล
@@ -2751,17 +2789,30 @@
         }
 
         function renderAddonsGrid() {
-            const container = document.getElementById('addons-container'); // ตรวจสอบว่าใน HTML มี <div id="addons-container"> แล้ว
+            const container = document.getElementById('addons-container');
             if (!container) return;
 
-            // ป้องกันกรณี state หรือ addons ยังไม่ถูกสร้าง
             if (!state.bookingForm) state.bookingForm = {};
+
+            // กำหนดรายการบริการเสริมพร้อมราคาล่าสุดที่ต้องการ
+            const latestAddons = [
+                { id: 'addon-shave', name: 'โกนหนวดหรือแต่ง', price: 20, icon: 'fa-solid fa-scissors' },
+                { id: 'addon-dye', name: 'ย้อมผมดำ', price: 170, icon: 'fa-solid fa-fill-drip' }, // 👈 บังคับราคา 170 ตรงนี้
+                { id: 'addon-wash', name: 'บริการสระ', price: 60, icon: 'fa-solid fa-shower' }
+            ];
+
+            // ถ้ายังไม่มี addons ให้สร้างใหม่ / ถ้ามีแล้ว ให้ดึงสถานะ selected เดิมมาใช้ แต่ "อัปเดตราคาใหม่ให้เป็นปัจจุบัน"
             if (!state.bookingForm.addons) {
-                state.bookingForm.addons = [
-                    { id: 'addon-shave', name: 'โกนหนวดหรือแต่ง', price: 50, icon: 'fa-solid fa-scissors', selected: false },
-                    { id: 'addon-dye', name: 'ย้อมผมดำ', price: 170, icon: 'fa-solid fa-fill-drip', selected: false },
-                    { id: 'addon-wash', name: 'บริการสระ', price: 60, icon: 'fa-solid fa-shower', selected: false }
-                ];
+                state.bookingForm.addons = latestAddons.map(a => ({ ...a, selected: false }));
+            } else {
+                // อัปเดตราคาให้ตรงกับปัจจุบันเสมอ โดยรักษาสถานะ (selected) ที่ผู้ใช้เคยติ๊กไว้
+                state.bookingForm.addons = latestAddons.map(latest => {
+                    const existing = state.bookingForm.addons.find(a => a.id === latest.id);
+                    return {
+                        ...latest,
+                        selected: existing ? existing.selected : false
+                    };
+                });
             }
 
             container.innerHTML = '';
@@ -2770,7 +2821,6 @@
                 const isSelected = addon.selected;
 
                 const card = document.createElement('div');
-                // กำหนด Class สำหรับสไตล์การ์ด
                 card.className = `addon-card p-3 rounded-xl border cursor-pointer transition-all flex items-center justify-between ${isSelected ? 'border-amber-500 bg-amber-500/10 shadow-lg' : 'border-gray-700 bg-gray-800/50 hover:border-gray-600'
                     }`;
 
@@ -2790,12 +2840,9 @@
             </div>
         `;
 
-                // กดคลิกการ์ดเพื่อสลับสถานะเลือก/ไม่เลือก
                 card.addEventListener('click', () => {
                     addon.selected = !addon.selected;
-                    renderAddonsGrid(); // เรนเดอร์ใหม่เพื่อให้ UI เปลี่ยนสถานะ
-
-                    // เรียกใช้งานอย่างปลอดภัย ป้องกัน Error กรณีฟังก์ชันยังไม่ถูกสร้าง
+                    renderAddonsGrid();
                     if (typeof updateTotalPrice === 'function') {
                         updateTotalPrice();
                     }
@@ -2842,20 +2889,20 @@
         }
 
         function updateTotalPrice() {
-            // 1. ดึงทรงผมที่กำลังเลือกอยู่
+            // 1. ดึงทรงผมที่เลือก
             const styleId = state.bookingForm?.selectedStyleId;
-            const selectedStyleObj = state.hairstyles.find(h => h.id === styleId);
+            const selectedStyleObj = state.hairstyles ? state.hairstyles.find(h => h.id === styleId) : null;
             const basePrice = selectedStyleObj ? (selectedStyleObj.basePrice || selectedStyleObj.price || 80) : 80;
 
-            // 2. ดึงเรทกลุ่มอายุที่กำลังเลือกอยู่
+            // 2. ดึงเรทกลุ่มอายุที่เลือก
             const ageId = state.bookingForm?.selectedAgeId;
-            const selectedAgeObj = state.ageGroups.find(a => a.id === ageId);
-            const rate = selectedAgeObj ? (selectedAgeObj.rate !== undefined ? selectedAgeObj.rate : (selectedAgeObj.multiplier || 1.0)) : 1.0;
+            const selectedAgeObj = state.ageGroups ? state.ageGroups.find(a => a.id === ageId) : null;
+            const rate = selectedAgeObj ? (selectedAgeObj.rate !== undefined ? selectedAgeObj.rate : 1.0) : 1.0;
 
             // 3. คำนวณราคาตัดผมตามเรทอายุ
             const haircutPrice = Math.round(basePrice * rate);
 
-            // 4. คำนวณราคารวมบริการเสริมเฉพาะอันที่ถูกเลือก (selected === true)
+            // 4. คำนวณราคารวมบริการเสริมเฉพาะอันที่ถูกเลือก (ดึงราคาจาก state ล่าสุด)
             let addonsTotal = 0;
             if (state.bookingForm && state.bookingForm.addons) {
                 state.bookingForm.addons.forEach(addon => {
@@ -2868,37 +2915,78 @@
             // 5. ราคารวมสุทธิทั้งหมด
             const netTotal = haircutPrice + addonsTotal;
 
-            // 6. อัปเดตแสดงผลตัวเลขราคารวมลงบนหน้าจอ (รองรับ id="total-price")
+            // 6. อัปเดตแสดงผลลงบนหน้าจอทุกจุดที่เกี่ยวข้อง
             const priceDisplay = document.getElementById('total-price');
             if (priceDisplay) {
                 priceDisplay.innerText = netTotal + ' บาท';
             }
 
-            // 🛑 7. เพิ่มการอัปเดตลงในกล่อง HTML สรุปราคา (summary elements)
-            const basePriceEl = document.getElementById('summary-base-price');
-            const ageRateEl = document.getElementById('summary-age-rate');
             const netPriceEl = document.getElementById('summary-net-price');
-            const addonsRowEl = document.getElementById('summary-addons-row');
-            const addonsPriceEl = document.getElementById('summary-addons-price');
-
-            if (basePriceEl) basePriceEl.innerText = `฿${basePrice}`;
-            if (ageRateEl) ageRateEl.innerText = `x${rate} (${selectedAgeObj ? selectedAgeObj.label : ''})`;
-            if (netPriceEl) netPriceEl.innerText = `฿${netTotal}`;
-
-            // จัดการแสดง/ซ่อน แถวบริการเสริมอัตโนมัติ (ถ้ามีการเลือกบริการเสริม)
-            if (addonsRowEl && addonsPriceEl) {
-                if (addonsTotal > 0) {
-                    addonsRowEl.style.display = 'flex';
-                    addonsPriceEl.innerText = `+฿${addonsTotal}`;
-                } else {
-                    addonsRowEl.style.display = 'none';
-                }
+            if (netPriceEl) {
+                netPriceEl.textContent = `฿${netTotal}`;
             }
 
-            // อัปเดตเก็บไว้ใน state เผื่อใช้ประโยชน์ส่วนอื่นต่อ
+            // บันทึกเก็บไว้ใน state
             state.bookingForm.calculatedTotal = netTotal;
 
             return netTotal;
+        }
+
+        // (เผื่อมีการเรียกชื่อเก่า ให้ผูกลิงก์ไว้ด้วยกันเพื่อความปลอดภัย)
+        function calculateTotalPrice() {
+            return updateTotalPrice();
+        }
+
+        function handleAgeAutoSelect(ageValue) {
+            const age = parseInt(ageValue);
+            if (isNaN(age) || !state.ageGroups || state.ageGroups.length === 0) return;
+
+            let matchedGroup = null;
+
+            // 1. ลองเช็กจาก minAge / maxAge ก่อน (ถ้าในโครงสร้างข้อมูลมีเก็บไว้)
+            matchedGroup = state.ageGroups.find(group => {
+                if (group.minAge !== undefined && group.maxAge !== undefined) {
+                    return age >= group.minAge && age <= group.maxAge;
+                }
+                return false;
+            });
+
+            // 2. ถ้าใน object ไม่มี minAge/maxAge ให้ใช้เงื่อนไขช่วงอายุและเทียบจาก id หรือ label แทน
+            if (!matchedGroup) {
+                if (age <= 12) {
+                    // กลุ่มเด็ก
+                    matchedGroup = state.ageGroups.find(g => g.id.includes('child') || g.id === 'a1' || (g.label && g.label.includes('เด็ก')));
+                } else if (age >= 13 && age <= 18) {
+                    // กลุ่มวัยรุ่น (15-18 ปี)
+                    matchedGroup = state.ageGroups.find(g => g.id.includes('teen') || g.id === 'a2' || (g.label && g.label.includes('15')));
+                } else {
+                    // กลุ่มผู้ใหญ่ (อายุ 19 ปีขึ้นไป) -> จะได้ตรงกับอายุ 25 ของก้องครับ
+                    matchedGroup = state.ageGroups.find(g => g.id.includes('adult') || g.id.includes('general') || g.id === 'a3' || (g.label && (g.label.includes('ผู้ใหญ่') || g.label.includes('ทั่วไป'))));
+                }
+            }
+
+            // 3. ถ้ายังหาไม่เจอจริงๆ ให้เลือกตัวสุดท้ายในลิสต์ (มักจะเป็นกลุ่มผู้ใหญ่/ทั่วไป)
+            if (!matchedGroup) {
+                matchedGroup = state.ageGroups[state.ageGroups.length - 1];
+            }
+
+            if (matchedGroup) {
+                // อัปเดตลง state ของฟอร์มจอง
+                state.bookingForm.selectedAgeId = matchedGroup.id;
+
+                // สั่งเรนเดอร์การ์ดกลุ่มอายุใหม่ เพื่อให้ UI ไฮไลต์การ์ดที่ถูกเลือก
+                if (typeof renderAgeGroupsGrid === 'function') {
+                    renderAgeGroupsGrid();
+                }
+
+                // อัปเดตคำนวณราคารวมใหม่ทันที
+                if (typeof updateTotalPrice === 'function') {
+                    updateTotalPrice();
+                }
+                if (typeof updateBookingSummary === 'function') {
+                    updateBookingSummary();
+                }
+            }
         }
 
     </script>
