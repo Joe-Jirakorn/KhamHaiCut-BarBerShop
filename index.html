@@ -1847,20 +1847,18 @@
                 <td class="px-4 py-3 text-center">
                     <div class="flex items-center justify-center gap-1">
                         ${bk.status === 'pending' ? `
-                            <!-- ถ้ายังรอดำเนินการ ให้แสดงปุ่ม "เสร็จสิ้น" และ "ยกเลิก" ได้ตามปกติ -->
-                            <button onclick="updateQueueStatus('${bk.id}', 'completed')" class="bg-emerald-500/20 hover:bg-emerald-500 text-emerald-400 hover:text-dark-900 border border-emerald-500/30 px-2 py-1 rounded font-semibold transition" title="ทำรายการเสร็จสิ้น">
+                            <!-- 🛠️ เปลี่ยนจาก bk.id เป็น bk.firestoreId เพื่อให้อัปเดตบน Firebase ได้แม่นยำ -->
+                            <button onclick="updateQueueStatus('${bk.firestoreId}', 'completed')" class="bg-emerald-500/20 hover:bg-emerald-500 text-emerald-400 hover:text-dark-900 border border-emerald-500/30 px-2 py-1 rounded font-semibold transition" title="ทำรายการเสร็จสิ้น">
                                 <i class="fa-solid fa-check"></i> เสร็จสิ้น
                             </button>
-                            <button onclick="updateQueueStatus('${bk.id}', 'cancelled')" class="bg-red-500/20 hover:bg-red-500 text-red-400 hover:text-white border border-red-500/30 px-2 py-1 rounded font-semibold transition" title="ยกเลิก">
+                            <button onclick="updateQueueStatus('${bk.firestoreId}', 'cancelled')" class="bg-red-500/20 hover:bg-red-500 text-red-400 hover:text-white border border-red-500/30 px-2 py-1 rounded font-semibold transition" title="ยกเลิก">
                                 <i class="fa-solid fa-xmark"></i> ยกเลิก
                             </button>
                         ` : bk.status === 'completed' ? `
-                            <!-- 🛑 ถ้าเสร็จสิ้นแล้ว จะแสดงข้อความล็อกไว้เฉยๆ ไม่มีปุ่มยกเลิกให้กดซ้ำอีก -->
                             <span class="text-emerald-400 font-medium text-xs bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded">
                                 <i class="fa-solid fa-circle-check"></i> เสร็จสิ้นแล้ว (ล็อก)
                             </span>
                         ` : `
-                            <!-- ถ้าถูกยกเลิกแล้ว -->
                             <span class="text-gray-500 text-xs">ยกเลิกแล้ว</span>
                         `}
                     </div>
@@ -1870,30 +1868,69 @@
             }).join('');
         }
 
-        function updateQueueStatus(id, newStatus) {
-            const bk = state.bookings.find(b => b.id === id);
+        async function updateQueueStatus(id, newStatus) {
+            // 1. ค้นหารายการจองโดยเช็คทั้ง firestoreId หรือ bk.id
+            const bk = state.bookings.find(b => b.firestoreId === id || b.id === id);
+
             if (bk) {
-                // 🛑 เพิ่มการป้องกัน: ถ้าสถานะเดิมเป็น 'completed' แล้ว และพยายามจะกดเปลี่ยนเป็น 'cancelled' (ยกเลิก) ให้บล็อกทันที!
+                // 🛑 ป้องกัน: ถ้าสถานะเดิมเป็น 'completed' แล้ว และจะกดเปลี่ยนเป็น 'cancelled' ให้บล็อก
                 if (bk.status === 'completed' && newStatus === 'cancelled') {
                     alert("รายการนี้ทำเสร็จสิ้นแล้ว ไม่สามารถกดยกเลิกได้ครับ");
                     return;
                 }
 
-                bk.status = newStatus;
+                try {
+                    // 2. บันทึกสถานะลงบน Firebase Firestore (คลาวด์)
+                    if (window.db && window.firebaseModules) {
+                        const { doc, updateDoc } = window.firebaseModules;
+                        let targetFirestoreId = bk.firestoreId;
 
-                // บันทึกลง LocalStorage
-                localStorage.setItem('barber_bookings', JSON.stringify(state.bookings));
+                        // กรณีไม่มี firestoreId ในตัวแปร ให้ลอง query หาจากรหัส BK-xxxx
+                        if (!targetFirestoreId && bk.id) {
+                            const { collection, getDocs, query, where } = window.firebaseModules;
+                            const q = query(collection(window.db, "bookings"), where("id", "==", bk.id));
+                            const querySnapshot = await getDocs(q);
+                            if (!querySnapshot.empty) {
+                                targetFirestoreId = querySnapshot.docs[0].id;
+                                bk.firestoreId = targetFirestoreId; // บันทึกเก็บไว้
+                            }
+                        }
 
-                // อัปเดตหน้าจอทั้งหมด
-                renderAdminBookingsTable();
-                renderUserBookingsTable();
-                updateRevenueStats();
+                        if (targetFirestoreId) {
+                            const docRef = doc(window.db, "bookings", targetFirestoreId);
+                            await updateDoc(docRef, {
+                                status: newStatus
+                            });
+                            console.log(`อัปเดตสถานะบน Firebase สำเร็จ (${targetFirestoreId}): ${newStatus}`);
+                        } else {
+                            alert("ไม่พบรหัสเอกสารบนคลาวด์สำหรับอัปเดต");
+                            return;
+                        }
+                    }
 
-                if (typeof showToast === 'function') {
-                    showToast(`อัปเดตสถานะคิว ${id} เป็น '${newStatus}' สำเร็จ`, 'success');
-                } else {
-                    alert(`อัปเดตสถานะคิว ${id} สำเร็จ`);
+                    // 3. อัปเดตสถานะในตัวแปร Local ทันที
+                    bk.status = newStatus;
+
+                    // (ทางเลือก) อัปเดต LocalStorage เผื่อกรณีใช้งานแบบออฟไลน์
+                    localStorage.setItem('barber_bookings', JSON.stringify(state.bookings));
+
+                    // 4. อัปเดตหน้าจอทั้งหมด
+                    if (typeof renderAdminBookingsTable === 'function') renderAdminBookingsTable();
+                    if (typeof renderUserBookingsTable === 'function') renderUserBookingsTable();
+                    if (typeof updateRevenueStats === 'function') updateRevenueStats();
+
+                    if (typeof showToast === 'function') {
+                        showToast(`อัปเดตสถานะคิว ${bk.id || id} เป็น '${newStatus}' สำเร็จ`, 'success');
+                    } else {
+                        alert(`อัปเดตสถานะคิว ${bk.id || id} สำเร็จ`);
+                    }
+
+                } catch (error) {
+                    console.error("เกิดข้อผิดพลาดในการอัปเดตสถานะลง Firebase:", error);
+                    alert("ไม่สามารถบันทึกสถานะลงคลาวด์ได้: " + error.message);
                 }
+            } else {
+                alert("ไม่พบข้อมูลการจองนี้ในระบบ");
             }
         }
 
@@ -2465,19 +2502,10 @@
                 }
             );
         }
-
-        // สั่งให้ทำงานหลังจากโหลดหน้าเว็บเสร็จ
         window.addEventListener('DOMContentLoaded', () => {
             setTimeout(() => {
                 initRealtimeBookings();
-            }, 1500);
-        });
-
-        // เรียกใช้งานเมื่อหน้าเว็บโหลดเสร็จ
-        window.addEventListener('DOMContentLoaded', () => {
-            setTimeout(() => {
-                initRealtimeBookings();
-            }, 1200);
+            }, 1000);
         });
     </script>
 </body>
