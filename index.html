@@ -1156,7 +1156,8 @@
             const usersRef = collection(window.db, "users");
 
             if (type === 'login') {
-                const email = document.getElementById('login-email').value.trim();
+                const rawEmail = document.getElementById('login-email').value;
+                const email = rawEmail ? rawEmail.trim().toLowerCase() : '';
                 const password = document.getElementById('login-password').value.trim();
 
                 if (!email || !password) {
@@ -1165,7 +1166,7 @@
                 }
 
                 try {
-                    // 🔍 ค้นหาผู้ใช้จาก Firebase ตามอีเมลที่กรอก
+                    // 🔍 ค้นหาผู้ใช้จาก Firebase ตามอีเมล (รองรับตัวพิมพ์เล็ก-ใหญ่และตัดช่องว่าง)
                     const q = query(usersRef, where("email", "==", email));
                     const querySnapshot = await getDocs(q);
 
@@ -1193,7 +1194,7 @@
                         foundUser.avatar = 'https://i.postimg.cc/qMrLWY3v/863844196-1134350642473490-5849783856972700037-n.jpg'; // รูปช่างโจ
                     }
 
-                    // บันทึกเฉพาะผู้ใช้ปัจจุบันที่กำลังล็อกอินลงเครื่อง (เพื่อจำสถานะการเปิดใช้งานบนเครื่องนั้นๆ)
+                    // บันทึกเฉพาะผู้ใช้ปัจจุบันที่กำลังล็อกอินลงเครื่อง
                     state.currentUser = foundUser;
                     localStorage.setItem('barber_current_user', JSON.stringify(foundUser));
 
@@ -1207,7 +1208,8 @@
             } else {
                 // โหมดสมัครสมาชิก (Register)
                 const name = document.getElementById('reg-name').value.trim();
-                const email = document.getElementById('reg-email').value.trim();
+                const rawEmail = document.getElementById('reg-email').value;
+                const email = rawEmail ? rawEmail.trim().toLowerCase() : '';
 
                 const phoneInput = document.getElementById('register-phone');
                 const phone = phoneInput ? phoneInput.value.trim() : '';
@@ -1221,7 +1223,7 @@
                 }
 
                 try {
-                    // 🔍 ตรวจสอบว่ามีอีเมลนี้ใน Firebase แล้วหรือยัง
+                    // 🔍 ตรวจสอบว่ามีอีเมลนี้ใน Firebase แล้วหรือยัง (เช็คแบบตัวพิมพ์เล็กทั้งหมด)
                     const q = query(usersRef, where("email", "==", email));
                     const querySnapshot = await getDocs(q);
 
@@ -1241,7 +1243,7 @@
                         assignedAvatar = 'https://i.postimg.cc/qMrLWY3v/863844196-1134350642473490-5849783856972700037-n.jpg'; // รูปช่างโจ
                     }
 
-                    // สร้าง Object ผู้ใช้ใหม่
+                    // สร้าง Object ผู้ใช้ใหม่ (บันทึกอีเมลเป็นตัวพิมพ์เล็กเสมอเพื่อความเสถียร)
                     const newUser = {
                         id: 'u-' + Date.now(),
                         name: name,
