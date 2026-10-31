@@ -2578,27 +2578,38 @@
 
             // ดึงข้อมูลจาก Collection "barbers" บน Firebase แบบเรียลไทม์
             onSnapshot(collection(window.db, "barbers"), (snapshot) => {
-                if (!window.state) window.state = { barbers: [] };
-                window.state.barbers = [];
+                if (!window.state || !window.state.barbers) return;
 
-                snapshot.forEach((doc) => {
-                    window.state.barbers.push({
-                        id: doc.id, // เช่น 'barber-kong', 'barber-joe'
-                        ...doc.data()
-                    });
+                snapshot.forEach((docSnap) => {
+                    const firebaseData = docSnap.data();
+                    const docId = docSnap.id; // เช่น 'b1' หรือ 'b2'
+
+                    // ค้นหาช่างใน state.barbers ที่มี id ตรงกัน
+                    const targetBarber = window.state.barbers.find(b => b.id === docId);
+                    if (targetBarber) {
+                        // อัปเดตสถานะจริงจาก Firebase ทับลงไป โดยยังคงรักษา avatar และ exp ไว้เหมือนเดิม
+                        targetBarber.status = firebaseData.status || targetBarber.status;
+                        if (firebaseData.name) {
+                            targetBarber.name = firebaseData.name;
+                        }
+                    }
                 });
 
-                // 🛑 สำคัญ: สั่งเรนเดอร์หน้าจอเลือกช่างฝั่ง User ทันทีที่ข้อมูลบน Firebase เปลี่ยน
+                // 🛑 สั่งเรนเดอร์หน้าจอทุกส่วนที่แสดงข้อมูลช่างให้อัปเดตทันทีแบบเรียลไทม์ (ไม่ต้องรีเฟรช)
                 if (typeof renderBarberSelectGrid === 'function') {
-                    renderBarberSelectGrid();
+                    renderBarberSelectGrid(); // หน้าจอเลือกช่างตอนจอง
                 }
-
-                // เรนเดอร์แผงควบคุมฝั่งแอดมินด้วย (ถ้ามี)
+                if (typeof renderBarbersHomeStatus === 'function') {
+                    renderBarbersHomeStatus(); // หน้าแรกแสดงสถานะช่าง
+                }
                 if (typeof renderAdminBarberControls === 'function') {
-                    renderAdminBarberControls();
+                    renderAdminBarberControls(); // แผงควบคุมของแอดมิน
+                }
+                if (typeof renderFullBarbersList === 'function') {
+                    renderFullBarbersList(); // หน้ารายชื่อช่างทั้งหมด
                 }
 
-                console.log("ซิงค์ข้อมูลช่างและอัปเดตตารางเลือกช่างเรียลไทม์สำเร็จ");
+                console.log("ซิงค์ข้อมูลช่างและอัปเดตหน้าจอเรียลไทม์สำเร็จ");
             }, (error) => {
                 console.error("เกิดข้อผิดพลาดในการซิงค์ข้อมูลช่าง:", error);
             });
