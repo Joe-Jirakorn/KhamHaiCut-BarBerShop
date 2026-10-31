@@ -868,8 +868,9 @@
             revenueChartInstance: null
         };
         /* ================= INITIALIZATION ================= */
-        window.addEventListener('DOMContentLoaded', () => {
-            // 1. ตรวจสอบและกู้คืนสถานะการเข้าสู่ระบบจาก LocalStorage ป้องกันการรีเฟรชแล้วเด้งออก
+        /* ================= INITIALIZATION ================= */
+        window.addEventListener('DOMContentLoaded', async () => {
+            // 1. กู้คืนสถานะการเข้าสู่ระบบจาก LocalStorage
             const savedUser = localStorage.getItem('current_user');
             if (savedUser) {
                 try {
@@ -879,11 +880,13 @@
                     state.currentUser = null;
                 }
             }
+
             const bookingDateInput = document.getElementById('booking-date');
             if (bookingDateInput) {
                 bookingDateInput.value = state.bookingForm.date;
                 bookingDateInput.min = new Date().toISOString().split('T')[0];
             }
+
             if (state.currentUser) {
                 const nameInput = document.getElementById('cust-name');
                 const phoneInput = document.getElementById('cust-phone');
@@ -897,22 +900,21 @@
                     phoneInput.readOnly = true;
                 }
             }
+
+            // 2. เรนเดอร์หน้าจอทั่วไปที่ไม่เกี่ยวกับสถานะช่างก่อน
             if (typeof updateUserUI === 'function') updateUserUI();
             if (typeof renderUI === 'function') renderUI();
             if (typeof renderHairstylesGrid === 'function') renderHairstylesGrid();
             if (typeof renderAgeGroupsGrid === 'function') renderAgeGroupsGrid();
-            if (typeof renderBarberSelectGrid === 'function') renderBarberSelectGrid();
-            if (typeof renderBarbersHomeStatus === 'function') renderBarbersHomeStatus();
-            if (typeof renderFullBarbersList === 'function') renderFullBarbersList();
             if (typeof renderUserBookingsTable === 'function') renderUserBookingsTable();
             if (typeof renderAdminBookingsTable === 'function') renderAdminBookingsTable();
-            if (typeof renderAdminBarberControls === 'function') renderAdminBarberControls();
-            if (typeof updateBookingSummary === 'function') updateBookingSummary();
             if (typeof initChart === 'function') initChart();
             if (typeof updateRevenueStats === 'function') updateRevenueStats();
-            if (typeof loadBarbersFromFirebase === 'function')
-                loadBarbersFromFirebase();
 
+            // 3. 🛑 สำคัญมาก: รอให้โหลดสถานะช่างจาก Firebase ให้เสร็จเสียก่อน แล้วค่อยเรนเดอร์หน้าจอช่าง
+            if (typeof loadBarbersFromFirebase === 'function') {
+                await loadBarbersFromFirebase();
+            }
         });
 
         /* ================= NAVIGATION & ROUTING ================= */
