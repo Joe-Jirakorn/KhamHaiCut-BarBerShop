@@ -6,7 +6,7 @@
     <script type="module">
         // นำเข้า Firebase App และ Firestore จาก CDN ที่ถูกต้อง
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore, collection, addDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, onSnapshot, getDocs, query, where, updateDoc, doc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
         import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-analytics.js";
 
         // 1. 🔑 ค่า config ของคุณ
@@ -25,9 +25,9 @@
         const analytics = getAnalytics(app);
         const db = getFirestore(app);
 
-        // เก็บไว้ให้ฟังก์ชันจองคิวเรียกใช้งาน
+        // เก็บไว้ให้ฟังก์ชันต่างๆ ในเว็บเรียกใช้งาน
         window.db = db;
-        window.firebaseModules = { collection, addDoc, onSnapshot };
+        window.firebaseModules = { collection, addDoc, onSnapshot, getDocs, query, where, updateDoc, doc };
 
         console.log("Firebase Connected Successfully!");
     </script>
@@ -1140,25 +1140,52 @@
                 btnAdmin.className = "px-2.5 py-1 rounded-md font-semibold transition bg-amber-500 text-dark-900";
             }
         }
-        function handleEmailAuth(event, type) {
+        async function handleEmailAuth(event, type) {
             event.preventDefault();
 
             // กำหนดอีเมลแอดมินและช่างตัดผม
             const ADMIN_EMAILS = ["phongsakorn2115@gmail.com"];
             const BARBER_EMAILS = ["phongsakorn7420@gmail.com"];
 
-            // ดึงรายชื่อผู้ใช้ทั้งหมดที่เคยบันทึกไว้ใน LocalStorage
-            let users = JSON.parse(localStorage.getItem('barber_users')) || [];
+            if (!window.db || !window.firebaseModules) {
+                showToast('ระบบฐานข้อมูลยังไม่พร้อมใช้งาน', 'error');
+                return;
+            }
+
+            const { collection, getDocs, addDoc, query, where } = window.firebaseModules;
+            const usersRef = collection(window.db, "users");
 
             if (type === 'login') {
                 const email = document.getElementById('login-email').value.trim();
                 const password = document.getElementById('login-password').value.trim();
 
-                // ค้นหาผู้ใช้จากอีเมลและรหัสผ่านที่สมัครไว้
-                const foundUser = users.find(u => u.email === email && u.password === password);
+                if (!email || !password) {
+                    showToast('กรุณากรอกอีเมลและรหัสผ่าน', 'error');
+                    return;
+                }
 
-                if (foundUser) {
-                    // 🌟 เช็กอัปเดตสิทธิ์และรูปภาพให้ตรงกับอาเรย์อีเมลล่าสุดเสมอ
+                try {
+                    // 🔍 ค้นหาผู้ใช้จาก Firebase ตามอีเมลที่กรอก
+                    const q = query(usersRef, where("email", "==", email));
+                    const querySnapshot = await getDocs(q);
+
+                    if (querySnapshot.empty) {
+                        showToast('ไม่พบอีเมลนี้ในระบบ หรือยังไม่ได้สมัครสมาชิก', 'error');
+                        return;
+                    }
+
+                    let foundUser = null;
+                    querySnapshot.forEach((docSnap) => {
+                        foundUser = { firestoreId: docSnap.id, ...docSnap.data() };
+                    });
+
+                    // ตรวจสอบรหัสผ่าน
+                    if (foundUser.password !== password) {
+                        showToast('รหัสผ่านไม่ถูกต้อง', 'error');
+                        return;
+                    }
+
+                    // 🌟 อัปเดตสิทธิ์ตามอีเมลล่าสุดเสมอ
                     if (ADMIN_EMAILS.includes(email)) {
                         foundUser.role = 'admin';
                     } else if (BARBER_EMAILS.includes(email)) {
@@ -1166,16 +1193,19 @@
                         foundUser.avatar = 'https://i.postimg.cc/qMrLWY3v/863844196-1134350642473490-5849783856972700037-n.jpg'; // รูปช่างโจ
                     }
 
+                    // บันทึกเฉพาะผู้ใช้ปัจจุบันที่กำลังล็อกอินลงเครื่อง (เพื่อจำสถานะการเปิดใช้งานบนเครื่องนั้นๆ)
                     state.currentUser = foundUser;
                     localStorage.setItem('barber_current_user', JSON.stringify(foundUser));
 
                     showToast('เข้าสู่ระบบสำเร็จ', 'success');
-                } else {
-                    showToast('อีเมลหรือรหัสผ่านไม่ถูกต้อง หรือยังไม่ได้สมัครสมาชิก', 'error');
+                } catch (error) {
+                    console.error("Login error:", error);
+                    showToast('เกิดข้อผิดพลาดในการเข้าสู่ระบบ', 'error');
                     return;
                 }
 
             } else {
+                // โหมดสมัครสมาชิก (Register)
                 const name = document.getElementById('reg-name').value.trim();
                 const email = document.getElementById('reg-email').value.trim();
 
@@ -1190,43 +1220,53 @@
                     return;
                 }
 
-                // ตรวจสอบว่าอีเมลนี้เคยสมัครไปแล้วหรือยัง
-                if (users.some(u => u.email === email)) {
-                    showToast('อีเมลนี้ถูกใช้งานแล้ว กรุณาใช้อีเมลอื่น', 'error');
+                try {
+                    // 🔍 ตรวจสอบว่ามีอีเมลนี้ใน Firebase แล้วหรือยัง
+                    const q = query(usersRef, where("email", "==", email));
+                    const querySnapshot = await getDocs(q);
+
+                    if (!querySnapshot.empty) {
+                        showToast('อีเมลนี้ถูกใช้งานแล้ว กรุณาใช้อีเมลอื่น', 'error');
+                        return;
+                    }
+
+                    // 🌟 กำหนดสิทธิ์และรูปภาพตามอีเมลที่สมัคร
+                    let assignedRole = 'customer';
+                    let assignedAvatar = 'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=100&auto=format&fit=crop&q=80';
+
+                    if (ADMIN_EMAILS.includes(email)) {
+                        assignedRole = 'admin';
+                    } else if (BARBER_EMAILS.includes(email)) {
+                        assignedRole = 'barber';
+                        assignedAvatar = 'https://i.postimg.cc/qMrLWY3v/863844196-1134350642473490-5849783856972700037-n.jpg'; // รูปช่างโจ
+                    }
+
+                    // สร้าง Object ผู้ใช้ใหม่
+                    const newUser = {
+                        id: 'u-' + Date.now(),
+                        name: name,
+                        email: email,
+                        phone: phone,
+                        password: password,
+                        role: assignedRole,
+                        avatar: assignedAvatar,
+                        provider: 'Email',
+                        createdAt: new Date().toISOString()
+                    };
+
+                    // ☁️ บันทึกข้อมูลสมาชิกใหม่ขึ้นไปเก็บไว้บน Firebase Firestore (Collection "users") ทันที
+                    const docRef = await addDoc(usersRef, newUser);
+                    newUser.firestoreId = docRef.id;
+
+                    state.currentUser = newUser;
+                    localStorage.setItem('barber_current_user', JSON.stringify(newUser));
+
+                    showToast('ลงทะเบียนบัญชีใหม่สำเร็จ!', 'success');
+                } catch (error) {
+                    console.error("Register error:", error);
+                    showToast('เกิดข้อผิดพลาดในการลงทะเบียน', 'error');
                     return;
                 }
-
-                // 🌟 กำหนดสิทธิ์และรูปภาพตามอีเมลที่สมัคร
-                let assignedRole = 'customer';
-                let assignedAvatar = 'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=100&auto=format&fit=crop&q=80';
-
-                if (ADMIN_EMAILS.includes(email)) {
-                    assignedRole = 'admin';
-                } else if (BARBER_EMAILS.includes(email)) {
-                    assignedRole = 'barber';
-                    assignedAvatar = 'https://i.postimg.cc/qMrLWY3v/863844196-1134350642473490-5849783856972700037-n.jpg'; // รูปช่างโจ
-                }
-
-                // สร้าง Object ผู้ใช้ใหม่
-                const newUser = {
-                    id: 'u-' + Date.now(),
-                    name: name,
-                    email: email,
-                    phone: phone,
-                    password: password,
-                    role: assignedRole,
-                    avatar: assignedAvatar,
-                    provider: 'Email'
-                };
-
-                // บันทึกลงฐานข้อมูล LocalStorage
-                users.push(newUser);
-                localStorage.setItem('barber_users', JSON.stringify(users));
-
-                state.currentUser = newUser;
-                localStorage.setItem('barber_current_user', JSON.stringify(newUser));
-
-                showToast('ลงทะเบียนบัญชีใหม่สำเร็จ!', 'success');
             }
 
             // ตั้งค่าโหมดเริ่มต้นตามสิทธิ์ของ User ทันทีที่เข้าสู่ระบบ
@@ -2151,8 +2191,10 @@
         });
 
         function renderUserBookingsTable() {
-            // 1. โหลดข้อมูลการจองทั้งหมดจาก LocalStorage
-            state.bookings = JSON.parse(localStorage.getItem('barber_bookings')) || [];
+            // 🛑 1. ไม่ดึงจาก LocalStorage แล้ว แต่ใช้ state.bookings ที่ซิงค์มาจาก Firebase โดยตรง
+            if (!Array.isArray(state.bookings)) {
+                state.bookings = [];
+            }
 
             // 2. ค้นหาตารางโดยอ้างอิงจาก id="user-bookings-table-body" ใน HTML ของคุณ
             const tableContainer = document.getElementById('user-bookings-table-body');
@@ -2194,22 +2236,19 @@
                     statusBadge = '<span class="px-2 py-1 bg-red-500/20 text-red-400 rounded-full text-xs">ยกเลิกแล้ว</span>';
                 }
 
-                // 🛑 กำหนดการแสดงผลปุ่มจัดการฝั่ง User ตามสถานะจริง
+                // กำหนดการแสดงผลปุ่มจัดการฝั่ง User ตามสถานะจริง
                 let actionButtonHTML = '';
                 if (booking.status === 'pending') {
-                    // ถ้ายังรอดำเนินการ ให้แสดงปุ่มยกเลิกได้ตามปกติ
                     actionButtonHTML = `
                 <button onclick="cancelBooking('${booking.id}')" class="px-3 py-1 bg-red-600/30 hover:bg-red-600 text-red-300 hover:text-white rounded text-xs transition-colors">
                     ยกเลิก
                 </button>
             `;
                 } else if (booking.status === 'completed') {
-                    // ถ้าแอดมินกดเสร็จสิ้นแล้ว ล็อกไม่ให้ User กดยกเลิกซ้ำ
                     actionButtonHTML = `
                 <span class="text-emerald-400 text-xs font-semibold">เสร็จสิ้นแล้ว</span>
             `;
                 } else {
-                    // ถ้าถูกยกเลิกไปแล้ว
                     actionButtonHTML = `
                 <span class="text-gray-500 text-xs">-</span>
             `;
@@ -2217,10 +2256,10 @@
 
                 row.innerHTML = `
             <td class="px-6 py-4 font-mono text-sm text-amber-400">${booking.id}</td>
-            <td class="px-6 py-4 text-gray-200">${booking.styleName} <span class="text-xs text-gray-400">(${booking.ageGroupLabel})</span></td>
-            <td class="px-6 py-4 text-gray-200">${booking.barberName}</td>
-            <td class="px-6 py-4 text-gray-300">${booking.date} ${booking.time}</td>
-            <td class="px-6 py-4 text-green-400 font-semibold">฿${booking.price}</td>
+            <td class="px-6 py-4 text-gray-200">${booking.styleName || '-'} <span class="text-xs text-gray-400">(${booking.ageGroupLabel || '-'})</span></td>
+            <td class="px-6 py-4 text-gray-200">${booking.barberName || '-'}</td>
+            <td class="px-6 py-4 text-gray-300">${booking.date || ''} ${booking.time || ''}</td>
+            <td class="px-6 py-4 text-green-400 font-semibold">฿${booking.price || 0}</td>
             <td class="px-6 py-4">${statusBadge}</td>
             <td class="px-6 py-4 text-center">
                 ${actionButtonHTML}
@@ -2230,29 +2269,61 @@
             });
         }
 
-        function updateBookingStatus(bookingId, newStatus) {
-            // ค้นหารายการจองจาก state.bookings
-            const booking = state.bookings.find(b => b.id === bookingId);
+        async function updateBookingStatus(bookingId, newStatus) {
+            // 1. ค้นหารายการจองจาก state.bookings โดยเช็คทั้ง id ทั่วไป หรือ firestoreId
+            const booking = state.bookings.find(b => b.id === bookingId || b.firestoreId === bookingId);
 
-            if (booking) {
-                // เปลี่ยนสถานะใหม่ (เช่น 'completed' คือเสร็จสิ้น)
+            if (!booking) {
+                alert("ไม่พบข้อมูลการจองนี้ในระบบ");
+                return;
+            }
+
+            try {
+                if (window.db && window.firebaseModules) {
+                    const { doc, updateDoc, collection, getDocs, query, where } = window.firebaseModules;
+                    let targetFirestoreId = booking.firestoreId;
+
+                    // 🔍 หากไม่มี firestoreId ให้ดึงรหัส Document ID จริงจาก Firebase โดยเทียบจากฟิลด์ id (เช่น BK-xxxx)
+                    if (!targetFirestoreId && booking.id) {
+                        const q = query(collection(window.db, "bookings"), where("id", "==", booking.id));
+                        const querySnapshot = await getDocs(q);
+                        if (!querySnapshot.empty) {
+                            targetFirestoreId = querySnapshot.docs[0].id;
+                        }
+                    }
+
+                    if (targetFirestoreId) {
+                        // ทำการอัปเดตสถานะขึ้นไปที่ Firebase Firestore บนคลาวด์โดยตรง
+                        const docRef = doc(window.db, "bookings", targetFirestoreId);
+                        await updateDoc(docRef, {
+                            status: newStatus
+                        });
+                        console.log(`อัปเดตสถานะบน Firebase สำเร็จ (${targetFirestoreId}): ${newStatus}`);
+                    } else {
+                        alert("ไม่พบรหัสเอกสารบนคลาวด์สำหรับอัปเดต");
+                        return;
+                    }
+                }
+
+                // 2. อัปเดตสถานะในตัวแปร state ท้องถิ่นทันทีเพื่อความลื่นไหล
                 booking.status = newStatus;
 
-                // 🛑 บันทึกลง LocalStorage เพื่อให้ข้อมูลจำฝั่งเครื่อง
-                localStorage.setItem('barber_bookings', JSON.stringify(state.bookings));
-
-                // 🛑 สั่งรีเฟรชตารางของทั้งฝั่ง User และ Admin พร้อมกันทันที
+                // 3. สั่งรีเฟรชตารางของทั้งฝั่ง User และ Admin พร้อมกันทันที
                 if (typeof renderUserBookingsTable === 'function') {
-                    renderUserBookingsTable(); // อัปเดตหน้าประวัติการจองของ User
+                    renderUserBookingsTable();
                 }
                 if (typeof renderAdminBookingsTable === 'function') {
-                    renderAdminBookingsTable(); // อัปเดตหน้าแอดมิน
+                    renderAdminBookingsTable();
                 }
                 if (typeof updateRevenueStats === 'function') {
-                    updateRevenueStats(); // อัปเดตตัวเลขรายได้ (ถ้ามี)
+                    updateRevenueStats();
                 }
 
-                alert(`อัปเดตสถานะการจองรหัส ${bookingId} เรียบร้อยแล้ว`);
+                alert(`อัปเดตสถานะการจองรหัส ${booking.id || bookingId} เรียบร้อยแล้ว`);
+
+            } catch (error) {
+                console.error("เกิดข้อผิดพลาดในการอัปเดตสถานะ:", error);
+                alert("ไม่สามารถอัปเดตสถานะได้ กรุณาลองใหม่อีกครั้ง: " + error.message);
             }
         }
         const ADMIN_EMAILS = ["phongsakorn2115@gmail.com"];
