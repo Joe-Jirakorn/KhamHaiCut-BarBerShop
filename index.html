@@ -912,12 +912,12 @@
             if (typeof updateRevenueStats === 'function') updateRevenueStats();
 
             // 3. 🛑 สำคัญมาก: รอให้โหลดสถานะช่างจาก Firebase ให้เสร็จเสียก่อน แล้วค่อยเรนเดอร์หน้าจอช่าง
-            // if (typeof loadBarbersFromFirebase === 'function') {
-            //     await loadBarbersFromFirebase();
-            // }
-            if (typeof initRealtimeBarbers === 'function') {
-                initRealtimeBarbers();
+            if (typeof loadBarbersFromFirebase === 'function') {
+                await loadBarbersFromFirebase();
             }
+            // if (typeof initRealtimeBarbers === 'function') {
+            //     initRealtimeBarbers();
+            // }
         });
 
         /* ================= NAVIGATION & ROUTING ================= */
