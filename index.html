@@ -911,13 +911,10 @@
             if (typeof initChart === 'function') initChart();
             if (typeof updateRevenueStats === 'function') updateRevenueStats();
 
-            // 3. 🛑 สำคัญมาก: รอให้โหลดสถานะช่างจาก Firebase ให้เสร็จเสียก่อน แล้วค่อยเรนเดอร์หน้าจอช่าง
-            if (typeof loadBarbersFromFirebase === 'function') {
-                await loadBarbersFromFirebase();
+            // 3. 🛑 เปิดใช้งานฟังก์ชัน Real-time ตัวจริง เพื่อให้มือถืออัปเดตตามคอมพิวเตอร์อัตโนมัติทันที
+            if (typeof initRealtimeBarbers === 'function') {
+                initRealtimeBarbers();
             }
-            // if (typeof initRealtimeBarbers === 'function') {
-            //     initRealtimeBarbers();
-            // }
         });
 
         /* ================= NAVIGATION & ROUTING ================= */
@@ -1813,14 +1810,29 @@
             const newStatus = barber.status === 'available' ? 'busy' : 'available';
 
             try {
-                // 2. บันทึกสถานะใหม่ลงบน Firebase Firestore (ตาม Document ID เช่น 'barber-kong')
+                // 2. ตรวจสอบและบันทึกสถานะใหม่ลงบน Firebase Firestore
                 if (window.db && window.firebaseModules) {
                     const { doc, updateDoc } = window.firebaseModules;
+
+                    if (!doc || !updateDoc) {
+                        console.error("❌ Firebase modules (doc, updateDoc) ไม่พร้อมใช้งาน");
+                        alert("เกิดข้อผิดพลาด: ฟังก์ชัน Firebase ไม่พร้อมใช้งาน");
+                        return;
+                    }
+
+                    // 🔍 ตรวจสอบ ID ที่กำลังจะส่งไปอัปเดต (ต้องตรงกับชื่อ Document ใน Firebase เช่น 'b1' หรือ 'b2')
+                    console.log(`กำลังอัปเดต Document ID: "${id}" บน Firebase เป็นสถานะ: "${newStatus}"`);
+
                     const barberRef = doc(window.db, "barbers", id);
                     await updateDoc(barberRef, {
                         status: newStatus
                     });
-                    console.log(`อัปเดตสถานะช่าง ${id} บน Firebase สำเร็จ: ${newStatus}`);
+
+                    console.log(`✅ อัปเดตสถานะช่าง ${id} บน Firebase สำเร็จ!`);
+                } else {
+                    console.warn("⚠️ window.db หรือ window.firebaseModules ยังไม่ถูกกำหนดค่า");
+                    alert("ยังไม่ได้เชื่อมต่อฐานข้อมูล Firebase");
+                    return;
                 }
 
                 // 3. อัปเดตใน state ท้องถิ่นทันทีเพื่อความลื่นไหล
@@ -1835,12 +1847,10 @@
                 // แจ้งเตือนผู้ใช้งาน
                 if (typeof showToast === 'function') {
                     showToast(`อัปเดตสถานะของ ${barber.name} เรียบร้อยแล้ว`, 'info');
-                } else {
-                    alert(`อัปเดตสถานะของ ${barber.name} เรียบร้อยแล้ว`);
                 }
 
             } catch (error) {
-                console.error("เกิดข้อผิดพลาดในการเปลี่ยนสถานะช่าง:", error);
+                console.error("❌ เกิดข้อผิดพลาดในการเปลี่ยนสถานะช่าง:", error);
                 alert("ไม่สามารถบันทึกสถานะช่างลงคลาวด์ได้: " + error.message);
             }
         }
@@ -2581,21 +2591,15 @@
 
             // ดึงและฟังข้อมูลจาก Collection "barbers" บน Firebase แบบเรียลไทม์
             onSnapshot(collection(window.db, "barbers"), (snapshot) => {
-                // ตรวจสอบว่า state.barbers มีอยู่จริงไหม ถ้ายังไม่มีให้สร้างโครงสร้างรอไว้
-                if (!window.state) window.state = {};
-                if (!window.state.barbers) {
-                    window.state.barbers = [
-                        { id: 'b1', name: 'ช่างก้อง (เจ้าของร้าน)', status: 'available', exp: 'ประสบการณ์ 1 ปี ชื่นชอบด้านการเฟด', avatar: 'https://i.postimg.cc/8FR1mMtP/858525001-1129326712975883-8607776798710260414-n.jpg' },
-                        { id: 'b2', name: 'ช่างโจ (ช่างประจำร้าน)', status: 'available', exp: 'ประสบการณ์ 5 ปี เชี่ยวชาญเฟดสายอเมริกัน', avatar: 'https://i.postimg.cc/qMrLWY3v/863844196-1134350642473490-5849783856972700037-n.jpg' }
-                    ];
-                }
+                // 🛑 ใช้ state หลักของระบบแทน window.state
+                if (typeof state === 'undefined' || !state.barbers) return;
 
                 snapshot.forEach((docSnap) => {
                     const firebaseData = docSnap.data();
                     const docId = docSnap.id; // 'b1' หรือ 'b2'
 
-                    // ค้นหาช่างใน state.barbers ที่มี id ตรงกัน
-                    const targetBarber = window.state.barbers.find(b => b.id === docId);
+                    // ค้นหาช่างใน state.barbers ตัวหลัก
+                    const targetBarber = state.barbers.find(b => b.id === docId);
 
                     if (targetBarber) {
                         // อัปเดตเฉพาะสถานะจริงจาก Firebase ทับลงไป โดยไม่ลบรูปภาพหรือข้อมูลเดิมทิ้ง
@@ -2606,9 +2610,9 @@
                     }
                 });
 
-                console.log("ซิงค์สถานะช่างเรียลไทม์สำเร็จ:", window.state.barbers);
+                console.log("ซิงค์สถานะช่างเรียลไทม์สำเร็จ:", state.barbers);
 
-                // 🛑 สั่งเรนเดอร์หน้าจอทุกส่วนที่แสดงผลข้อมูลช่างให้อัปเดตตามทันที (ไม่ต้องรีเฟรช)
+                // 🛑 สั่งเรนเดอร์หน้าจอทุกส่วนที่แสดงผลข้อมูลช่างให้อัปเดตตามทันที (รวมถึงหน้า Guest ตอนออกจากระบบ)
                 if (typeof renderBarbersHomeStatus === 'function') renderBarbersHomeStatus();
                 if (typeof renderBarberSelectGrid === 'function') renderBarberSelectGrid();
                 if (typeof renderAdminBarberControls === 'function') renderAdminBarberControls();
