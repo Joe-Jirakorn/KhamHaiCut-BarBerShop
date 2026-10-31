@@ -912,8 +912,11 @@
             if (typeof updateRevenueStats === 'function') updateRevenueStats();
 
             // 3. 🛑 สำคัญมาก: รอให้โหลดสถานะช่างจาก Firebase ให้เสร็จเสียก่อน แล้วค่อยเรนเดอร์หน้าจอช่าง
-            if (typeof loadBarbersFromFirebase === 'function') {
-                await loadBarbersFromFirebase();
+            // if (typeof loadBarbersFromFirebase === 'function') {
+            //     await loadBarbersFromFirebase();
+            // }
+            if (typeof initRealtimeBarbers === 'function') {
+                initRealtimeBarbers();
             }
         });
 
@@ -2576,42 +2579,43 @@
 
             const { collection, onSnapshot } = window.firebaseModules;
 
-            // ดึงข้อมูลจาก Collection "barbers" บน Firebase แบบเรียลไทม์
+            // ดึงและฟังข้อมูลจาก Collection "barbers" บน Firebase แบบเรียลไทม์
             onSnapshot(collection(window.db, "barbers"), (snapshot) => {
-                if (!window.state || !window.state.barbers) return;
+                // ตรวจสอบว่า state.barbers มีอยู่จริงไหม ถ้ายังไม่มีให้สร้างโครงสร้างรอไว้
+                if (!window.state) window.state = {};
+                if (!window.state.barbers) {
+                    window.state.barbers = [
+                        { id: 'b1', name: 'ช่างก้อง (เจ้าของร้าน)', status: 'available', exp: 'ประสบการณ์ 1 ปี ชื่นชอบด้านการเฟด', avatar: 'https://i.postimg.cc/8FR1mMtP/858525001-1129326712975883-8607776798710260414-n.jpg' },
+                        { id: 'b2', name: 'ช่างโจ (ช่างประจำร้าน)', status: 'available', exp: 'ประสบการณ์ 5 ปี เชี่ยวชาญเฟดสายอเมริกัน', avatar: 'https://i.postimg.cc/qMrLWY3v/863844196-1134350642473490-5849783856972700037-n.jpg' }
+                    ];
+                }
 
                 snapshot.forEach((docSnap) => {
                     const firebaseData = docSnap.data();
-                    const docId = docSnap.id; // เช่น 'b1' หรือ 'b2'
+                    const docId = docSnap.id; // 'b1' หรือ 'b2'
 
                     // ค้นหาช่างใน state.barbers ที่มี id ตรงกัน
                     const targetBarber = window.state.barbers.find(b => b.id === docId);
+
                     if (targetBarber) {
-                        // อัปเดตสถานะจริงจาก Firebase ทับลงไป โดยยังคงรักษา avatar และ exp ไว้เหมือนเดิม
-                        targetBarber.status = firebaseData.status || targetBarber.status;
+                        // อัปเดตเฉพาะสถานะจริงจาก Firebase ทับลงไป โดยไม่ลบรูปภาพหรือข้อมูลเดิมทิ้ง
+                        targetBarber.status = firebaseData.status || 'available';
                         if (firebaseData.name) {
                             targetBarber.name = firebaseData.name;
                         }
                     }
                 });
 
-                // 🛑 สั่งเรนเดอร์หน้าจอทุกส่วนที่แสดงข้อมูลช่างให้อัปเดตทันทีแบบเรียลไทม์ (ไม่ต้องรีเฟรช)
-                if (typeof renderBarberSelectGrid === 'function') {
-                    renderBarberSelectGrid(); // หน้าจอเลือกช่างตอนจอง
-                }
-                if (typeof renderBarbersHomeStatus === 'function') {
-                    renderBarbersHomeStatus(); // หน้าแรกแสดงสถานะช่าง
-                }
-                if (typeof renderAdminBarberControls === 'function') {
-                    renderAdminBarberControls(); // แผงควบคุมของแอดมิน
-                }
-                if (typeof renderFullBarbersList === 'function') {
-                    renderFullBarbersList(); // หน้ารายชื่อช่างทั้งหมด
-                }
+                console.log("ซิงค์สถานะช่างเรียลไทม์สำเร็จ:", window.state.barbers);
 
-                console.log("ซิงค์ข้อมูลช่างและอัปเดตหน้าจอเรียลไทม์สำเร็จ");
+                // 🛑 สั่งเรนเดอร์หน้าจอทุกส่วนที่แสดงผลข้อมูลช่างให้อัปเดตตามทันที (ไม่ต้องรีเฟรช)
+                if (typeof renderBarbersHomeStatus === 'function') renderBarbersHomeStatus();
+                if (typeof renderBarberSelectGrid === 'function') renderBarberSelectGrid();
+                if (typeof renderAdminBarberControls === 'function') renderAdminBarberControls();
+                if (typeof renderFullBarbersList === 'function') renderFullBarbersList();
+
             }, (error) => {
-                console.error("เกิดข้อผิดพลาดในการซิงค์ข้อมูลช่าง:", error);
+                console.error("เกิดข้อผิดพลาดในการซิงค์ข้อมูลช่างแบบเรียลไทม์:", error);
             });
         }
 
