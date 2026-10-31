@@ -808,8 +808,8 @@
                 </div>
                 <div>
                     <label class="block text-xs text-gray-400 mb-1">อายุ (ปี)</label>
-                    <input type="number" id="cust-age" placeholder="ระบุอายุของคุณ" min="1" max="120"
-                        class="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2 text-white text-sm focus:border-amber-500 focus:outline-none">
+                    <input type="text" id="reg-age" inputmode="numeric" placeholder="ระบุอายุของคุณ"
+                        class="w-full bg-dark-900 border border-dark-600 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500">
                 </div>
                 <div>
                     <label class="block text-xs font-medium text-gray-400 mb-1">อีเมล:</label>
@@ -909,8 +909,8 @@
         /* ================= INITIALIZATION ================= */
         /* ================= INITIALIZATION ================= */
         window.addEventListener('DOMContentLoaded', async () => {
-            // 1. กู้คืนสถานะการเข้าสู่ระบบจาก LocalStorage
-            const savedUser = localStorage.getItem('current_user');
+            // 1. กู้คืนสถานะการเข้าสู่ระบบจาก LocalStorage (แก้ชื่อคีย์ให้ตรงกัน)
+            const savedUser = localStorage.getItem('barber_current_user');
             if (savedUser) {
                 try {
                     state.currentUser = JSON.parse(savedUser);
@@ -929,7 +929,7 @@
             if (state.currentUser) {
                 const nameInput = document.getElementById('cust-name');
                 const phoneInput = document.getElementById('cust-phone');
-                const ageInput = document.getElementById('cust-age'); // 👈 เพิ่มช่องอายุ
+                const ageInput = document.getElementById('cust-age');
 
                 if (nameInput) {
                     nameInput.value = state.currentUser.name || '';
@@ -949,7 +949,7 @@
                 }
             }
 
-            // 🛑 ผูก Event Listener สำหรับช่องกรอกอายุ (เพื่อให้พิมพ์เปลี่ยนอายุแล้วเลือกการ์ดให้อัตโนมัติ)
+            // 🛑 ผูก Event Listener สำหรับช่องกรอกอายุ
             const ageInputEl = document.getElementById('cust-age');
             if (ageInputEl) {
                 ageInputEl.addEventListener('input', (e) => {
@@ -1238,7 +1238,7 @@
                 }
 
                 try {
-                    // 🔍 ค้นหาผู้ใช้จาก Firebase ตามอีเมล (รองรับตัวพิมพ์เล็ก-ใหญ่และตัดช่องว่าง)
+                    // 🔍 ค้นหาผู้ใช้จาก Firebase ตามอีเมล
                     const q = query(usersRef, where("email", "==", email));
                     const querySnapshot = await getDocs(q);
 
@@ -1286,9 +1286,10 @@
                 const phoneInput = document.getElementById('register-phone');
                 const phone = phoneInput ? phoneInput.value.trim() : '';
 
-                // ดึงค่าอายุจากหน้าสมัครสมาชิก (ถ้าในฟอร์มมีช่อง reg-age)
+                // ดึงค่าอายุจากหน้าสมัครสมาชิก (ใช้อีก id ป้องกันซ้ำ)
                 const ageInputReg = document.getElementById('reg-age');
-                const age = ageInputReg ? ageInputReg.value.trim() : '';
+                const rawAge = ageInputReg ? ageInputReg.value.trim() : '';
+                const ageString = rawAge !== '' ? String(rawAge) : '';
 
                 const passwordInput = document.getElementById('reg-password');
                 const password = passwordInput ? passwordInput.value.trim() : '';
@@ -1299,7 +1300,7 @@
                 }
 
                 try {
-                    // 🔍 ตรวจสอบว่ามีอีเมลนี้ใน Firebase แล้วหรือยัง (เช็คแบบตัวพิมพ์เล็กทั้งหมด)
+                    // 🔍 ตรวจสอบว่ามีอีเมลนี้ใน Firebase แล้วหรือยัง
                     const q = query(usersRef, where("email", "==", email));
                     const querySnapshot = await getDocs(q);
 
@@ -1316,16 +1317,16 @@
                         assignedRole = 'admin';
                     } else if (BARBER_EMAILS.includes(email)) {
                         assignedRole = 'barber';
-                        assignedAvatar = 'https://i.postimg.cc/qMrLWY3v/863844196-1134350642473490-5849783856972700037-n.jpg'; // รูปช่างโจ
+                        assignedAvatar = 'https://i.postimg.cc/qMrLWY3v/863844196-1134350642473490-5849783856972700037-n.jpg';
                     }
 
-                    // สร้าง Object ผู้ใช้ใหม่ (เพิ่มฟิลด์ age เข้าไปด้วย)
+                    // สร้าง Object ผู้ใช้ใหม่
                     const newUser = {
                         id: 'u-' + Date.now(),
                         name: name,
                         email: email,
                         phone: phone,
-                        age: age, // 👈 บันทึกอายุลง Firebase
+                        age: ageString,
                         password: password,
                         role: assignedRole,
                         avatar: assignedAvatar,
@@ -1333,7 +1334,7 @@
                         createdAt: new Date().toISOString()
                     };
 
-                    // ☁️ บันทึกข้อมูลสมาชิกใหม่ขึ้นไปเก็บไว้บน Firebase Firestore (Collection "users") ทันที
+                    // ☁️ บันทึกข้อมูลขึ้น Firebase Firestore
                     const docRef = await addDoc(usersRef, newUser);
                     newUser.firestoreId = docRef.id;
 
@@ -1348,7 +1349,7 @@
                 }
             }
 
-            // ตั้งค่าโหมดเริ่มต้นตามสิทธิ์ของ User ทันทีที่เข้าสู่ระบบ
+            // 1️⃣ ตั้งค่าโหมดเริ่มต้นตามสิทธิ์ของ User
             const userRole = state.currentUser.role ? state.currentUser.role.toLowerCase() : 'customer';
             if (userRole === 'admin') {
                 state.currentMode = 'admin';
@@ -1358,26 +1359,37 @@
                 state.currentMode = 'user';
             }
 
-            // 🛑 เติมข้อมูลอายุลงในช่อง Input ของฟอร์มจอง และสั่งเลือกการ์ดกลุ่มอายุอัตโนมัติทันที
-            const ageInput = document.getElementById('cust-age');
-            if (ageInput && state.currentUser.age) {
-                ageInput.value = state.currentUser.age;
-                if (typeof handleAgeAutoSelect === 'function') {
-                    handleAgeAutoSelect(state.currentUser.age);
-                }
+            // 2️⃣ รีเซ็ตฟอร์มจองก่อนเป็นอันดับแรก (เพื่อให้ได้ DOM และ Events ที่สะอาด)
+            if (typeof initBookingForm === 'function') {
+                initBookingForm();
             }
 
-            // อัปเดตหน้าจอ ปิดโมดัล และรีเฟรชข้อมูล
+            // 3️⃣ 🛑 เคลียร์ค่าเลือกกลุ่มอายุเก่าทิ้ง แล้วสั่งเรนเดอร์คำนวณใหม่ตามอายุผู้ใช้ปัจจุบันทันที
+            state.bookingForm.selectedAgeId = null;
+            const ageInput = document.getElementById('cust-age');
+            if (ageInput && state.currentUser && state.currentUser.age) {
+                ageInput.value = state.currentUser.age;
+            }
+
+            if (typeof renderAgeGroupsGrid === 'function') {
+                renderAgeGroupsGrid(); // สั่งเรนเดอร์และเลือกการ์ดอัตโนมัติ
+            }
+
+            // 4️⃣ ดึงข้อมูลประวัติการจองล่าสุดจาก Firebase
+            if (typeof fetchBookings === 'function') {
+                await fetchBookings();
+            }
+
+            // 5️⃣ อัปเดตหน้าจอ UI ปิดโมดัล สลับโหมดหลังบ้าน
             updateUserUI();
             closeModal('auth-modal');
 
-            // สั่งรัน switchRole เพื่อกางหน้าจอหลังบ้านตามสิทธิ์ทันที
-            if (typeof switchRole === 'function') {
-                switchRole(state.currentMode);
+            if (typeof renderUserBookingsTable === 'function') {
+                renderUserBookingsTable();
             }
 
-            if (typeof initBookingForm === 'function') {
-                initBookingForm();
+            if (typeof switchRole === 'function') {
+                switchRole(state.currentMode);
             }
         }
 
@@ -1543,27 +1555,67 @@
         // 2. Age Group Grid Selection
         function renderAgeGroupsGrid() {
             const container = document.getElementById('age-group-grid');
-            if (!container) return;
+            if (!container || !state.ageGroups || state.ageGroups.length === 0) return;
+
+            let selectionChanged = false;
+
+            // 🌟 บังคับตรวจสอบและอัปเดตเลือกกลุ่มอายุตามอายุผู้ใช้จริงทุกครั้งที่เรนเดอร์
+            if (state.currentUser && state.currentUser.age) {
+                const userAge = parseInt(state.currentUser.age, 10);
+                if (!isNaN(userAge)) {
+                    let matchedGroup = state.ageGroups.find(group => {
+                        if (group.minAge !== undefined && group.maxAge !== undefined) {
+                            return userAge >= group.minAge && userAge <= group.maxAge;
+                        }
+                        return false;
+                    });
+
+                    if (!matchedGroup) {
+                        if (userAge <= 14) {
+                            matchedGroup = state.ageGroups.find(g => g.id.includes('child') || g.id === 'a1' || (g.label && g.label.includes('เด็ก')));
+                        } else if (userAge >= 15 && userAge <= 17) {
+                            matchedGroup = state.ageGroups.find(g => g.id.includes('teen') || g.id === 'a2' || (g.label && g.label.includes('15')));
+                        } else {
+                            matchedGroup = state.ageGroups.find(g => g.id.includes('adult') || g.id.includes('general') || g.id === 'a3' || (g.label && (g.label.includes('ผู้ใหญ่') || g.label.includes('ทั่วไป'))));
+                        }
+                    }
+
+                    if (!matchedGroup) {
+                        matchedGroup = state.ageGroups[state.ageGroups.length - 1];
+                    }
+
+                    if (matchedGroup && state.bookingForm.selectedAgeId !== matchedGroup.id) {
+                        state.bookingForm.selectedAgeId = matchedGroup.id;
+                        selectionChanged = true;
+                    }
+                }
+            }
 
             container.innerHTML = state.ageGroups.map(a => {
                 const isSelected = state.bookingForm.selectedAgeId === a.id;
                 return `
-                    <div onclick="selectAgeGroup('${a.id}')"
-                        class="cursor-pointer p-4 rounded-xl border-2 transition text-center flex flex-col items-center space-y-2 ${isSelected ? 'border-amber-500 bg-amber-500/10 shadow-md' : 'border-dark-700 bg-dark-900/50 hover:border-dark-600'
+            <div onclick="selectAgeGroup('${a.id}')"
+                class="cursor-pointer p-4 rounded-xl border-2 transition text-center flex flex-col items-center space-y-2 ${isSelected ? 'border-amber-500 bg-amber-500/10 shadow-md' : 'border-dark-700 bg-dark-900/50 hover:border-dark-600'
                     }">
-                        <div class="w-10 h-10 rounded-full ${isSelected ? 'bg-amber-500 text-dark-900' : 'bg-dark-700 text-amber-500'} flex items-center justify-center text-lg">
-                            <i class="fa-solid ${a.icon}"></i>
-                        </div>
-                        <div>
-                            <h4 class="font-bold text-sm text-white">${a.label}</h4>
-                            <p class="text-xs text-gray-400">ช่วงอายุ ${a.minAge}</p>
-                        </div>
-                        <span class="inline-block text-xs font-semibold px-2 py-0.5 rounded-full ${isSelected ? 'bg-amber-500 text-dark-900' : 'bg-dark-700 text-amber-400'}">
-                            ${a.discountLabel}
-                        </span>
-                    </div>
-                `;
+                <div class="w-10 h-10 rounded-full ${isSelected ? 'bg-amber-500 text-dark-900' : 'bg-dark-700 text-amber-500'} flex items-center justify-center text-lg">
+                    <i class="fa-solid ${a.icon}"></i>
+                </div>
+                <div>
+                    <h4 class="font-bold text-sm text-white">${a.label}</h4>
+                    <p class="text-xs text-gray-400">ช่วงอายุ ${a.minAge}</p>
+                </div>
+                <span class="inline-block text-xs font-semibold px-2 py-0.5 rounded-full ${isSelected ? 'bg-amber-500 text-dark-900' : 'bg-dark-700 text-amber-400'}">
+                    ${a.discountLabel}
+                </span>
+            </div>
+        `;
             }).join('');
+
+            // หากมีการเปลี่ยนกลุ่มอายุอัตโนมัติ ให้สั่งคำนวณราคาและสรุปผลใหม่ทันที
+            if (selectionChanged) {
+                if (typeof updateTotalPrice === 'function') updateTotalPrice();
+                if (typeof updateBookingSummary === 'function') updateBookingSummary();
+            }
         }
 
         function selectAgeGroup(id) {
@@ -1843,25 +1895,57 @@
             // ราคารวมสุทธิ
             const netTotal = haircutPrice + addonsTotal;
 
-            // สร้าง Object การจองใหม่
-            const newBooking = {
-                id: 'BK-' + Math.floor(1000 + Math.random() * 9000),
-                userId: state.currentUser ? (state.currentUser.id || 'u-user') : 'guest',
-                userName: name,
-                userPhone: phone,
-                styleName: selectedStyleObj.name,
-                ageGroupLabel: selectedAgeObj.label || selectedAgeObj.name,
-                barberName: selectedBarberObj.name,
-                addons: selectedAddons.map(a => a.name), // บันทึกชื่อบริการเสริมลงไปเก็บไว้แสดงผล (หรือจะเก็บเป็น Object เต็มๆ ก็ได้ครับ)
-                addonsDetails: selectedAddons, // เก็บรายละเอียดครบถ้วน (ชื่อ+ราคา)
-                date: date,
-                time: time,
-                price: netTotal, // ราคารวมสุทธิ (ตัดผม + บริการเสริม)
-                status: 'pending', // 'pending', 'completed', 'cancelled'
-                createdAt: new Date().toISOString()
-            };
-
             try {
+                // 🛑 4. ตรวจสอบการจองเวลาชนกัน (Time Slot Conflict Check) จาก Firebase ก่อนบันทึก
+                if (window.firebaseModules && window.db) {
+                    const { collection, getDocs, query, where } = window.firebaseModules;
+                    const bookingsRef = collection(window.db, "bookings");
+
+                    // ค้นหาคิวในวัน เวลา และช่างคนเดียวกันจากฐานข้อมูลจริง
+                    const q = query(
+                        bookingsRef,
+                        where("date", "==", date),
+                        where("time", "==", time),
+                        where("barberName", "==", selectedBarberObj.name)
+                    );
+
+                    const querySnapshot = await getDocs(q);
+                    let hasConflict = false;
+
+                    querySnapshot.forEach((docSnap) => {
+                        const existing = docSnap.data();
+                        // ถ้ามีคิวในเวลานี้และสถานะไม่ใช่ 'cancelled' ถือว่าชนทันที!
+                        if (existing.status !== 'cancelled') {
+                            hasConflict = true;
+                        }
+                    });
+
+                    if (hasConflict) {
+                        alert(`ติดจอง! ช่วงเวลา ${time} ในวันที่ ${date} กับช่าง ${selectedBarberObj.name} มีผู้จองไปแล้ว กรุณาเลือกช่วงเวลาอื่นครับ`);
+                        return; // หยุดการทำงาน ไม่บันทึกซ้ำ
+                    }
+                }
+
+                // สร้าง Object การจองใหม่
+                const newBooking = {
+                    id: 'BK-' + Math.floor(1000 + Math.random() * 9000),
+                    userId: state.currentUser ? (state.currentUser.id || state.currentUser.firestoreId || 'u-user') : 'guest',
+                    userEmail: state.currentUser ? (state.currentUser.email || '').trim().toLowerCase() : '', // 👈 เพิ่มเก็บบันทึกอีเมลไว้เทียบสิทธิ์
+                    userName: name,
+                    userPhone: phone,
+                    styleName: selectedStyleObj.name,
+                    ageGroupLabel: selectedAgeObj.label || selectedAgeObj.name,
+                    barberId: barberId,
+                    barberName: selectedBarberObj.name,
+                    addons: selectedAddons.map(a => a.name),
+                    addonsDetails: selectedAddons,
+                    date: date,
+                    time: time,
+                    price: netTotal,
+                    status: 'pending',
+                    createdAt: new Date().toISOString()
+                };
+
                 // 🚀 บันทึกลง Firebase Cloud Firestore
                 if (window.firebaseModules && window.db) {
                     await window.firebaseModules.addDoc(
@@ -1886,6 +1970,14 @@
                 if (typeof navigateTo === 'function') {
                     navigateTo('my-bookings');
                 }
+
+                // อัปเดตตารางแสดงผลใหม่ทันที (ถ้ามีฟังก์ชันดึงข้อมูล)
+                if (typeof fetchBookings === 'function') {
+                    fetchBookings();
+                } else if (typeof renderUserBookingsTable === 'function') {
+                    renderUserBookingsTable();
+                }
+
             } catch (error) {
                 console.error("Error saving booking to Firebase: ", error);
                 alert("เกิดข้อผิดพลาดในการบันทึกข้อมูล กรุณาลองใหม่อีกครั้ง");
@@ -2389,18 +2481,27 @@
             if (state.currentUser) {
                 const nameInput = document.getElementById('cust-name');
                 const phoneInput = document.getElementById('cust-phone');
+                const ageInput = document.getElementById('cust-age'); // 👈 เพิ่มตัวแปรดึงช่องอายุ
 
                 // 2. นำชื่อและเบอร์โทรจากตอนสมัครสมาชิกมาใส่ในช่องกรอกให้อัตโนมัติ
                 if (nameInput) {
                     nameInput.value = state.currentUser.name || '';
-                    nameInput.readOnly = true; // ล็อคไว้ไม่ให้แก้ (ถ้าต้องการให้แก้ได้ เอาบรรทัดนี้ออกครับ)
-                    nameInput.classList.add('bg-dark-950', 'text-gray-400'); // ปรับสีให้รู้ว่าล็อคอยู่
+                    nameInput.readOnly = true; // ล็อคไว้ไม่ให้แก้
+                    nameInput.classList.add('bg-dark-950', 'text-gray-400');
                 }
 
                 if (phoneInput) {
                     phoneInput.value = state.currentUser.phone || '';
                     phoneInput.readOnly = true; // ล็อคไว้ไม่ให้แก้
                     phoneInput.classList.add('bg-dark-950', 'text-gray-400');
+                }
+
+                // 🌟 3. เติมข้อมูลอายุ และสั่งเลือกการ์ดกลุ่มอายุอัตโนมัติทันทีเมื่อรีเฟรชหน้าเว็บหรือเปิดฟอร์ม
+                if (ageInput && state.currentUser.age) {
+                    ageInput.value = state.currentUser.age;
+                    if (typeof handleAgeAutoSelect === 'function') {
+                        handleAgeAutoSelect(state.currentUser.age);
+                    }
                 }
             }
         }
@@ -2456,14 +2557,30 @@
                     statusBadge = '<span class="px-2 py-1 bg-red-500/20 text-red-400 rounded-full text-xs">ยกเลิกแล้ว</span>';
                 }
 
-                // กำหนดการแสดงผลปุ่มจัดการฝั่ง User ตามสถานะจริง
+                // 🛑 ตรวจสอบสิทธิ์ความเป็นเจ้าของคิวแบบยืดหยุ่น (เทียบทั้ง ID และ Email)
+                const currentUserId = state.currentUser ? (state.currentUser.id || state.currentUser.firestoreId || '') : '';
+                const currentUserEmail = state.currentUser && state.currentUser.email ? state.currentUser.email.trim().toLowerCase() : '';
+                const currentUserRole = state.currentUser && state.currentUser.role ? state.currentUser.role.toLowerCase() : 'customer';
+
+                // เช็กว่าเป็นเจ้าของคิวไหม (รองรับทั้งกรณีเทียบผ่าน userId หรือ userEmail/email)
+                const isOwnerById = currentUserId && (booking.userId === currentUserId || booking.firestoreId === currentUserId);
+                const isOwnerByEmail = currentUserEmail && (booking.userEmail === currentUserEmail || booking.email === currentUserEmail);
+                const isOwner = isOwnerById || isOwnerByEmail;
+
+                const isAdminOrBarber = currentUserRole === 'admin' || currentUserRole === 'barber';
+
                 let actionButtonHTML = '';
                 if (booking.status === 'pending') {
-                    actionButtonHTML = `
-                <button onclick="cancelBooking('${booking.id}')" class="px-3 py-1 bg-red-600/30 hover:bg-red-600 text-red-300 hover:text-white rounded text-xs transition-colors">
-                    ยกเลิก
-                </button>
-            `;
+                    // ถ้าเป็นเจ้าของคิว หรือเป็นแอดมิน/ช่าง ถึงจะแสดงปุ่มยกเลิก
+                    if (isOwner || isAdminOrBarber) {
+                        actionButtonHTML = `
+                    <button onclick="cancelBooking('${booking.id || booking.firestoreId}')" class="px-3 py-1 bg-red-600/30 hover:bg-red-600 text-red-300 hover:text-white rounded text-xs transition-colors">
+                        ยกเลิก
+                    </button>
+                `;
+                    } else {
+                        actionButtonHTML = `<span class="text-gray-500 text-xs">-</span>`;
+                    }
                 } else if (booking.status === 'completed') {
                     actionButtonHTML = `
                 <span class="text-emerald-400 text-xs font-semibold">เสร็จสิ้นแล้ว</span>
@@ -2953,14 +3070,14 @@
 
             // 2. ถ้าใน object ไม่มี minAge/maxAge ให้ใช้เงื่อนไขช่วงอายุและเทียบจาก id หรือ label แทน
             if (!matchedGroup) {
-                if (age <= 12) {
-                    // กลุ่มเด็ก
+                if (age <= 14) {
+                    // กลุ่มเด็ก (1-14 ปี)
                     matchedGroup = state.ageGroups.find(g => g.id.includes('child') || g.id === 'a1' || (g.label && g.label.includes('เด็ก')));
-                } else if (age >= 13 && age <= 18) {
-                    // กลุ่มวัยรุ่น (15-18 ปี)
+                } else if (age >= 15 && age <= 17) {
+                    // กลุ่มวัยรุ่น (15-17 ปี)
                     matchedGroup = state.ageGroups.find(g => g.id.includes('teen') || g.id === 'a2' || (g.label && g.label.includes('15')));
                 } else {
-                    // กลุ่มผู้ใหญ่ (อายุ 19 ปีขึ้นไป) -> จะได้ตรงกับอายุ 25 ของก้องครับ
+                    // กลุ่มผู้ใหญ่ (อายุ 18 ปีขึ้นไป) -> 25 ปีของก้องจะมาลงล็อกนี้อย่างถูกต้องครับ!
                     matchedGroup = state.ageGroups.find(g => g.id.includes('adult') || g.id.includes('general') || g.id === 'a3' || (g.label && (g.label.includes('ผู้ใหญ่') || g.label.includes('ทั่วไป'))));
                 }
             }
@@ -2987,6 +3104,74 @@
                     updateBookingSummary();
                 }
             }
+        }
+
+        async function validateAndSubmitBooking(bookingData) {
+            if (!window.db || !window.firebaseModules) {
+                showToast('ระบบฐานข้อมูลยังไม่พร้อมใช้งาน', 'error');
+                return;
+            }
+
+            const { collection, getDocs, query, where } = window.firebaseModules;
+            const bookingsRef = collection(window.db, "bookings");
+
+            try {
+                // 1. ดึงข้อมูลการจองทั้งหมดในวันที่ลูกค้าเลือก และช่างคนเดียวกัน (ถ้ามีการเลือกช่าง)
+                // เพื่อนำมาเช็กช่วงเวลาว่าชนกันหรือไม่
+                const q = query(
+                    bookingsRef,
+                    where("date", "==", bookingData.date),
+                    where("barberId", "==", bookingData.barberId) // ตัดบรรทัดนี้ออกถ้าไม่ได้แยกช่าง
+                );
+
+                const querySnapshot = await getDocs(q);
+                let isConflict = false;
+
+                // แปลงช่วงเวลาที่ลูกค้าเลือกใหม่เป็นนาทีตั้งแต่เที่ยงคืน เพื่อให้เทียบช่วงเวลาง่ายขึ้น
+                // สมมติ bookingData เก็บเวลาเริ่ม เช่น "16:00" และเวลาสิ้นสุด "17:00"
+                const newStartMin = timeToMinutes(bookingData.startTime); // เช่น 16:00 -> 960 นาที
+                const newEndMin = timeToMinutes(bookingData.endTime);     // เช่น 17:00 -> 1020 นาที
+
+                querySnapshot.forEach((docSnap) => {
+                    const existingBooking = docSnap.data();
+
+                    // ข้ามรายการที่ถูกยกเลิกไปแล้ว (ถ้ามีสถานะ cancelled)
+                    if (existingBooking.status === 'cancelled') return;
+
+                    const existStartMin = timeToMinutes(existingBooking.startTime);
+                    const existEndMin = timeToMinutes(existingBooking.endTime);
+
+                    // 🛑 เช็กเงื่อนไขเวลาทับซ้อน (Overlap Logic)
+                    // สูตร: (เวลาเริ่มใหม่ < เวลาสิ้นสุดเดิม) และ (เวลาสิ้นสุดใหม่ > เวลาเริ่มเดิม)
+                    if (newStartMin < existEndMin && newEndMin > existStartMin) {
+                        isConflict = true;
+                    }
+                });
+
+                if (isConflict) {
+                    // แจ้งเตือนผู้ใช้ว่าเวลานี้ถูกจองไปแล้ว
+                    showToast('ช่วงเวลานี้ถูกจองไปแล้ว กรุณาเลือกช่วงเวลาอื่นครับ', 'error');
+                    alert('ติดจอง! ช่วงเวลาตั้งแต่ ' + bookingData.startTime + ' ถึง ' + bookingData.endTime + ' มีผู้จองไปแล้ว กรุณาเลือกเวลาอื่น');
+                    return false; // ยกเลิกการจอง
+                }
+
+                // 2. ถ้าไม่ชน สามารถบันทึกการจองลง Firebase ต่อได้ตามปกติ
+                // await addDoc(bookingsRef, bookingData);
+                // showToast('จองคิวสำเร็จ!', 'success');
+                return true;
+
+            } catch (error) {
+                console.error("Error checking booking conflict:", error);
+                showToast('เกิดข้อผิดพลาดในการตรวจสอบคิว', 'error');
+                return false;
+            }
+        }
+
+        // ฟังก์ชันช่วยแปลงเวลา "HH:MM" เป็นนาที เพื่อให้เปรียบเทียบช่วงเวลาได้ง่าย
+        function timeToMinutes(timeStr) {
+            if (!timeStr) return 0;
+            const parts = timeStr.split(':');
+            return parseInt(parts[0]) * 60 + parseInt(parts[1]);
         }
 
     </script>
