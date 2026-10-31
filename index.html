@@ -910,6 +910,9 @@
             if (typeof updateBookingSummary === 'function') updateBookingSummary();
             if (typeof initChart === 'function') initChart();
             if (typeof updateRevenueStats === 'function') updateRevenueStats();
+            if (typeof loadBarbersFromFirebase === 'function')
+                loadBarbersFromFirebase();
+
         });
 
         /* ================= NAVIGATION & ROUTING ================= */
@@ -2605,6 +2608,37 @@
                 initRealtimeBarbers();
             }, 1200);
         });
+
+        async function loadBarbersFromFirebase() {
+            if (!window.db || !window.firebaseModules) return;
+
+            try {
+                const { collection, getDocs } = window.firebaseModules;
+                const querySnapshot = await getDocs(collection(window.db, "barbers"));
+
+                querySnapshot.forEach((docSnap) => {
+                    const firebaseData = docSnap.data();
+                    const docId = docSnap.id; // จะได้ 'b1' หรือ 'b2' ตรงกับใน state.barbers
+
+                    // ค้นหาช่างใน state.barbers และอัปเดตสถานะจริงจาก Firebase ทับลงไป
+                    const targetBarber = state.barbers.find(b => b.id === docId);
+                    if (targetBarber) {
+                        targetBarber.status = firebaseData.status || 'available';
+                    }
+                });
+
+                console.log("โหลดสถานะช่างจาก Firebase สำเร็จตอนเริ่มเว็บ:", state.barbers);
+
+                // สั่งเรนเดอร์เฉพาะส่วนของการแสดงผลช่างใหม่ โดยไม่แตะต้องกราฟหรือฟังก์ชันอื่น
+                if (typeof renderBarbersHomeStatus === 'function') renderBarbersHomeStatus();
+                if (typeof renderBarberSelectGrid === 'function') renderBarberSelectGrid();
+                if (typeof renderAdminBarberControls === 'function') renderAdminBarberControls();
+                if (typeof renderFullBarbersList === 'function') renderFullBarbersList();
+
+            } catch (error) {
+                console.error("เกิดข้อผิดพลาดในการโหลดสถานะช่างจาก Firebase:", error);
+            }
+        }
     </script>
 </body>
 
