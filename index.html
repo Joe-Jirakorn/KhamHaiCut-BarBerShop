@@ -349,12 +349,29 @@
                         </div>
                     </div>
 
-                    <!-- STEP 2: Select Age Group -->
+                    <!-- บริการเสริม (Add-ons) -->
                     <div class="bg-dark-800 rounded-2xl border border-dark-700 p-6 shadow-lg space-y-4">
                         <div class="flex items-center justify-between border-b border-dark-700 pb-3">
                             <h2 class="text-lg font-bold text-white flex items-center gap-2">
                                 <span
                                     class="w-7 h-7 rounded-full bg-amber-500 text-dark-900 flex items-center justify-center text-sm font-bold">2</span>
+                                บริการเสริม (เลือกได้มากกว่า 1 หรือไม่เลือกก็ได้)
+                            </h2>
+                            <span class="text-xs text-gray-400 font-medium">ไม่บังคับเลือก</span>
+                        </div>
+
+                        <!-- กล่องสำหรับให้ JS เรนเดอร์การ์ดบริการเสริม -->
+                        <div id="addons-container" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                            <!-- Add-on Cards Loaded by JS -->
+                        </div>
+                    </div>
+
+                    <!-- STEP 2: Select Age Group -->
+                    <div class="bg-dark-800 rounded-2xl border border-dark-700 p-6 shadow-lg space-y-4">
+                        <div class="flex items-center justify-between border-b border-dark-700 pb-3">
+                            <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                                <span
+                                    class="w-7 h-7 rounded-full bg-amber-500 text-dark-900 flex items-center justify-center text-sm font-bold">3</span>
                                 เลือกกลุ่มอายุลูกค้า (ราคาเฉพาะกลุ่ม)
                             </h2>
                         </div>
@@ -369,7 +386,7 @@
                         <div class="flex items-center justify-between border-b border-dark-700 pb-3">
                             <h2 class="text-lg font-bold text-white flex items-center gap-2">
                                 <span
-                                    class="w-7 h-7 rounded-full bg-amber-500 text-dark-900 flex items-center justify-center text-sm font-bold">3</span>
+                                    class="w-7 h-7 rounded-full bg-amber-500 text-dark-900 flex items-center justify-center text-sm font-bold">4</span>
                                 เลือกช่างและวันเวลาที่ต้องการ
                             </h2>
                         </div>
@@ -466,14 +483,25 @@
 
                             <!-- Calculation Breakdown -->
                             <div class="space-y-2">
+                                <!-- ราคาปกติทรงผม -->
                                 <div class="flex justify-between text-xs text-gray-400">
                                     <span>ราคาปกติ:</span>
                                     <span id="summary-base-price">฿0</span>
                                 </div>
+                                <!-- ตัวคูณกลุ่มอายุ -->
                                 <div class="flex justify-between text-xs text-gray-400">
                                     <span>ตัวคูณกลุ่มอายุ:</span>
                                     <span id="summary-age-rate">-</span>
                                 </div>
+
+                                <!-- 🛑 เพิ่มแถวแสดงราคาบริการเสริม (ถ้ามีเลือก) -->
+                                <div class="flex justify-between text-xs text-gray-400" id="summary-addons-row"
+                                    style="display: none;">
+                                    <span>บริการเสริม:</span>
+                                    <span id="summary-addons-price">+฿0</span>
+                                </div>
+
+                                <!-- ราคาสุทธิ (Net) -->
                                 <div
                                     class="flex justify-between text-base font-bold text-white pt-2 border-t border-dark-700/50">
                                     <span>ราคาสุทธิ (Net):</span>
@@ -804,7 +832,7 @@
             // รองรับการเก็บเบอร์โทรศัพท์ใน currentUser (ดึงจาก LocalStorage)
             currentUser: JSON.parse(localStorage.getItem('barber_current_user')) || null,
 
-            // รายชื่อบัญชีผู้ใช้ทั้งหมดในระบบ (เก็บข้อมูลสำหรับตรวจสอบการสมัครและการดึงเบอร์โทร)
+            // รายชื่อบัญชีผู้ใช้ทั้งหมดในระบบ
             users: JSON.parse(localStorage.getItem('barber_users')) || [],
 
             currentRole: 'user', // 'user' or 'admin'
@@ -839,14 +867,20 @@
                 { id: 'b2', name: 'ช่างโจ (ช่างประจำร้าน)', status: 'available', exp: 'ประสบการณ์ 5 ปี เชี่ยวชาญเฟดสายอเมริกัน', avatar: 'https://i.postimg.cc/qMrLWY3v/863844196-1134350642473490-5849783856972700037-n.jpg' },
             ],
 
-            // Booking Form State
+            // Booking Form State (เพิ่ม addons เข้ามาเพื่อรองรับบริการเสริม)
             bookingForm: {
                 selectedStyleId: 'h1',
                 selectedAgeId: 'a2',
                 selectedBarberId: 'b1',
+                addons: [
+                    { id: 'addon-shave', name: 'โกนหนวดหรือแต่ง', price: 20, icon: 'fa-solid fa-razor', selected: false },
+                    { id: 'addon-dye', name: 'ย้อมผมดำ', price: 120, icon: 'fa-solid fa-paint-brush', selected: false },
+                    { id: 'addon-wash', name: 'บริการสระ', price: 60, icon: 'fa-solid fa-shower', selected: false }
+                ],
                 date: new Date().toISOString().split('T')[0],
                 time: '14:00'
             },
+
             bookings: JSON.parse(localStorage.getItem('barber_bookings')) || [
                 {
                     id: 'BK-1001',
@@ -901,17 +935,21 @@
                 }
             }
 
-            // 2. เรนเดอร์หน้าจอทั่วไปที่ไม่เกี่ยวกับสถานะช่างก่อน
+            // 2. เรนเดอร์หน้าจอทั่วไป
             if (typeof updateUserUI === 'function') updateUserUI();
             if (typeof renderUI === 'function') renderUI();
             if (typeof renderHairstylesGrid === 'function') renderHairstylesGrid();
+
+            // 🛑 เพิ่มการสั่งเรนเดอร์การ์ดบริการเสริมตรงนี้
+            if (typeof renderAddonsGrid === 'function') renderAddonsGrid();
+
             if (typeof renderAgeGroupsGrid === 'function') renderAgeGroupsGrid();
             if (typeof renderUserBookingsTable === 'function') renderUserBookingsTable();
             if (typeof renderAdminBookingsTable === 'function') renderAdminBookingsTable();
             if (typeof initChart === 'function') initChart();
             if (typeof updateRevenueStats === 'function') updateRevenueStats();
 
-            // 3. 🛑 เปิดใช้งานฟังก์ชัน Real-time ตัวจริง เพื่อให้มือถืออัปเดตตามคอมพิวเตอร์อัตโนมัติทันที
+            // 3. เปิดใช้งานระบบซิงค์สถานะช่างแบบ Real-time
             if (typeof initRealtimeBarbers === 'function') {
                 initRealtimeBarbers();
             }
@@ -1545,12 +1583,42 @@
                 document.getElementById('summary-base-price').textContent = `฿${style.basePrice}`;
             }
 
-            let netPrice = 0;
+            let haircutPrice = 0;
             if (style && ageGroup) {
-                netPrice = Math.round(style.basePrice * ageGroup.rate);
+                haircutPrice = Math.round(style.basePrice * ageGroup.rate);
                 document.getElementById('summary-age').textContent = ageGroup.label;
                 document.getElementById('summary-age-rate').textContent = `${ageGroup.rate * 100}% (${ageGroup.discountLabel})`;
-                document.getElementById('summary-net-price').textContent = `฿${netPrice}`;
+            }
+
+            // 🛑 1. คำนวณราคารวมบริการเสริมที่ถูกเลือก (selected === true)
+            let addonsTotal = 0;
+            if (state.bookingForm && state.bookingForm.addons) {
+                state.bookingForm.addons.forEach(addon => {
+                    if (addon.selected) {
+                        addonsTotal += (addon.price || 0);
+                    }
+                });
+            }
+
+            // 🛑 2. รวมราคาสุทธิ (ค่าตัดผมตามเรทอายุ + บริการเสริมทั้งหมด)
+            const netPrice = haircutPrice + addonsTotal;
+
+            // อัปเดตราคาสุทธิลงหน้าจอ
+            const netPriceEl = document.getElementById('summary-net-price');
+            if (netPriceEl) {
+                netPriceEl.textContent = `฿${netPrice}`;
+            }
+
+            // 🛑 3. จัดการแสดง/ซ่อน แถวบริการเสริมในใบสรุปราคา (ถ้ามี)
+            const addonsRowEl = document.getElementById('summary-addons-row');
+            const addonsPriceEl = document.getElementById('summary-addons-price');
+            if (addonsRowEl && addonsPriceEl) {
+                if (addonsTotal > 0) {
+                    addonsRowEl.style.display = 'flex';
+                    addonsPriceEl.textContent = `+฿${addonsTotal}`;
+                } else {
+                    addonsRowEl.style.display = 'none';
+                }
             }
 
             if (barber) {
@@ -1558,6 +1626,9 @@
             }
 
             document.getElementById('summary-datetime').textContent = `${dateInput} เวลา ${timeSelect} น.`;
+
+            // บันทึกยอดรวมสุทธิเก็บไว้ใน state เผื่อใช้ตอนกดบันทึกจอง
+            state.bookingForm.calculatedTotal = netPrice;
         }
 
         // Attach Event Listeners to date/time inputs
@@ -1696,11 +1767,16 @@
             const selectedAgeObj = state.ageGroups.find(a => a.id === ageId || a === state.selectedAgeGroup);
             const selectedBarberObj = state.barbers.find(b => b.id === barberId || b === state.selectedBarber);
 
-            // ตรวจสอบว่าเลือกครบถ้วนหรือไม่
+            // ตรวจสอบว่าเลือกทรงผม กลุ่มอายุ และช่างครบถ้วนหรือไม่
             if (!selectedStyleObj || !selectedAgeObj || !selectedBarberObj) {
                 alert("กรุณาเลือกทรงผม กลุ่มอายุ และช่างตัดผมให้ครบถ้วนครับ");
                 return;
             }
+
+            // 🛑 2. ดึงรายการบริการเสริมที่ผู้ใช้เลือก (selected: true) จาก state.bookingForm.addons
+            const selectedAddons = state.bookingForm.addons
+                ? state.bookingForm.addons.filter(addon => addon.selected)
+                : [];
 
             // ดึงค่าจากฟอร์ม Input
             const dateInput = document.getElementById('booking-date');
@@ -1718,10 +1794,16 @@
                 return;
             }
 
-            // คำนวณราคา (รองรับทั้ง basePrice/price และ rate/multiplier)
+            // 3. คำนวณราคา (ราคาหลักทรงผมตามเรทอายุ + ราคารวมบริการเสริมทั้งหมด)
             const base = selectedStyleObj.basePrice || selectedStyleObj.price || 80;
             const mult = selectedAgeObj.rate !== undefined ? selectedAgeObj.rate : (selectedAgeObj.multiplier || 1.0);
-            const net = Math.round(base * mult);
+            const haircutPrice = Math.round(base * mult);
+
+            // คำนวณราคาบริการเสริมบวกเพิ่ม (ถ้ามีเลือก)
+            const addonsTotal = selectedAddons.reduce((sum, addon) => sum + (addon.price || 0), 0);
+
+            // ราคารวมสุทธิ
+            const netTotal = haircutPrice + addonsTotal;
 
             // สร้าง Object การจองใหม่
             const newBooking = {
@@ -1732,15 +1814,17 @@
                 styleName: selectedStyleObj.name,
                 ageGroupLabel: selectedAgeObj.label || selectedAgeObj.name,
                 barberName: selectedBarberObj.name,
+                addons: selectedAddons.map(a => a.name), // บันทึกชื่อบริการเสริมลงไปเก็บไว้แสดงผล (หรือจะเก็บเป็น Object เต็มๆ ก็ได้ครับ)
+                addonsDetails: selectedAddons, // เก็บรายละเอียดครบถ้วน (ชื่อ+ราคา)
                 date: date,
                 time: time,
-                price: net,
+                price: netTotal, // ราคารวมสุทธิ (ตัดผม + บริการเสริม)
                 status: 'pending', // 'pending', 'completed', 'cancelled'
                 createdAt: new Date().toISOString()
             };
 
             try {
-                // 🚀 บันทึกลง Firebase Cloud Firestore แทน LocalStorage เพื่อให้ซิงค์ข้ามเครื่อง
+                // 🚀 บันทึกลง Firebase Cloud Firestore
                 if (window.firebaseModules && window.db) {
                     await window.firebaseModules.addDoc(
                         window.firebaseModules.collection(window.db, "bookings"),
@@ -1753,7 +1837,12 @@
                     localStorage.setItem('barber_bookings', JSON.stringify(state.bookings));
                 }
 
-                alert(`จองคิวสำเร็จ! รหัสจองของคุณคือ ${newBooking.id}`);
+                alert(`จองคิวสำเร็จ! รหัสจองของคุณคือ ${newBooking.id} (ยอดรวม ${netTotal} บาท)`);
+
+                // ล้างค่าบริการเสริมที่เลือกไว้หลังจองเสร็จ (รีเซ็ตฟอร์ม)
+                if (state.bookingForm.addons) {
+                    state.bookingForm.addons.forEach(addon => addon.selected = false);
+                }
 
                 // ย้ายไปหน้าประวัติการจอง
                 if (typeof navigateTo === 'function') {
@@ -2660,6 +2749,158 @@
                 console.error("เกิดข้อผิดพลาดในการโหลดสถานะช่างจาก Firebase:", error);
             }
         }
+
+        function renderAddonsGrid() {
+            const container = document.getElementById('addons-container'); // ตรวจสอบว่าใน HTML มี <div id="addons-container"> แล้ว
+            if (!container) return;
+
+            // ป้องกันกรณี state หรือ addons ยังไม่ถูกสร้าง
+            if (!state.bookingForm) state.bookingForm = {};
+            if (!state.bookingForm.addons) {
+                state.bookingForm.addons = [
+                    { id: 'addon-shave', name: 'โกนหนวดหรือแต่ง', price: 50, icon: 'fa-solid fa-scissors', selected: false },
+                    { id: 'addon-dye', name: 'ย้อมผมดำ', price: 150, icon: 'fa-solid fa-fill-drip', selected: false },
+                    { id: 'addon-wash', name: 'บริการสระ', price: 60, icon: 'fa-solid fa-shower', selected: false }
+                ];
+            }
+
+            container.innerHTML = '';
+
+            state.bookingForm.addons.forEach(addon => {
+                const isSelected = addon.selected;
+
+                const card = document.createElement('div');
+                // กำหนด Class สำหรับสไตล์การ์ด
+                card.className = `addon-card p-3 rounded-xl border cursor-pointer transition-all flex items-center justify-between ${isSelected ? 'border-amber-500 bg-amber-500/10 shadow-lg' : 'border-gray-700 bg-gray-800/50 hover:border-gray-600'
+                    }`;
+
+                card.innerHTML = `
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-lg bg-gray-700 flex items-center justify-center text-amber-400">
+                    <i class="${addon.icon} text-lg"></i>
+                </div>
+                <div>
+                    <h4 class="text-white font-medium text-sm">${addon.name}</h4>
+                    <span class="text-xs text-gray-400">+${addon.price} บาท</span>
+                </div>
+            </div>
+            <div class="w-6 h-6 rounded-full border flex items-center justify-center ${isSelected ? 'bg-amber-500 border-amber-500 text-black' : 'border-gray-600 text-transparent'
+                    }">
+                <i class="fa-solid fa-check text-xs"></i>
+            </div>
+        `;
+
+                // กดคลิกการ์ดเพื่อสลับสถานะเลือก/ไม่เลือก
+                card.addEventListener('click', () => {
+                    addon.selected = !addon.selected;
+                    renderAddonsGrid(); // เรนเดอร์ใหม่เพื่อให้ UI เปลี่ยนสถานะ
+
+                    // เรียกใช้งานอย่างปลอดภัย ป้องกัน Error กรณีฟังก์ชันยังไม่ถูกสร้าง
+                    if (typeof updateTotalPrice === 'function') {
+                        updateTotalPrice();
+                    }
+                });
+
+                container.appendChild(card);
+            });
+        }
+
+        function calculateTotalPrice() {
+            // 1. ดึงทรงผมที่เลือก
+            const styleId = state.bookingForm?.selectedStyleId;
+            const selectedStyleObj = state.hairstyles.find(h => h.id === styleId);
+            const basePrice = selectedStyleObj ? (selectedStyleObj.basePrice || 80) : 80;
+
+            // 2. ดึงเรทกลุ่มอายุที่เลือก
+            const ageId = state.bookingForm?.selectedAgeId;
+            const selectedAgeObj = state.ageGroups.find(a => a.id === ageId);
+            const rate = selectedAgeObj ? selectedAgeObj.rate : 1.0;
+
+            // 3. คำนวณราคาตัดผมตามเรทอายุ
+            const haircutPrice = Math.round(basePrice * rate);
+
+            // 4. คำนวณราคารวมบริการเสริมเฉพาะอันที่ถูกเลือก (selected === true)
+            let addonsTotal = 0;
+            if (state.bookingForm.addons) {
+                state.bookingForm.addons.forEach(addon => {
+                    if (addon.selected) {
+                        addonsTotal += addon.price;
+                    }
+                });
+            }
+
+            // 5. ราคารวมสุทธิทั้งหมด
+            const netTotal = haircutPrice + addonsTotal;
+
+            // (ถ้าหน้าเว็บมี Element แสดงผลราคารวม เช่น <span id="total-price"> ให้สั่งอัปเดตตรงนี้ได้เลย)
+            const priceElement = document.getElementById('total-price');
+            if (priceElement) {
+                priceElement.innerText = netTotal + ' บาท';
+            }
+
+            return netTotal;
+        }
+
+        function updateTotalPrice() {
+            // 1. ดึงทรงผมที่กำลังเลือกอยู่
+            const styleId = state.bookingForm?.selectedStyleId;
+            const selectedStyleObj = state.hairstyles.find(h => h.id === styleId);
+            const basePrice = selectedStyleObj ? (selectedStyleObj.basePrice || selectedStyleObj.price || 80) : 80;
+
+            // 2. ดึงเรทกลุ่มอายุที่กำลังเลือกอยู่
+            const ageId = state.bookingForm?.selectedAgeId;
+            const selectedAgeObj = state.ageGroups.find(a => a.id === ageId);
+            const rate = selectedAgeObj ? (selectedAgeObj.rate !== undefined ? selectedAgeObj.rate : (selectedAgeObj.multiplier || 1.0)) : 1.0;
+
+            // 3. คำนวณราคาตัดผมตามเรทอายุ
+            const haircutPrice = Math.round(basePrice * rate);
+
+            // 4. คำนวณราคารวมบริการเสริมเฉพาะอันที่ถูกเลือก (selected === true)
+            let addonsTotal = 0;
+            if (state.bookingForm && state.bookingForm.addons) {
+                state.bookingForm.addons.forEach(addon => {
+                    if (addon.selected) {
+                        addonsTotal += (addon.price || 0);
+                    }
+                });
+            }
+
+            // 5. ราคารวมสุทธิทั้งหมด
+            const netTotal = haircutPrice + addonsTotal;
+
+            // 6. อัปเดตแสดงผลตัวเลขราคารวมลงบนหน้าจอ (รองรับ id="total-price")
+            const priceDisplay = document.getElementById('total-price');
+            if (priceDisplay) {
+                priceDisplay.innerText = netTotal + ' บาท';
+            }
+
+            // 🛑 7. เพิ่มการอัปเดตลงในกล่อง HTML สรุปราคา (summary elements)
+            const basePriceEl = document.getElementById('summary-base-price');
+            const ageRateEl = document.getElementById('summary-age-rate');
+            const netPriceEl = document.getElementById('summary-net-price');
+            const addonsRowEl = document.getElementById('summary-addons-row');
+            const addonsPriceEl = document.getElementById('summary-addons-price');
+
+            if (basePriceEl) basePriceEl.innerText = `฿${basePrice}`;
+            if (ageRateEl) ageRateEl.innerText = `x${rate} (${selectedAgeObj ? selectedAgeObj.label : ''})`;
+            if (netPriceEl) netPriceEl.innerText = `฿${netTotal}`;
+
+            // จัดการแสดง/ซ่อน แถวบริการเสริมอัตโนมัติ (ถ้ามีการเลือกบริการเสริม)
+            if (addonsRowEl && addonsPriceEl) {
+                if (addonsTotal > 0) {
+                    addonsRowEl.style.display = 'flex';
+                    addonsPriceEl.innerText = `+฿${addonsTotal}`;
+                } else {
+                    addonsRowEl.style.display = 'none';
+                }
+            }
+
+            // อัปเดตเก็บไว้ใน state เผื่อใช้ประโยชน์ส่วนอื่นต่อ
+            state.bookingForm.calculatedTotal = netTotal;
+
+            return netTotal;
+        }
+
     </script>
 </body>
 
