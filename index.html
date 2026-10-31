@@ -1794,15 +1794,46 @@
             }).join('');
         }
 
-        function toggleBarberStatus(id) {
+        async function toggleBarberStatus(id) {
             const barber = state.barbers.find(b => b.id === id);
-            if (barber) {
-                barber.status = barber.status === 'available' ? 'busy' : 'available';
-                renderAdminBarberControls();
-                renderBarbersHomeStatus();
-                renderFullBarbersList();
-                renderBarberSelectGrid();
-                showToast(`อัปเดตสถานะของ ${barber.name} เรียบร้อยแล้ว`, 'info');
+            if (!barber) {
+                alert("ไม่พบข้อมูลช่างในระบบ");
+                return;
+            }
+
+            // 1. สลับสถานะตรงกันข้าม
+            const newStatus = barber.status === 'available' ? 'busy' : 'available';
+
+            try {
+                // 2. บันทึกสถานะใหม่ลงบน Firebase Firestore (ตาม Document ID เช่น 'barber-kong')
+                if (window.db && window.firebaseModules) {
+                    const { doc, updateDoc } = window.firebaseModules;
+                    const barberRef = doc(window.db, "barbers", id);
+                    await updateDoc(barberRef, {
+                        status: newStatus
+                    });
+                    console.log(`อัปเดตสถานะช่าง ${id} บน Firebase สำเร็จ: ${newStatus}`);
+                }
+
+                // 3. อัปเดตใน state ท้องถิ่นทันทีเพื่อความลื่นไหล
+                barber.status = newStatus;
+
+                // 4. เรนเดอร์หน้าจอส่วนต่างๆ ใหม่
+                if (typeof renderAdminBarberControls === 'function') renderAdminBarberControls();
+                if (typeof renderBarbersHomeStatus === 'function') renderBarbersHomeStatus();
+                if (typeof renderFullBarbersList === 'function') renderFullBarbersList();
+                if (typeof renderBarberSelectGrid === 'function') renderBarberSelectGrid();
+
+                // แจ้งเตือนผู้ใช้งาน
+                if (typeof showToast === 'function') {
+                    showToast(`อัปเดตสถานะของ ${barber.name} เรียบร้อยแล้ว`, 'info');
+                } else {
+                    alert(`อัปเดตสถานะของ ${barber.name} เรียบร้อยแล้ว`);
+                }
+
+            } catch (error) {
+                console.error("เกิดข้อผิดพลาดในการเปลี่ยนสถานะช่าง:", error);
+                alert("ไม่สามารถบันทึกสถานะช่างลงคลาวด์ได้: " + error.message);
             }
         }
 
@@ -2506,6 +2537,73 @@
             setTimeout(() => {
                 initRealtimeBookings();
             }, 1000);
+        });
+
+        async function updateBarberStatus(barberDocId, newStatus) {
+            if (!window.db || !window.firebaseModules) {
+                alert("ระบบฐานข้อมูลยังไม่พร้อมใช้งาน");
+                return;
+            }
+
+            try {
+                const { doc, updateDoc } = window.firebaseModules;
+
+                // อัปเดตฟิลด์ status ลงในคอลเลกชัน barbers ตาม Document ID ของช่าง (เช่น 'barber-kong')
+                const barberRef = doc(window.db, "barbers", barberDocId);
+                await updateDoc(barberRef, {
+                    status: newStatus // ค่าจะเป็น 'available' (คิวว่าง) หรือ 'busy' (ติดคิว)
+                });
+
+                console.log(`อัปเดตสถานะช่าง ${barberDocId} เป็น ${newStatus} สำเร็จ`);
+
+                if (typeof showToast === 'function') {
+                    showToast(`เปลี่ยนสถานะช่างเป็น '${newStatus === 'available' ? 'คิวว่าง' : 'ติดคิว'}' สำเร็จ`, 'success');
+                }
+            } catch (error) {
+                console.error("เกิดข้อผิดพลาดในการอัปเดตสถานะช่าง:", error);
+                alert("ไม่สามารถเปลี่ยนสถานะช่างได้: " + error.message);
+            }
+        }
+
+        // ฟังก์ชันฟังสถานะช่างแบบเรียลไทม์ฝั่ง User
+        function initRealtimeBarbers() {
+            if (!window.db || !window.firebaseModules) return;
+
+            const { collection, onSnapshot } = window.firebaseModules;
+
+            // ดึงข้อมูลจาก Collection "barbers" บน Firebase แบบเรียลไทม์
+            onSnapshot(collection(window.db, "barbers"), (snapshot) => {
+                if (!window.state) window.state = { barbers: [] };
+                window.state.barbers = [];
+
+                snapshot.forEach((doc) => {
+                    window.state.barbers.push({
+                        id: doc.id, // เช่น 'barber-kong', 'barber-joe'
+                        ...doc.data()
+                    });
+                });
+
+                // 🛑 สำคัญ: สั่งเรนเดอร์หน้าจอเลือกช่างฝั่ง User ทันทีที่ข้อมูลบน Firebase เปลี่ยน
+                if (typeof renderBarberSelectGrid === 'function') {
+                    renderBarberSelectGrid();
+                }
+
+                // เรนเดอร์แผงควบคุมฝั่งแอดมินด้วย (ถ้ามี)
+                if (typeof renderAdminBarberControls === 'function') {
+                    renderAdminBarberControls();
+                }
+
+                console.log("ซิงค์ข้อมูลช่างและอัปเดตตารางเลือกช่างเรียลไทม์สำเร็จ");
+            }, (error) => {
+                console.error("เกิดข้อผิดพลาดในการซิงค์ข้อมูลช่าง:", error);
+            });
+        }
+
+        // สั่งให้ทำงานเมื่อเปิดหน้าเว็บ
+        window.addEventListener('DOMContentLoaded', () => {
+            setTimeout(() => {
+                initRealtimeBarbers();
+            }, 1200);
         });
     </script>
 </body>
