@@ -2,14 +2,11 @@
 <html lang="th" class="dark">
 
 <head>
-    <!-- นำเข้า Firebase SDK -->
     <script type="module">
         // นำเข้า Firebase App และ Firestore จาก CDN ที่ถูกต้อง
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getFirestore, collection, addDoc, onSnapshot, getDocs, query, where, updateDoc, doc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
         import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-analytics.js";
-
-        // 1. 🔑 ค่า config ของคุณ
         const firebaseConfig = {
             apiKey: "AIzaSyDVenyDbUvNMGdvgDxoqLuUCHl0jzBw_jA",
             authDomain: "khamhaicut.firebaseapp.com",
@@ -19,22 +16,16 @@
             appId: "1:359072565539:web:6fc05e9b75c1fd5147a496",
             measurementId: "G-4YVB4GBKLL"
         };
-
-        // 2. เริ่มต้นเชื่อมต่อ Firebase
         const app = initializeApp(firebaseConfig);
         const analytics = getAnalytics(app);
         const db = getFirestore(app);
-
-        // เก็บไว้ให้ฟังก์ชันต่างๆ ในเว็บเรียกใช้งาน
         window.db = db;
         window.firebaseModules = { collection, addDoc, onSnapshot, getDocs, query, where, updateDoc, doc };
-
         console.log("Firebase Connected Successfully!");
     </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>THE CUT & CRAFT - Premium Barber Shop</title>
-    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -61,13 +52,10 @@
             }
         }
     </script>
-    <!-- Google Fonts: Kanit -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <!-- FontAwesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Chart.js CDN -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         body {
@@ -110,20 +98,12 @@
 </head>
 
 <body class="min-h-screen flex flex-col justify-between">
-
-    <!-- Notification / Toast Container -->
     <div id="toast-container" class="fixed top-5 right-5 z-50 flex flex-col gap-3 max-w-sm w-full pointer-events-none">
     </div>
-
-    <!-- Navigation Header -->
     <header class="bg-dark-800 border-b border-dark-700 sticky top-0 z-40 shadow-xl">
-        <!-- เปลี่ยนจาก max-w-7xl เป็น w-full และปรับ padding ด้านข้างให้พอดีกับจอใหญ่ -->
         <div class="w-full px-4 sm:px-8 lg:px-12">
             <div class="flex justify-between items-center h-20">
-
-                <!-- ฝั่งซ้าย: โลโก้ และ เมนูนำทาง (จับมารวมกลุ่มกันเพื่อให้ดันออกซ้าย-ขวาได้สมดุล) -->
                 <div class="flex items-center gap-8 lg:gap-12">
-                    <!-- Brand Logo -->
                     <div class="flex items-center gap-2 cursor-pointer" onclick="navigateTo('home')">
                         <div
                             class="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-br from-amber-500 to-amber-700 flex items-center justify-center text-dark-900 font-bold text-xl sm:text-2xl shadow-lg shadow-amber-500/20">
@@ -136,8 +116,6 @@
                                 class="text-[10px] sm:text-xs text-amber-500 font-medium tracking-widest uppercase">BARBER</span>
                         </div>
                     </div>
-
-                    <!-- Desktop Navigation Links (ขยายช่องไฟระหว่างเมนูด้วย gap-8 หรือ gap-10) -->
                     <nav class="hidden md:flex items-center gap-8 lg:gap-10">
                         <button onclick="navigateTo('home')"
                             class="nav-link text-gray-300 hover:text-amber-500 font-medium transition py-2 text-base">หน้าหลัก</button>
@@ -149,8 +127,6 @@
                             class="nav-link text-gray-300 hover:text-amber-500 font-medium transition py-2 text-base">ประวัติการจอง</button>
                     </nav>
                 </div>
-
-                <!-- ฝั่งขวา: ปุ่มสลับ Role / ข้อมูลผู้ใช้ / ปุ่ม 3 ขีดมือถือ -->
                 <div class="flex items-center gap-3">
                     <!-- Quick Role Switcher -->
                     <div id="role-switcher"
@@ -162,8 +138,6 @@
                         <button id="role-admin-btn" onclick="switchRole('admin')"
                             class="px-2 py-1 rounded-md font-semibold text-gray-400 hover:text-white transition">Admin</button>
                     </div>
-
-                    <!-- User Profile / Login -->
                     <div id="auth-buttons">
                         <button onclick="openModal('auth-modal')"
                             class="bg-amber-500 hover:bg-amber-600 text-dark-900 font-semibold px-3 py-2 rounded-lg text-xs transition flex items-center gap-1">
@@ -591,24 +565,6 @@
 
         <!-- ================= PAGE: ADMIN DASHBOARD ================= -->
         <section id="page-admin" class="page-section hidden space-y-8">
-            <div
-                class="border-b border-dark-700 pb-5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                <div>
-                    <div class="flex items-center gap-2">
-                        <span class="bg-amber-500 text-dark-900 text-xs font-bold px-2.5 py-0.5 rounded">ADMIN
-                            CONTROL</span>
-                        <h1 class="text-3xl font-extrabold text-white">ระบบหลังบ้านร้านตัดผม</h1>
-                    </div>
-                    <p class="text-gray-400 mt-1">สรุปรายได้ การจัดการคิวลูกค้า และเปลี่ยนสถานะช่างตัดผม</p>
-                </div>
-                <div class="flex gap-2">
-                    <button onclick="seedDemoData()"
-                        class="bg-dark-700 hover:bg-dark-600 text-amber-400 text-xs font-semibold px-3 py-2 rounded-lg border border-dark-600">
-                        <i class="fa-solid fa-database"></i> สุ่มข้อมูลตัวอย่าง
-                    </button>
-                </div>
-            </div>
-
             <!-- Revenue Summary Cards (Daily, Weekly, Monthly) -->
             <!-- 🛑 เพิ่ม id="revenue-cards-container" ไว้ที่ div นอกสุดตรงนี้ครับ -->
             <div id="revenue-cards-container" class="grid grid-cols-1 sm:grid-cols-3 gap-6">
@@ -1025,6 +981,11 @@
             if (typeof renderAdminBookingsTable === 'function') renderAdminBookingsTable();
             if (typeof initChart === 'function') initChart();
             if (typeof updateRevenueStats === 'function') updateRevenueStats();
+
+            // 🌟 เพิ่มการสั่งอัปเดตแดชบอร์ดรายได้จากข้อมูลจริงทันทีตอนรีเฟรชหน้าจอ
+            if (typeof updateAdminRevenueDashboard === 'function') {
+                updateAdminRevenueDashboard('daily');
+            }
 
             if (typeof initRealtimeBarbers === 'function') {
                 initRealtimeBarbers();
@@ -2424,21 +2385,26 @@
                             });
                             console.log(`อัปเดตสถานะบน Firebase สำเร็จ (${targetFirestoreId}): ${newStatus}`);
                         } else {
-                            alert("ไม่พบรหัสเอกสารบนคลาวด์สำหรับอัปเดต");
-                            return;
+                            console.warn("ไม่พบรหัสเอกสารบนคลาวด์สำหรับอัปเดต (อัปเดตเฉพาะ Local)");
                         }
                     }
 
                     // 3. อัปเดตสถานะในตัวแปร Local ทันที
                     bk.status = newStatus;
 
-                    // (ทางเลือก) อัปเดต LocalStorage เผื่อกรณีใช้งานแบบออฟไลน์
-                    localStorage.setItem('barber_bookings', JSON.stringify(state.bookings));
+                    // 🌟 แก้ไขชื่อคีย์ให้ตรงกัน เพื่อให้ระบบดึงข้อมูลไปคำนวณรายได้ได้ถูกต้อง
+                    localStorage.setItem('barber_shop_bookings', JSON.stringify(state.bookings));
 
-                    // 4. อัปเดตหน้าจอทั้งหมด
+                    // 4. อัปเดตหน้าจอทั้งหมดรวมถึงแดชบอร์ดรายได้
                     if (typeof renderAdminBookingsTable === 'function') renderAdminBookingsTable();
                     if (typeof renderUserBookingsTable === 'function') renderUserBookingsTable();
-                    if (typeof updateRevenueStats === 'function') updateRevenueStats();
+
+                    // 🌟 เพิ่มบรรทัดเรียกอัปเดตรายได้ตรงนี้ เพื่อให้กราฟและการ์ดเปลี่ยนตามทันที
+                    if (typeof updateAdminRevenueDashboard === 'function') {
+                        updateAdminRevenueDashboard();
+                    } else if (typeof updateRevenueStats === 'function') {
+                        updateRevenueStats();
+                    }
 
                     if (typeof showToast === 'function') {
                         showToast(`อัปเดตสถานะคิว ${bk.id || id} เป็น '${newStatus}' สำเร็จ`, 'success');
@@ -2469,7 +2435,7 @@
             const weeklyRev = completed.reduce((sum, b) => sum + b.price, 0);
 
             // Monthly
-            const monthlyRev = weeklyRev + 12500; // Adding mock historical total
+            const monthlyRev = weeklyRev; // Adding mock historical total
 
             document.getElementById('stat-daily-revenue').textContent = `฿${dailyRev.toLocaleString()}`;
             document.getElementById('stat-daily-count').textContent = `${dailyList.length} คิวที่เสร็จสิ้นวันนี้`;
@@ -2478,7 +2444,7 @@
             document.getElementById('stat-weekly-count').textContent = `${completed.length} คิวในสัปดาห์นี้`;
 
             document.getElementById('stat-monthly-revenue').textContent = `฿${monthlyRev.toLocaleString()}`;
-            document.getElementById('stat-monthly-count').textContent = `${completed.length + 35} คิวในเดือนนี้`;
+            document.getElementById('stat-monthly-count').textContent = `${completed.length} คิวในเดือนนี้`;
 
             // Update Chart Data
             if (state.revenueChartInstance) {
@@ -2613,37 +2579,6 @@
                 };
             }
         }
-
-        /* ================= DEMO HELPER ================= */
-        function seedDemoData() {
-            const styles = ['Fade & Undercut', 'Two-Block Classic', 'Beard Trim & Haircut', 'Pompadour / Slick Back'];
-            const barbers = ['ช่างเอก (Master Barber)', 'ช่างบอย (Fade Specialist)', 'ช่างต้น (K-Style Expert)'];
-            const ages = ['ผู้ใหญ่ (Adults)', 'เด็ก (Kids)', 'ผู้สูงอายุ (Seniors)'];
-            const names = ['วิชัย เมตตา', 'ชลทิตย์ บุญมี', 'พีระพงษ์ สุขสันต์', 'ธนกฤต ชัยยะ'];
-
-            const randomItem = {
-                id: 'BK-' + Math.floor(1000 + Math.random() * 9000),
-                userId: 'demo@user.com',
-                userName: names[Math.floor(Math.random() * names.length)],
-                userPhone: '081-' + Math.floor(1000000 + Math.random() * 9000000),
-                styleName: styles[Math.floor(Math.random() * styles.length)],
-                ageGroupLabel: ages[Math.floor(Math.random() * ages.length)],
-                barberName: barbers[Math.floor(Math.random() * barbers.length)],
-                date: new Date().toISOString().split('T')[0],
-                time: '16:00',
-                price: Math.floor(Math.random() * 3 + 2) * 100,
-                status: 'completed',
-                createdAt: new Date().toISOString()
-            };
-
-            state.bookings.unshift(randomItem);
-            updateRevenueStats();
-            renderAdminBookingsTable();
-            renderUserBookingsTable();
-            showToast('สุ่มเพิ่มคิวตัวอย่างสถิติเรียบร้อย', 'success');
-        }
-
-        /* ================= TOAST NOTIFICATION SYSTEM ================= */
         function showToast(message, type = 'info') {
             const container = document.getElementById('toast-container');
             if (!container) return;
@@ -2681,32 +2616,59 @@
             const ctx = document.getElementById('revenueChart');
             if (!ctx) return;
 
-            // กรองเอาเฉพาะคิวที่เสร็จสิ้น (completed)
-            const completedBookings = state.bookings.filter(b => b.status === 'completed');
+            // 1. ดึงข้อมูลการจองล่าสุดจาก state หรือ localStorage
+            let allBookings = [];
+            try {
+                const saved = localStorage.getItem('barber_shop_bookings') || localStorage.getItem('bookings');
+                if (saved) {
+                    allBookings = JSON.parse(saved);
+                } else if (typeof state !== 'undefined' && state.bookings) {
+                    allBookings = state.bookings;
+                }
+            } catch (e) {
+                allBookings = [];
+            }
 
-            // จัดกลุ่มข้อมูลตามช่วงเวลา (ตัวอย่างแบบ รายวัน / daily)
+            // 2. กรองเอาเฉพาะคิวที่เสร็จสิ้น (รองรับหลายรูปแบบสถานะ หรือดึงทั้งหมดถ้าไม่มีการเช็กสถานะ)
+            const completedBookings = allBookings.filter(b => {
+                const status = String(b.status || '').toLowerCase();
+                // ถ้าสถานะว่าง หรือเป็นคำที่สื่อว่าเสร็จสิ้น ให้ดึงมาแสดง
+                return status === 'completed' || status === 'success' || status === 'finished' || status === 'confirmed' || !b.status;
+            });
+
+            // 3. จัดกลุ่มข้อมูลตามวันที่และคำนวณยอดรวมรายได้
+            const dailyMap = {};
+            completedBookings.forEach(b => {
+                const rawDate = b.date || '';
+                const dateKey = rawDate.includes('T') ? rawDate.split('T')[0] : rawDate.substring(0, 10);
+
+                if (!dateKey) return;
+
+                // ดึงราคาจากฟิลด์ที่เป็นไปได้ทั้งหมด
+                const price = Number(b.calculatedTotal || b.totalPrice || b.price || 0);
+
+                dailyMap[dateKey] = (dailyMap[dateKey] || 0) + price;
+            });
+
             const labels = [];
             const revenueData = [];
 
-            // รวบรวมวันที่และคำนวณยอดรวมรายได้ของแต่ละวัน
-            const dailyMap = {};
-            completedBookings.forEach(b => {
-                const dateKey = b.date;
-                dailyMap[dateKey] = (dailyMap[dateKey] || 0) + (b.price || 0);
+            // เรียงลำดับวันที่จากน้อยไปมาก
+            const sortedDates = Object.keys(dailyMap).sort();
+            sortedDates.forEach(date => {
+                labels.push(date);
+                revenueData.push(dailyMap[date]);
             });
 
-            for (const [date, total] of Object.entries(dailyMap)) {
-                labels.push(date);
-                revenueData.push(total);
-            }
-
-            // ทำลาย Chart เดิมก่อนวาดใหม่ (ป้องกัน Chart ซ้อนทับ)
-            if (state.revenueChartInstance) {
+            // 4. ทำลาย Chart เดิมก่อนวาดใหม่ (ป้องกัน Chart ซ้อนทับ)
+            if (typeof state !== 'undefined' && state.revenueChartInstance) {
                 state.revenueChartInstance.destroy();
+            } else if (window.myRevenueChart) {
+                window.myRevenueChart.destroy();
             }
 
-            // สร้าง Chart ใหม่จากข้อมูลจริง
-            state.revenueChartInstance = new Chart(ctx, {
+            // 5. สร้าง Chart ใหม่จากข้อมูลจริง
+            const newChart = new Chart(ctx, {
                 type: 'bar',
                 data: {
                     labels: labels.length > 0 ? labels : ['ไม่มีข้อมูล'],
@@ -2714,20 +2676,37 @@
                         label: 'รายได้สุทธิ (บาท)',
                         data: revenueData.length > 0 ? revenueData : [0],
                         backgroundColor: '#f59e0b',
+                        borderColor: '#d97706',
+                        borderWidth: 1,
                         borderRadius: 8
                     }]
                 },
                 options: {
                     responsive: true,
+                    maintainAspectRatio: false,
                     plugins: {
                         legend: { labels: { color: '#e6edf3' } }
                     },
                     scales: {
-                        x: { ticks: { color: '#9ca3af' }, grid: { color: '#22272e' } },
-                        y: { ticks: { color: '#9ca3af' }, grid: { color: '#22272e' } }
+                        x: {
+                            ticks: { color: '#9ca3af' },
+                            grid: { color: '#22272e' }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            ticks: { color: '#9ca3af' },
+                            grid: { color: '#22272e' }
+                        }
                     }
                 }
             });
+
+            // เก็บ instance ไว้ทำลายครั้งถัดไป
+            if (typeof state !== 'undefined') {
+                state.revenueChartInstance = newChart;
+            } else {
+                window.myRevenueChart = newChart;
+            }
         }
         function initBookingForm() {
             // 1. ตรวจสอบว่ามีผู้ใช้เข้าสู่ระบบอยู่หรือไม่
@@ -3932,54 +3911,347 @@
             }).join('');
         }
 
-        // function renderBookingBarbers() {
-        //     // 🌟 เปลี่ยน ID ให้ตรงกับ Container หรือ Dropdown เลือกช่างในหน้าจองคิวของก้อง
-        //     // (เช่น ถ้าเป็น Grid เลือกช่าง: 'booking-barbers-grid' หรือถ้าเป็น Dropdown: 'barber-select')
-        //     const container = document.getElementById('booking-barbers-grid');
-        //     if (!container) return;
+        // ตัวเก็บสถานะฟิลเตอร์กราฟปัจจุบัน ('daily', 'weekly', 'monthly')
+        let currentRevenueFilter = 'daily';
+        let revenueChartInstance = null; // เก็บ instance ของ Chart.js
 
-        //     // 1. ดึงข้อมูลช่างล่าสุดจาก LocalStorage หรือตัวแปรกลาง
-        //     let currentBarbers = [];
-        //     try {
-        //         const savedBarbers = localStorage.getItem('barber_shop_barbers');
-        //         if (savedBarbers) {
-        //             currentBarbers = JSON.parse(savedBarbers);
-        //         } else if (window.barbers) {
-        //             currentBarbers = window.barbers;
-        //         } else if (typeof state !== 'undefined' && state.barbers) {
-        //             currentBarbers = state.barbers;
-        //         }
-        //     } catch (e) {
-        //         currentBarbers = [];
-        //     }
+        // ฟังก์ชันหลักสำหรับคำนวณและอัปเดตข้อมูลรายได้ทั้งหมดในหน้า Admin
+        // ตัวแปรเก็บสถานะฟิลเตอร์ปัจจุบัน ('daily', 'weekly', 'monthly')
 
-        //     // 2. ดึงสถานะเปิด/ปิดร้านจาก LocalStorage
-        //     const savedShopStatus = localStorage.getItem('barber_shop_open_status');
-        //     const isOpen = savedShopStatus !== null ? (savedShopStatus === 'true') : true;
+        // ฟังก์ชันหลัก: คำนวณรายได้อัปเดตการ์ด และวาดกราฟตามข้อมูลจริงในระบบ
+        // ฟังก์ชันหลัก: คำนวณรายได้อัปเดตการ์ด และวาดกราฟจากข้อมูลจริง (กรองคิวที่ยกเลิกออก)
+        function updateAdminRevenueDashboard(filterType = null) {
+            if (filterType) {
+                currentRevenueFilter = filterType;
+                updateFilterButtonUI(filterType);
+            }
 
-        //     container.innerHTML = currentBarbers.map(b => {
-        //         const isClosed = !isOpen || b.status === 'closed';
+            let allBookings = [];
+            try {
+                const savedBookings = localStorage.getItem('barber_shop_bookings');
+                if (savedBookings) {
+                    allBookings = JSON.parse(savedBookings);
+                } else if (typeof state !== 'undefined' && state.bookings) {
+                    allBookings = state.bookings;
+                }
+            } catch (e) {
+                allBookings = [];
+            }
 
-        //         // 3. ตรวจสอบสถานะว่างแบบยืดหยุ่น
-        //         const statusStr = String(b.status || '').trim().toLowerCase();
-        //         const isAvailable = !isClosed && (
-        //             statusStr === 'available' ||
-        //             statusStr === 'ว่าง' ||
-        //             b.isAvailable === true ||
-        //             statusStr === 'true'
-        //         );
+            const now = new Date();
+            const todayStr = now.toISOString().split('T')[0]; // วันนี้ YYYY-MM-DD
+            const currentYear = now.getFullYear();
+            const currentMonth = String(now.getMonth() + 1).padStart(2, '0'); // เดือนปัจจุบันแบบ '03', '11' ฯลฯ
+            const currentYearMonth = `${currentYear}-${currentMonth}`; // เช่น '2026-11'
 
-        //         let statusText = isClosed ? 'ปิดบริการ' : (isAvailable ? 'ว่าง' : 'ติดคิว');
-        //         let badgeColor = isClosed ? 'text-gray-400' : (isAvailable ? 'text-emerald-400' : 'text-red-400');
+            let dailyRev = 0, dailyCount = 0;
+            let weeklyRev = 0, weeklyCount = 0;
+            let monthlyRev = 0, monthlyCount = 0;
 
-        //         return `
-        //     <div class="booking-barber-card ...">
-        //         <!-- โครงสร้างการแสดงผลช่างในหน้าจองคิว -->
-        //         <span class="${badgeColor}">(${statusText})</span>
-        //     </div>
-        // `;
-        //     }).join('');
-        // }
+            const sevenDaysAgo = new Date(now);
+            sevenDaysAgo.setDate(now.getDate() - 7);
+
+            const chartDataMap = {};
+
+            allBookings.forEach(b => {
+                const rawStatus = String(b.status || '').toLowerCase().trim();
+                // ข้ามรายการที่ยกเลิก
+                if (rawStatus === 'cancelled' || rawStatus === 'canceled' || rawStatus === 'ยกเลิก') {
+                    return;
+                }
+
+                const rawDate = b.date || '';
+                const bookingDateStr = rawDate.includes('T') ? rawDate.split('T')[0] : rawDate.substring(0, 10);
+                const price = Number(b.calculatedTotal || b.totalPrice || b.price || 0);
+
+                if (!bookingDateStr) return;
+                const bDate = new Date(bookingDateStr);
+
+                // 1. รายวัน (เฉพาะวันนี้เป๊ะๆ)
+                if (bookingDateStr === todayStr) {
+                    dailyRev += price;
+                    dailyCount++;
+                }
+
+                // 2. รายสัปดาห์ (7 วันย้อนหลัง)
+                if (bDate >= sevenDaysAgo && bDate <= now) {
+                    weeklyRev += price;
+                    weeklyCount++;
+                }
+
+                // 3. รายเดือน (ต้องตรงกับปีและเดือนปัจจุบันจริงๆ เท่านั้น เช่น '2026-11')
+                // ตรงนี้จะช่วยตัดข้อมูลจำลองเดือนเก่าหรือเดือนอื่นออกทันที
+                if (bookingDateStr.startsWith(currentYearMonth)) {
+                    monthlyRev += price;
+                    monthlyCount++;
+                }
+
+                // กรองข้อมูลใส่กราฟตามฟิลเตอร์
+                let shouldInclude = false;
+                if (currentRevenueFilter === 'daily') {
+                    if (bookingDateStr === todayStr) shouldInclude = true;
+                } else if (currentRevenueFilter === 'weekly') {
+                    if (bDate >= sevenDaysAgo && bDate <= now) shouldInclude = true;
+                } else if (currentRevenueFilter === 'monthly') {
+                    if (bookingDateStr.startsWith(currentYearMonth)) shouldInclude = true;
+                }
+
+                if (shouldInclude) {
+                    chartDataMap[bookingDateStr] = (chartDataMap[bookingDateStr] || 0) + price;
+                }
+            });
+
+            // อัปเดตตัวเลขลง HTML
+            const setElemText = (id, text) => {
+                const el = document.getElementById(id);
+                if (el) el.textContent = text;
+            };
+
+            setElemText('stat-daily-revenue', `฿${dailyRev.toLocaleString()}`);
+            setElemText('stat-daily-count', `${dailyCount} คิวที่เสร็จสิ้นวันนี้`);
+
+            setElemText('stat-weekly-revenue', `฿${weeklyRev.toLocaleString()}`);
+            setElemText('stat-weekly-count', `${weeklyCount} คิวในสัปดาห์นี้`);
+
+            setElemText('stat-monthly-revenue', `฿${monthlyRev.toLocaleString()}`);
+            setElemText('stat-monthly-count', `${monthlyCount} คิวในเดือนนี้`);
+
+            renderRealRevenueChart(chartDataMap);
+        }
+
+        // ฟังก์ชันสลับสีปุ่มฟิลเตอร์
+        function updateFilterButtonUI(filterType) {
+            ['daily', 'weekly', 'monthly'].forEach(type => {
+                const btnId = type === 'daily' ? 'chart-filter-day' : (type === 'weekly' ? 'chart-filter-week' : 'chart-filter-month');
+                const btn = document.getElementById(btnId);
+                if (!btn) return;
+
+                if (type === filterType) {
+                    btn.className = "px-3 py-1.5 rounded-md text-xs font-semibold transition bg-amber-500 text-dark-900";
+                } else {
+                    btn.className = "px-3 py-1.5 rounded-md text-xs font-semibold text-gray-400 hover:text-white transition";
+                }
+            });
+        }
+
+        // ฟังก์ชันวาดกราฟ Chart.js จากข้อมูลจริง
+        function renderRealRevenueChart(dataMap) {
+            const ctx = document.getElementById('revenueChart');
+            if (!ctx) return;
+
+            const sortedKeys = Object.keys(dataMap).sort();
+            const labels = sortedKeys.length > 0 ? sortedKeys : ['ไม่มีข้อมูลในช่วงเวลานี้'];
+            const revenueData = sortedKeys.length > 0 ? sortedKeys.map(k => dataMap[k]) : [0];
+
+            // ทำลายกราฟเก่าทิ้งก่อนสร้างใหม่เพื่อป้องกันบั๊กซ้อนทับ
+            if (revenueChartInstance) {
+                revenueChartInstance.destroy();
+            }
+
+            revenueChartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'รายได้จริง (บาท)',
+                        data: revenueData,
+                        backgroundColor: '#f59e0b',
+                        borderColor: '#d97706',
+                        borderWidth: 1,
+                        borderRadius: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        x: { ticks: { color: '#9ca3af' }, grid: { color: '#22272e' } },
+                        y: { beginAtZero: true, ticks: { color: '#9ca3af' }, grid: { color: '#22272e' } }
+                    }
+                }
+            });
+        }
+
+        // ฟังก์ชันเชื่อมกับปุ่มกดใน HTML (รายวัน / รายสัปดาห์ / รายเดือน)
+        function updateChartFilter(filter) {
+            let filterKey = 'daily';
+            if (filter === 'weekly' || filter === 'week') filterKey = 'weekly';
+            if (filter === 'monthly' || filter === 'month') filterKey = 'monthly';
+
+            updateAdminRevenueDashboard(filterKey);
+        }
+
+        // ฟังก์ชันสลับมุมมองกราฟเมื่อกดปุ่ม รายวัน/รายสัปดาห์/รายเดือน
+        function updateChartFilter(filterType) {
+            currentRevenueFilter = filterType;
+
+            // สลับคลาสสี active ของปุ่ม
+            ['day', 'week', 'month'].forEach(type => {
+                const btn = document.getElementById(`chart-filter-${type}`);
+                if (!btn) return;
+                if ((type === 'day' && filterType === 'daily') ||
+                    (type === 'week' && filterType === 'weekly') ||
+                    (type === 'month' && filterType === 'monthly')) {
+                    btn.className = "px-3 py-1.5 rounded-md text-xs font-semibold transition bg-amber-500 text-dark-900";
+                } else {
+                    btn.className = "px-3 py-1.5 rounded-md text-xs font-semibold text-gray-400 hover:text-white transition";
+                }
+            });
+
+            // คำนวณและวาดกราฟใหม่ตามฟิลเตอร์ที่เลือก
+            updateAdminRevenueDashboard();
+        }
+
+        // ฟังก์ชันวาดกราฟด้วย Chart.js
+        function renderRevenueChart(dataMap) {
+            const canvas = document.getElementById('revenueChart');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+
+            // เรียงลำดับ Key (วันที่ หรือ เดือน)
+            const sortedKeys = Object.keys(dataMap).sort();
+            const labels = sortedKeys;
+            const values = sortedKeys.map(k => dataMap[k]);
+
+            if (revenueChartInstance) {
+                revenueChartInstance.data.labels = labels;
+                revenueChartInstance.data.datasets[0].data = values;
+                revenueChartInstance.update();
+            } else {
+                revenueChartInstance = new Chart(ctx, {
+                    type: 'bar', // สามารถเปลี่ยนเป็น 'line' ได้ถ้าชอบกราฟเส้น
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'ยอดรายได้ (บาท)',
+                            data: values,
+                            backgroundColor: '#f59e0b', // สีส้มทองธีมร้านตัดผม
+                            borderColor: '#d97706',
+                            borderWidth: 1,
+                            borderRadius: 6
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                grid: { color: 'rgba(55, 65, 81, 0.4)' },
+                                ticks: { color: '#9ca3af', font: { size: 11 } }
+                            },
+                            x: {
+                                grid: { display: false },
+                                ticks: { color: '#9ca3af', font: { size: 11 } }
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+        // ฟังก์ชันวาดกราฟที่ปลอดภัย ไม่เกิด Error ซ้ำซ้อน
+        function renderRealRevenueChart(chartDataMap) {
+            const canvas = document.getElementById('revenueChart');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            if (!ctx) return;
+
+            // ถ้า chartDataMap ไม่มา หรือไม่ใช่ Object ให้ป้องกันไว้ก่อน
+            if (!chartDataMap || typeof chartDataMap !== 'object') {
+                chartDataMap = {};
+            }
+
+            // จัดเรียงวันที่จากน้อยไปมาก
+            const sortedDates = Object.keys(chartDataMap).sort();
+            const labels = sortedDates.map(dateStr => {
+                const parts = dateStr.split('-');
+                return parts.length >= 3 ? `${parts[2]}/${parts[1]}` : dateStr;
+            });
+            const dataValues = sortedDates.map(dateStr => chartDataMap[dateStr]);
+
+            // ถ้ายังไม่มีข้อมูลเลย ให้แสดงข้อมูลหลอกเป็นวันนี้ 0 บาท เพื่อป้องกันกราฟพัง
+            const finalLabels = labels.length > 0 ? labels : [new Date().toISOString().split('T')[0].split('-').reverse().join('/')];
+            const finalData = dataValues.length > 0 ? dataValues : [0];
+
+            // ทำลายกราฟตัวเก่าทิ้งก่อนสร้างใหม่ ป้องกัน Error Canvas is already in use
+            if (window.myRevenueChartInstance && typeof window.myRevenueChartInstance.destroy === 'function') {
+                window.myRevenueChartInstance.destroy();
+            } else if (typeof state !== 'undefined' && state.revenueChartInstance && typeof state.revenueChartInstance.destroy === 'function') {
+                state.revenueChartInstance.destroy();
+            }
+
+            const gradient = ctx.createLinearGradient(0, 0, 0, 300);
+            gradient.addColorStop(0, 'rgba(245, 158, 11, 0.4)');
+            gradient.addColorStop(1, 'rgba(245, 158, 11, 0.0)');
+
+            // สร้างกราฟใหม่
+            window.myRevenueChartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: finalLabels,
+                    datasets: [{
+                        label: 'รายได้',
+                        data: finalData,
+                        borderColor: '#f59e0b',
+                        backgroundColor: gradient,
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.3,
+                        pointBackgroundColor: '#f59e0b',
+                        pointBorderColor: '#181b20',
+                        pointBorderWidth: 2,
+                        pointRadius: 4,
+                        pointHoverRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: '#181b20',
+                            titleColor: '#f59e0b',
+                            bodyColor: '#ffffff',
+                            borderColor: '#333a45',
+                            borderWidth: 1,
+                            padding: 12,
+                            displayColors: false,
+                            callbacks: {
+                                label: function (context) {
+                                    return `รายได้: ฿${context.parsed.y.toLocaleString()}`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: { color: '#22272e' },
+                            ticks: { color: '#9ca3af' }
+                        },
+                        y: {
+                            grid: { color: '#22272e' },
+                            ticks: {
+                                color: '#9ca3af',
+                                callback: function (value) { return '฿' + value; }
+                            },
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+
+            if (typeof state !== 'undefined') {
+                state.revenueChartInstance = window.myRevenueChartInstance;
+            }
+        }
 
     </script>
     <!-- Modal ข้อมูลส่วนตัว -->
