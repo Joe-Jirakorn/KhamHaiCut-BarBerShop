@@ -192,6 +192,13 @@
                                 class="w-full text-left px-4 py-2.5 text-sm text-gray-300 hover:bg-dark-700 flex items-center gap-2">
                                 <i class="fa-solid fa-calendar-check text-amber-500"></i> ประวัติคิวของฉัน
                             </button>
+
+                            <!-- 🌟 เพิ่มปุ่มข้อมูลส่วนตัวตรงนี้ (พร้อมไอคอนรูปเฟือง/โปรไฟล์ให้เข้ากัน) -->
+                            <button onclick="openProfileModal()"
+                                class="w-full text-left px-4 py-2.5 text-sm text-gray-300 hover:bg-dark-700 flex items-center gap-2">
+                                <i class="fa-solid fa-user-gear text-amber-500"></i> ข้อมูลส่วนตัว
+                            </button>
+
                             <div id="admin-menu-option" class="hidden">
                                 <button onclick="navigateTo('admin')"
                                     class="w-full text-left px-4 py-2.5 text-sm text-amber-400 hover:bg-dark-700 flex items-center gap-2">
@@ -867,9 +874,9 @@
             ],
 
             // Barbers Data
-            barbers: [
-                { id: 'b1', name: 'ช่างก้อง (เจ้าของร้าน)', status: 'available', exp: 'ประสบการณ์ 1 ปี ชื่นชอบด้านการเฟด', avatar: 'https://i.postimg.cc/8FR1mMtP/858525001-1129326712975883-8607776798710260414-n.jpg' },
-                { id: 'b2', name: 'ช่างโจ (ช่างประจำร้าน)', status: 'available', exp: 'ประสบการณ์ 5 ปี เชี่ยวชาญเฟดสายอเมริกัน', avatar: 'https://i.postimg.cc/qMrLWY3v/863844196-1134350642473490-5849783856972700037-n.jpg' },
+            barbers: JSON.parse(localStorage.getItem('barber_shop_barbers')) || [
+                { id: 'b1', name: 'ช่างก้อง (เจ้าของร้าน)', email: 'phongsakorn2115@gmail.com', status: 'available', exp: 'ประสบการณ์ 1 ปี ชื่นชอบด้านการเฟด', avatar: 'https://i.postimg.cc/8FR1mMtP/858525001-1129326712975883-8607776798710260414-n.jpg' },
+                { id: 'b2', name: 'ช่างโจ (ช่างประจำร้าน)', email: 'phongsakorn7420@gmail.com', status: 'available', exp: 'ประสบการณ์ 5 ปี เชี่ยวชาญเฟดสายอเมริกัน', avatar: 'https://i.postimg.cc/qMrLWY3v/863844196-1134350642473490-5849783856972700037-n.jpg' },
             ],
 
             // Booking Form State (เพิ่ม addons เข้ามาเพื่อรองรับบริการเสริม)
@@ -1105,19 +1112,25 @@
             const revenueFilters = document.getElementById('revenue-filters') || document.querySelector('.revenue-filter-buttons') || document.querySelector('.flex.space-x-2');
             const revenueCanvas = document.getElementById('revenueChart') || document.getElementById('revenue-chart-canvas');
 
-            // 🌟 เพิ่มตัวแปรดึง "การ์ดรายได้ 3 กล่องด้านบน" และ "ก้อนแม่สุดของกราฟ"
+            // 🌟 ตัวแปรการ์ดรายได้และกล่องกราฟ
             const revenueCardsContainer = document.getElementById('revenue-cards-container') || document.querySelector('.grid.grid-cols-1.md\\:grid-cols-3');
             const revenueSectionWrapper = document.getElementById('revenue-section-wrapper') || revenueSection?.closest('.bg-dark-800.p-6');
 
+            // 🌟 เพิ่มตัวแปรดึงหัวข้อ "ADMIN CONTROL ระบบหลังบ้านร้านตัดผม" ด้านบนสุด
+            const adminHeaderTitle = pageAdmin ? pageAdmin.querySelector('.bg-amber-500')?.closest('div')?.parentElement || pageAdmin.querySelector('h1, h2, .flex.items-center.gap-2') : null;
+            // หรือดึงจากข้อความหัวข้อโดยตรง (ถ้ามี id หรือคลาสเฉพาะ สามารถเปลี่ยนมาใช้ getElementById ได้ครับ)
+            const adminControlHeaderBox = pageAdmin ? pageAdmin.firstElementChild : null;
+
             // 2. ควบคุมการแสดงผลแบบ "สลับหน้า" อย่างเด็ดขาด
             if (role === 'admin') {
-                // 👑 โหมด Admin: เปิดครบทุกส่วน
+                // 👑 โหมด Admin: เปิดครบทุกส่วนรวมถึงหัวข้อหลังบ้าน
                 if (pageHome) { pageHome.classList.add('hidden'); pageHome.style.display = 'none'; }
                 if (bookingSection) { bookingSection.classList.add('hidden'); bookingSection.style.display = 'none'; }
                 if (barbersSection) { barbersSection.classList.add('hidden'); barbersSection.style.display = 'none'; }
                 if (historySection) { historySection.classList.add('hidden'); historySection.style.display = 'none'; }
 
                 if (pageAdmin) { pageAdmin.classList.remove('hidden'); pageAdmin.style.display = 'block'; }
+                if (adminControlHeaderBox) { adminControlHeaderBox.classList.remove('hidden'); adminControlHeaderBox.style.display = 'block'; }
                 if (revenueCardsContainer) { revenueCardsContainer.classList.remove('hidden'); revenueCardsContainer.style.display = 'grid'; }
                 if (revenueSectionWrapper) { revenueSectionWrapper.classList.remove('hidden'); revenueSectionWrapper.style.display = 'block'; }
                 if (revenueSection) { revenueSection.classList.remove('hidden'); revenueSection.style.display = 'block'; }
@@ -1129,7 +1142,7 @@
                 showToast('สลับเป็นโหมด Admin สำเร็จ', 'success');
 
             } else if (role === 'barber') {
-                // ✂️ โหมด Barber: ซ่อนหน้า User -> เปิดหลังบ้าน (ซ่อนการ์ดรายได้, กราฟ, และปุ่มเลือกช่วงเวลาทั้งหมด)
+                // ✂️ โหมด Barber: เปิดหลังบ้าน แต่สั่งซ่อน "ADMIN CONTROL", "การ์ดรายได้", "กราฟ" และขยับเนื้อหาขึ้น
                 if (pageHome) { pageHome.classList.add('hidden'); pageHome.style.display = 'none'; }
                 if (bookingSection) { bookingSection.classList.add('hidden'); bookingSection.style.display = 'none'; }
                 if (barbersSection) { barbersSection.classList.add('hidden'); barbersSection.style.display = 'none'; }
@@ -1137,15 +1150,17 @@
 
                 if (pageAdmin) { pageAdmin.classList.remove('hidden'); pageAdmin.style.display = 'block'; }
 
-                // 🛑 สั่งซ่อนการ์ดรายได้ 3 กล่องด้านบนแบบเด็ดขาด
-                if (revenueCardsContainer) { revenueCardsContainer.classList.add('hidden'); revenueCardsContainer.style.display = 'none'; }
+                // 🛑 ซ่อนหัวข้อ ADMIN CONTROL ระบบหลังบ้านร้านตัดผม ในโหมด Barber
+                if (adminControlHeaderBox) { adminControlHeaderBox.classList.add('hidden'); adminControlHeaderBox.style.display = 'none'; }
 
-                // 🛑 สั่งซ่อนก้อนกล่องกราฟและพื้นที่ว่างทั้งหมด เพื่อดึงพื้นที่ออกให้หัวข้อด้านล่างเลื่อนขึ้น
+                // 🛑 สั่งซ่อนการ์ดรายได้และกราฟ
+                if (revenueCardsContainer) { revenueCardsContainer.classList.add('hidden'); revenueCardsContainer.style.display = 'none'; }
                 if (revenueSectionWrapper) { revenueSectionWrapper.classList.add('hidden'); revenueSectionWrapper.style.display = 'none'; }
                 if (revenueSection) { revenueSection.classList.add('hidden'); revenueSection.style.display = 'none'; }
                 if (revenueFilters) { revenueFilters.classList.add('hidden'); revenueFilters.style.display = 'none'; }
                 if (revenueCanvas) { revenueCanvas.classList.add('hidden'); revenueCanvas.style.display = 'none'; }
 
+                // ให้แสดงส่วนจัดการสถานะช่างและตารางคิวตามปกติ
                 if (barberStatusControl) { barberStatusControl.classList.remove('hidden'); barberStatusControl.style.display = 'block'; }
                 if (allBookingsTable) { allBookingsTable.classList.remove('hidden'); allBookingsTable.style.display = 'block'; }
 
@@ -1159,10 +1174,11 @@
                 }
 
                 if (pageAdmin) { pageAdmin.classList.add('hidden'); pageAdmin.style.display = 'none'; }
+                if (adminControlHeaderBox) { adminControlHeaderBox.classList.add('hidden'); adminControlHeaderBox.style.display = 'none'; }
                 if (revenueCardsContainer) { revenueCardsContainer.classList.add('hidden'); revenueCardsContainer.style.display = 'none'; }
                 if (revenueSectionWrapper) { revenueSectionWrapper.classList.add('hidden'); revenueSectionWrapper.style.display = 'none'; }
                 if (revenueSection) { revenueSection.classList.add('hidden'); revenueSection.style.display = 'none'; }
-                if (revenueFilters) { revenueFilters.classList.add('hidden'); revenueFilters.style.display = 'none'; }
+                if (revenueFilters) { revenueFilters.classList.add('hidden'); revenueFilters.style.display, 'none'; }
                 if (revenueCanvas) { revenueCanvas.classList.add('hidden'); revenueCanvas.style.display = 'none'; }
                 if (barberStatusControl) { barberStatusControl.classList.add('hidden'); barberStatusControl.style.display = 'none'; }
                 if (allBookingsTable) { allBookingsTable.classList.add('hidden'); allBookingsTable.style.display = 'none'; }
@@ -1439,6 +1455,20 @@
                     if (userRole === 'admin' || userRole === 'barber') {
                         roleSwitcher.classList.remove('hidden');
                         roleSwitcher.style.display = 'flex';
+
+                        // 🌟 ค้นหาและจัดการปุ่ม "Admin" ด้านใน roleSwitcher
+                        // (ไม่ว่าจะใช้ onclick เป็น switchRole('admin') หรือมีคลาส/id เฉพาะ)
+                        const adminBtn = roleSwitcher.querySelector('[onclick*="admin"]') || roleSwitcher.querySelector('.btn-admin');
+
+                        if (adminBtn) {
+                            if (userRole === 'barber') {
+                                // ✂️ ถ้าเป็นช่าง ให้ซ่อนปุ่มแอดมินทิ้งทันที
+                                adminBtn.style.display = 'none';
+                            } else {
+                                // 👑 ถ้าเป็นแอดมิน ให้แสดงปุ่มแอดมินตามปกติ
+                                adminBtn.style.display = 'inline-block';
+                            }
+                        }
                     } else {
                         roleSwitcher.classList.add('hidden');
                         roleSwitcher.style.display = 'none';
@@ -1629,7 +1659,10 @@
             const container = document.getElementById('barber-select-grid');
             if (!container) return;
 
-            container.innerHTML = state.barbers.map(b => {
+            // 🌟 เช็กให้ชัวร์ว่าดึงค่า barbers ล่าสุดจาก state หรือ localStorage มาใช้แสดงผลทันที
+            const currentBarbers = state.barbers || JSON.parse(localStorage.getItem('barber_shop_barbers')) || [];
+
+            container.innerHTML = currentBarbers.map(b => {
                 const isSelected = state.bookingForm.selectedBarberId === b.id;
                 const isAvailable = b.status === 'available';
 
@@ -1730,25 +1763,27 @@
             const container = document.getElementById('home-barbers-grid');
             if (!container) return;
 
-            container.innerHTML = state.barbers.map(b => {
+            // 🌟 ดึงข้อมูลช่างล่าสุดจาก localStorage มาแสดงผลทันทีแบบ Real-time
+            const currentBarbers = JSON.parse(localStorage.getItem('barber_shop_barbers')) || state.barbers || [];
+
+            container.innerHTML = currentBarbers.map(b => {
                 const isAvailable = b.status === 'available';
                 return `
-                    <div class="bg-dark-800 rounded-2xl border border-dark-700 p-5 shadow-lg flex items-center gap-4 relative overflow-hidden">
-                        <div class="relative flex-shrink-0">
-                            <img src="${b.avatar}" class="w-16 h-16 rounded-full object-cover border-2 border-amber-500/50" alt="${b.name}">
-                            <span class="absolute bottom-0 right-0 w-4 h-4 rounded-full border-2 border-dark-800 ${isAvailable ? 'bg-emerald-500 animate-pulse' : 'bg-red-500'}"></span>
-                        </div>
-                        <div class="flex-grow">
-                            <h3 class="font-bold text-white text-base">${b.name}</h3>
-                            <p class="text-xs text-gray-400 mt-0.5">${b.exp}</p>
-                            <div class="mt-2 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${isAvailable ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-red-500/10 text-red-400 border border-red-500/20'
-                    }">
-                                <span class="w-1.5 h-1.5 rounded-full ${isAvailable ? 'bg-emerald-400' : 'bg-red-400'}"></span>
-                                <span>${isAvailable ? 'คิวว่าง (Available)' : 'ติดคิว (Busy)'}</span>
-                            </div>
-                        </div>
+            <div class="bg-dark-800 rounded-2xl border border-dark-700 p-5 shadow-lg flex items-center gap-4 relative overflow-hidden">
+                <div class="relative flex-shrink-0">
+                    <img src="${b.avatar}" class="w-16 h-16 rounded-full object-cover border-2 border-amber-500/50" alt="${b.name}">
+                    <span class="absolute bottom-0 right-0 w-4 h-4 rounded-full border-2 border-dark-800 ${isAvailable ? 'bg-emerald-500 animate-pulse' : 'bg-red-500'}"></span>
+                </div>
+                <div class="flex-grow">
+                    <h3 class="font-bold text-white text-base">${b.name}</h3>
+                    <p class="text-xs text-gray-400 mt-0.5">${b.exp}</p>
+                    <div class="mt-2 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${isAvailable ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-red-500/10 text-red-400 border border-red-500/20'}">
+                        <span class="w-1.5 h-1.5 rounded-full ${isAvailable ? 'bg-emerald-400' : 'bg-red-400'}"></span>
+                        <span>${isAvailable ? 'คิวว่าง (Available)' : 'ติดคิว (Busy)'}</span>
                     </div>
-                `;
+                </div>
+            </div>
+        `;
             }).join('');
         }
 
@@ -3174,7 +3209,208 @@
             return parseInt(parts[0]) * 60 + parseInt(parts[1]);
         }
 
+        let tempProfileAvatarBase64 = ''; // ตัวแปรเก็บรูปภาพชั่วคราวก่อนกดบันทึก
+
+        // 1. เปิด Modal ข้อมูลส่วนตัว และดึงข้อมูลปัจจุบันมาแสดง
+        function openProfileModal() {
+            // ซ่อน Dropdown ก่อน
+            const dropdownPanel = document.getElementById('user-dropdown');
+            if (dropdownPanel) dropdownPanel.classList.add('hidden');
+
+            if (!state.currentUser) {
+                showToast('กรุณาเข้าสู่ระบบก่อน', 'error');
+                return;
+            }
+
+            // เติมข้อมูลลงในฟอร์ม
+            document.getElementById('profile-name').value = state.currentUser.name || '';
+            document.getElementById('profile-email').value = state.currentUser.email || '';
+            document.getElementById('profile-phone').value = state.currentUser.phone || '';
+            document.getElementById('profile-age').value = state.currentUser.age || '';
+
+            // ตั้งค่ารูปโปรไฟล์
+            const previewImg = document.getElementById('profile-preview-img');
+            previewImg.src = state.currentUser.avatar || 'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=100&auto=format&fit=crop&q=80';
+            tempProfileAvatarBase64 = state.currentUser.avatar || '';
+
+            // แสดง Modal
+            const modal = document.getElementById('profile-modal');
+            if (modal) {
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+            }
+        }
+
+        // 2. ฟังก์ชันแปลงไฟล์รูปภาพที่อัปโหลดเป็น Base64
+        function previewProfileImage(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    tempProfileAvatarBase64 = e.target.result;
+                    document.getElementById('profile-preview-img').src = tempProfileAvatarBase64;
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        // 3. บันทึกข้อมูลส่วนตัวที่แก้ไข (อัปเดตลง State, LocalStorage และ Firebase Firestore)
+        async function updateProfileData(event) {
+            event.preventDefault();
+
+            if (!state.currentUser) return;
+
+            const newName = document.getElementById('profile-name').value.trim();
+            const newPhone = document.getElementById('profile-phone').value.trim();
+            const newAge = document.getElementById('profile-age').value.trim();
+
+            // อัปเดตค่าลงใน Object ปัจจุบัน
+            state.currentUser.name = newName;
+            state.currentUser.phone = newPhone;
+            state.currentUser.age = newAge;
+            if (tempProfileAvatarBase64) {
+                state.currentUser.avatar = tempProfileAvatarBase64;
+            }
+
+            try {
+                // 🌟 0. ดึงข้อมูลช่างล่าสุดจาก localStorage มาไว้ใน state.barbers ก่อนเริ่มเช็ก
+                state.barbers = JSON.parse(localStorage.getItem('barber_shop_barbers')) || state.barbers;
+
+                // 1. ซิงก์ข้อมูลลงใน Local state.barbers (รองรับทั้งจับคู่ด้วย Email หรือ ID)
+                if (state.barbers && Array.isArray(state.barbers)) {
+                    let matched = false;
+                    for (let barber of state.barbers) {
+                        const barberEmail = barber.email ? barber.email.trim().toLowerCase() : '';
+                        const userEmail = state.currentUser.email ? state.currentUser.email.trim().toLowerCase() : '';
+
+                        const isEmailMatch = barberEmail && userEmail && barberEmail === userEmail;
+                        const isIdMatch = barber.id === state.currentUser.id || barber.id === state.currentUser.barberId;
+
+                        if (isEmailMatch || isIdMatch) {
+                            barber.name = state.currentUser.name;
+                            barber.avatar = state.currentUser.avatar;
+                            barber.phone = state.currentUser.phone;
+                            matched = true;
+                        }
+                    }
+
+                    // บันทึกอาเรย์ช่างที่อัปเดตแล้วลง LocalStorage ทันที
+                    localStorage.setItem('barber_shop_barbers', JSON.stringify(state.barbers));
+                    console.log("สถานะการซิงก์ช่าง:", matched ? "สำเร็จ" : "ไม่พบอีเมลช่างที่ตรงกัน");
+                }
+
+                // 2. อัปเดตข้อมูล User ลง Firebase Firestore (ถ้ามี firestoreId)
+                if (window.db && window.firebaseModules && state.currentUser.firestoreId) {
+                    const { doc, updateDoc } = window.firebaseModules;
+                    const userDocRef = doc(window.db, "users", state.currentUser.firestoreId);
+                    await updateDoc(userDocRef, {
+                        name: newName,
+                        phone: newPhone,
+                        age: newAge,
+                        avatar: state.currentUser.avatar
+                    });
+                }
+
+                // บันทึกลง LocalStorage ของ User
+                localStorage.setItem('barber_current_user', JSON.stringify(state.currentUser));
+
+                // อัปเดตหน้าจอ UI ทั้งหมดทันทีแบบ Real-time
+                updateUserUI();
+
+                if (typeof renderAgeGroupsGrid === 'function') {
+                    renderAgeGroupsGrid();
+                }
+
+                if (typeof renderBarberSelectGrid === 'function') {
+                    renderBarberSelectGrid(); // อัปเดตช่องเลือกช่างทันที
+                }
+
+                if (typeof renderBarbers === 'function') {
+                    renderBarbers(); // อัปเดตหน้ารายชื่อช่างทันที
+                }
+
+                if (typeof renderBarbersHomeStatus === 'function') {
+                    renderBarbersHomeStatus(); // อัปเดตการ์ดสถานะช่างหน้าแรกทันทีแบบเรียลไทม์
+                }
+
+                showToast('บันทึกข้อมูลส่วนตัวสำเร็จ!', 'success');
+                closeModal('profile-modal');
+
+            } catch (error) {
+                console.error("Error updating profile:", error);
+                showToast('เกิดข้อผิดพลาดในการบันทึกข้อมูล', 'error');
+            }
+        }
+
     </script>
+    <!-- Modal ข้อมูลส่วนตัว -->
+    <div id="profile-modal"
+        class="fixed inset-0 bg-black/70 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
+        <div class="bg-dark-800 border border-dark-700 rounded-2xl w-full max-w-md p-6 text-white shadow-2xl relative">
+            <!-- ปุ่มปิด Modal -->
+            <button onclick="closeModal('profile-modal')"
+                class="absolute top-4 right-4 text-gray-400 hover:text-white text-xl">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+
+            <h3 class="text-xl font-bold mb-4 flex items-center gap-2 text-amber-500">
+                <i class="fa-solid fa-id-card"></i> ข้อมูลส่วนตัว
+            </h3>
+
+            <!-- ฟอร์มแก้ไขข้อมูล -->
+            <form id="profile-form" onsubmit="updateProfileData(event)" class="space-y-4">
+                <!-- ส่วนอัปโหลด / เปลี่ยนรูปโปรไฟล์ -->
+                <div class="flex flex-col items-center justify-center space-y-2">
+                    <div class="relative w-24 h-24 rounded-full overflow-hidden border-2 border-amber-500 group">
+                        <img id="profile-preview-img" src="" alt="Profile Preview" class="w-full h-full object-cover">
+                        <!-- เลเยอร์กดเปลี่ยนรูป -->
+                        <label for="profile-image-input"
+                            class="absolute inset-0 bg-black/50 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition cursor-pointer text-xs text-white">
+                            <i class="fa-solid fa-camera text-lg mb-1"></i> เปลี่ยนรูป
+                        </label>
+                    </div>
+                    <input type="file" id="profile-image-input" accept="image/*" class="hidden"
+                        onchange="previewProfileImage(event)">
+                    <span class="text-xs text-gray-400">คลิกที่รูปเพื่อเปลี่ยนรูปโปรไฟล์</span>
+                </div>
+
+                <!-- ชื่อ-นามสกุล -->
+                <div>
+                    <label class="block text-xs font-semibold text-gray-400 mb-1">ชื่อ-นามสกุล</label>
+                    <input type="text" id="profile-name" disabled
+                        class="w-full bg-dark-900 border border-dark-700 rounded-xl px-4 py-2.5 text-white text-sm opacity-60 cursor-not-allowed">
+                </div>
+
+                <!-- อีเมล (Readonly ห้ามแก้) -->
+                <div>
+                    <label class="block text-xs text-gray-400 mb-1">อีเมล (ไม่สามารถเปลี่ยนได้)</label>
+                    <input type="email" id="profile-email"
+                        class="w-full bg-dark-900/50 border border-dark-700 rounded-xl px-4 py-2 text-sm text-gray-400 cursor-not-allowed outline-none"
+                        readonly>
+                </div>
+
+                <!-- เบอร์โทรศัพท์ -->
+                <div>
+                    <label class="block text-xs text-gray-400 mb-1">เบอร์โทรศัพท์</label>
+                    <input type="text" id="profile-phone"
+                        class="w-full bg-dark-900 border border-dark-700 rounded-xl px-4 py-2 text-sm text-white focus:border-amber-500 outline-none">
+                </div>
+
+                <!-- อายุ -->
+                <div>
+                    <label class="block text-xs font-semibold text-gray-400 mb-1">อายุ</label>
+                    <input type="number" id="profile-age" disabled
+                        class="w-full bg-dark-900 border border-dark-700 rounded-xl px-4 py-2.5 text-white text-sm opacity-60 cursor-not-allowed">
+                </div>
+
+                <!-- ปุ่มบันทึก -->
+                <button type="submit"
+                    class="w-full bg-amber-500 hover:bg-amber-600 text-dark-900 font-bold py-2.5 rounded-xl transition shadow-md">
+                    บันทึกการแก้ไข
+                </button>
+            </form>
+        </div>
+    </div>
 </body>
 
 </html>
