@@ -3267,14 +3267,13 @@
 
             if (!state.currentUser) return;
 
-            const newName = document.getElementById('profile-name').value.trim();
-            const newPhone = document.getElementById('profile-phone').value.trim();
-            const newAge = document.getElementById('profile-age').value.trim();
+            // 🌟 แก้ไข: ใช้ค่าเดิมจาก state.currentUser โดยตรง เพราะช่อง input ถูก disabled ไว้ (ป้องกันค่าว่างในมือถือ)
+            const newName = state.currentUser.name;
+            const newAge = state.currentUser.age;
+            const newPhone = document.getElementById('profile-phone').value.trim(); // เบอร์ยังแก้ไขได้ปกติ
 
             // อัปเดตค่าลงใน Object ปัจจุบัน
-            state.currentUser.name = newName;
             state.currentUser.phone = newPhone;
-            state.currentUser.age = newAge;
             if (tempProfileAvatarBase64) {
                 state.currentUser.avatar = tempProfileAvatarBase64;
             }
