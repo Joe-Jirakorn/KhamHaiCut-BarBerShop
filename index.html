@@ -236,7 +236,14 @@
 
     <!-- Main Dynamic Content Wrapper -->
     <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
-
+        <div id="shop-closed-banner"
+            class="hidden bg-gray-800 border border-gray-700 text-gray-300 px-4 py-3 rounded-xl mb-4 flex items-center gap-3 shadow-lg">
+            <i class="fa-solid fa-triangle-exclamation text-amber-500 text-xl"></i>
+            <div>
+                <h4 class="font-bold text-white text-sm">ร้านปิด</h4>
+                <p class="text-xs text-gray-400">ขณะนี้ร้านปิดให้บริการไม่สามารถจองคิวได้</p>
+            </div>
+        </div>
         <!-- ================= PAGE: HOME ================= -->
         <section id="page-home" class="page-section space-y-12">
             <!-- Hero Banner -->
@@ -271,6 +278,7 @@
                     </div>
                 </div>
             </div>
+            <!-- นำไปวางไว้ในจุดที่ต้องการให้แสดงแจ้งเตือนหน้าแรก (เช่น เหนือฟอร์มจองคิว) -->
 
             <!-- Barbers Real-time Status Strip -->
             <div>
@@ -698,9 +706,21 @@
             <!-- 🛑 เติม id="barber-status-control" ไว้ที่ div ตัวแม่สุดตรงนี้ -->
             <div id="barber-status-control"
                 class="bg-dark-800 p-6 rounded-2xl border border-dark-700 shadow-xl space-y-4">
-                <h2 class="text-xl font-bold text-white flex items-center gap-2 border-b border-dark-700 pb-3">
-                    <i class="fa-solid fa-user-gear text-amber-500"></i> จัดการสถานะช่างตัดผม
-                </h2>
+
+                <!-- 🌟 ปรับหัวข้อให้เป็น Flex เพื่อดันปุ่มไปไว้มุมขวาตรงข้ามในบรรทัดเดียวกัน -->
+                <div class="flex justify-between items-center border-b border-dark-700 pb-3">
+                    <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-user-gear text-amber-500"></i> จัดการสถานะช่างตัดผม
+                    </h2>
+
+                    <!-- ปุ่มเปิด/ปิดร้าน (อยู่ที่มุมขวาตรงข้าม) -->
+                    <button id="shop-status-toggle-btn" onclick="toggleShopStatus()"
+                        class="px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition shadow-md bg-emerald-600 hover:bg-emerald-500 text-white">
+                        <span id="shop-status-dot" class="w-2 h-2 rounded-full bg-white animate-pulse"></span>
+                        <span id="shop-status-text">เปิดร้านอยู่</span>
+                    </button>
+                </div>
+
                 <div id="admin-barber-control-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                     <!-- Admin Barber Toggle Cards loaded JS -->
                 </div>
@@ -964,6 +984,37 @@
                 });
             }
 
+            // 🌟 โหลดและอัปเดตสถานะปุ่ม เปิด/ปิดร้าน และแบนเนอร์แจ้งเตือน จาก LocalStorage ตอนเปิดหน้าเว็บ
+            const savedShopStatus = localStorage.getItem('barber_shop_open_status');
+            if (savedShopStatus !== null) {
+                isShopOpen = savedShopStatus === 'true';
+                const btn = document.getElementById('shop-status-toggle-btn');
+                const dot = document.getElementById('shop-status-dot');
+                const text = document.getElementById('shop-status-text');
+
+                if (btn && dot && text) {
+                    if (isShopOpen) {
+                        btn.className = "px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition shadow-md bg-emerald-600 hover:bg-emerald-500 text-white";
+                        dot.className = "w-2 h-2 rounded-full bg-white animate-pulse";
+                        text.textContent = "เปิดร้านอยู่";
+                    } else {
+                        btn.className = "px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition shadow-md bg-gray-700 hover:bg-gray-600 text-gray-300";
+                        dot.className = "w-2 h-2 rounded-full bg-gray-400";
+                        text.textContent = "ปิดร้านแล้ว";
+                    }
+                }
+            }
+
+            // 🌟 เช็กและแสดง/ซ่อน แบนเนอร์แจ้งเตือนร้านปิดในหน้าแรก
+            const closedBanner = document.getElementById('shop-closed-banner');
+            if (closedBanner) {
+                if (!isShopOpen) {
+                    closedBanner.classList.remove('hidden');
+                } else {
+                    closedBanner.classList.add('hidden');
+                }
+            }
+
             // 2. เรนเดอร์หน้าจอทั่วไป
             if (typeof updateUserUI === 'function') updateUserUI();
             if (typeof renderUI === 'function') renderUI();
@@ -1013,13 +1064,23 @@
                 window.scrollTo({ top: 0, behavior: 'smooth' });
             }
 
-            // 2. จองคิวตัดผม
+            // 2. จองคิวตัดผม (🌟 สั่งอัปเดตทั้งกริดเลือกช่างและข้อมูลสรุปผลทันทีที่เปิดหน้านี้)
             else if (target === 'booking') {
                 hideAdminView();
                 hideAllUserViews();
                 if (bookingSection) {
                     bookingSection.style.display = 'block';
                     bookingSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+                    // 🌟 เพิ่มบรรทัดนี้เพื่อให้เรนเดอร์สถานะช่างใหม่ทันทีที่เข้าหน้าจองคิว
+                    if (typeof renderBarberSelectGrid === 'function') {
+                        renderBarberSelectGrid();
+                    }
+
+                    // สั่งอัปเดตข้อมูลสรุปและราคา
+                    if (typeof updateBookingSummary === 'function') {
+                        updateBookingSummary();
+                    }
                 }
                 showToast('เข้าสู่หน้าจองคิว', 'success');
             }
@@ -1664,34 +1725,77 @@
             const container = document.getElementById('barber-select-grid');
             if (!container) return;
 
-            // 🌟 เช็กให้ชัวร์ว่าดึงค่า barbers ล่าสุดจาก state หรือ localStorage มาใช้แสดงผลทันที
-            const currentBarbers = state.barbers || JSON.parse(localStorage.getItem('barber_shop_barbers')) || [];
+            // 🌟 1. ดึงข้อมูลล่าสุดจาก localStorage มาก่อนเป็นอันดับแรกเสมอ เพื่อป้องกันข้อมูลเก่าค้างหลังรีเฟรช
+            let currentBarbers = [];
+            try {
+                const savedBarbers = localStorage.getItem('barber_shop_barbers');
+                if (savedBarbers) {
+                    currentBarbers = JSON.parse(savedBarbers);
+                    // อัปเดตกลับเข้า state กลางด้วยเพื่อให้ข้อมูลซิงค์กัน
+                    state.barbers = currentBarbers;
+                } else {
+                    currentBarbers = state.barbers || [];
+                }
+            } catch (e) {
+                currentBarbers = state.barbers || [];
+            }
+
+            // 2. ดึงสถานะเปิด/ปิดร้าน
+            const savedShopStatus = localStorage.getItem('barber_shop_open_status');
+            const isOpen = savedShopStatus !== null ? (savedShopStatus === 'true') : true;
 
             container.innerHTML = currentBarbers.map(b => {
-                const isSelected = state.bookingForm.selectedBarberId === b.id;
-                const isAvailable = b.status === 'available';
+                const isSelected = String(state.bookingForm.selectedBarberId) === String(b.id);
+                const isClosed = !isOpen || b.status === 'closed';
+
+                // 3. ตรวจสอบสถานะว่างแบบยืดหยุ่น (รองรับทั้ง available และ ว่าง)
+                const statusStr = String(b.status || '').trim().toLowerCase();
+                const isAvailable = !isClosed && (
+                    statusStr === 'available' ||
+                    statusStr === 'ว่าง' ||
+                    b.isAvailable === true ||
+                    statusStr === 'true'
+                );
+
+                let statusText = isClosed ? 'ปิดบริการ' : (isAvailable ? 'คิวว่าง' : 'ติดคิวอยู่');
+                let badgeClass = isClosed ? 'text-gray-400 bg-gray-500/10' : (isAvailable ? 'text-emerald-400 bg-emerald-500/10' : 'text-red-400 bg-red-500/10');
+                let dotColor = isClosed ? 'bg-gray-500' : (isAvailable ? 'bg-emerald-500' : 'bg-red-500');
 
                 return `
-                    <div onclick="selectBarber('${b.id}')"
-                        class="cursor-pointer p-3 rounded-xl border-2 transition text-center flex flex-col items-center gap-2 ${isSelected ? 'border-amber-500 bg-amber-500/10' : 'border-dark-700 bg-dark-900/50 hover:border-dark-600'
+            <div onclick="selectBarberAndBook('${b.id}')"
+                class="cursor-pointer p-3 rounded-xl border-2 transition text-center flex flex-col items-center gap-2 ${isSelected ? 'border-amber-500 bg-amber-500/10 shadow-lg' : 'border-dark-700 bg-dark-900/50 hover:border-dark-600'
                     }">
-                        <div class="relative">
-                            <img src="${b.avatar}" class="w-12 h-12 rounded-full object-cover border border-dark-600" alt="${b.name}">
-                            <span class="absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full border-2 border-dark-800 ${isAvailable ? 'bg-emerald-500' : 'bg-red-500'}"></span>
-                        </div>
-                        <span class="text-xs font-bold text-white max-w-full truncate">${b.name.split(' ')[0]}</span>
-                        <span class="text-[10px] px-2 py-0.5 rounded-full ${isAvailable ? 'text-emerald-400 bg-emerald-500/10' : 'text-red-400 bg-red-500/10'}">
-                            ${isAvailable ? 'คิวว่าง' : 'ติดคิวอยู่'}
-                        </span>
-                    </div>
-                `;
+                <div class="relative">
+                    <img src="${b.avatar || ''}" class="w-12 h-12 rounded-full object-cover border border-dark-600" alt="${b.name}">
+                    <span class="absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full border-2 border-dark-800 ${dotColor}"></span>
+                </div>
+                <span class="text-xs font-bold text-white max-w-full truncate">${b.name.split(' ')[0]}</span>
+                <span class="text-[10px] px-2 py-0.5 rounded-full font-semibold ${badgeClass}">
+                    ${statusText}
+                </span>
+            </div>
+        `;
             }).join('');
         }
 
-        function selectBarber(id) {
-            state.bookingForm.selectedBarberId = id;
-            renderBarberSelectGrid();
-            updateBookingSummary();
+        function selectBarberAndBook(barberId) {
+            // 1. บันทึก ID ช่างที่ถูกเลือก
+            state.bookingForm.selectedBarberId = barberId;
+
+            // 2. สั่งเรนเดอร์กริดเลือกช่างในหน้าจองคิวทันที (เพื่อให้ไฮไลต์ช่างที่เลือก)
+            if (typeof renderBarberSelectGrid === 'function') {
+                renderBarberSelectGrid();
+            }
+
+            // 3. อัปเดตข้อมูลสรุปและสถานะ (ที่เราเพิ่งรวมฟังก์ชันอัปเดตสถานะช่างไว้ข้างใน)
+            if (typeof updateBookingSummary === 'function') {
+                updateBookingSummary();
+            }
+
+            // 4. พาผู้ใช้กระโดดไปที่หน้าจองคิวอย่างราบรื่น
+            if (typeof navigateTo === 'function') {
+                navigateTo('booking');
+            }
         }
 
         // Update Summary Calculations
@@ -1715,7 +1819,13 @@
             if (style && ageGroup) {
                 haircutPrice = Math.round(style.basePrice * ageGroup.rate);
                 document.getElementById('summary-age').textContent = ageGroup.label;
-                document.getElementById('summary-age-rate').textContent = `${ageGroup.rate * 100}% (${ageGroup.discountLabel})`;
+
+                // 🌟 แก้ไขจุดคำนวณเรทเปอร์เซ็นต์ให้ถูกต้องสมบูรณ์
+                const ratePercent = Math.round(ageGroup.rate * 100);
+                const ageRateEl = document.getElementById('summary-age-rate');
+                if (ageRateEl) {
+                    ageRateEl.textContent = `${ratePercent}% (${ageGroup.discountLabel || ''})`;
+                }
             }
 
             // 🛑 1. คำนวณราคารวมบริการเสริมที่ถูกเลือก (selected === true)
@@ -1753,10 +1863,18 @@
                 document.getElementById('summary-barber').textContent = barber.name;
             }
 
-            document.getElementById('summary-datetime').textContent = `${dateInput} เวลา ${timeSelect} น.`;
+            const dateTimeEl = document.getElementById('summary-datetime');
+            if (dateTimeEl) {
+                dateTimeEl.textContent = `${dateInput} เวลา ${timeSelect} น.`;
+            }
 
             // บันทึกยอดรวมสุทธิเก็บไว้ใน state เผื่อใช้ตอนกดบันทึกจอง
             state.bookingForm.calculatedTotal = netPrice;
+
+            // 🌟 (แถม) ถ้าหน้าจองคิวมีส่วนแสดงรายชื่อหรือสถานะช่าง ให้เรียกฟังก์ชันอัปเดตตรงนี้ได้เลยทันทีโดยไม่ต้องสร้างเพิ่ม!
+            if (typeof renderBookingBarbers === 'function') {
+                renderBookingBarbers();
+            }
         }
 
         // Attach Event Listeners to date/time inputs
@@ -1768,30 +1886,75 @@
             const container = document.getElementById('home-barbers-grid');
             if (!container) return;
 
-            // 🌟 ดึงข้อมูลช่างล่าสุดจาก localStorage มาแสดงผลทันทีแบบ Real-time
-            const currentBarbers = JSON.parse(localStorage.getItem('barber_shop_barbers')) || state.barbers || [];
+            // 1. ดึงข้อมูลช่างล่าสุดจาก LocalStorage กลางตัวเดียวกัน
+            let currentBarbers = [];
+            try {
+                const savedBarbers = localStorage.getItem('barber_shop_barbers');
+                if (savedBarbers) {
+                    currentBarbers = JSON.parse(savedBarbers);
+                } else if (window.barbers) {
+                    currentBarbers = window.barbers;
+                } else if (typeof state !== 'undefined' && state.barbers) {
+                    currentBarbers = state.barbers;
+                }
+            } catch (e) {
+                currentBarbers = [];
+            }
+
+            // 2. ดึงสถานะเปิด/ปิดร้าน
+            const savedShopStatus = localStorage.getItem('barber_shop_open_status');
+            const isOpen = savedShopStatus !== null ? (savedShopStatus === 'true') : true;
 
             container.innerHTML = currentBarbers.map(b => {
-                const isAvailable = b.status === 'available';
+                const isClosed = !isOpen || b.status === 'closed';
+
+                // 🌟 3. ตรวจสอบสถานะแบบครอบคลุมทุกกรณี (รองรับทั้ง b.status และฟิลด์อื่นๆ เผื่อระบบใช้สลับกัน)
+                const statusStr = String(b.status || '').trim().toLowerCase();
+
+                // เช็กว่าถ้าไม่ใช่สถานะปิด และสถานะบอกว่าว่าง (available, ว่าง, true, หรือเปิด) ให้ถือว่าว่าง
+                const isAvailable = !isClosed && (
+                    statusStr === 'available' ||
+                    statusStr === 'ว่าง' ||
+                    b.isAvailable === true ||
+                    statusStr === 'true'
+                );
+
+                let dotColor = 'bg-gray-500';
+                let badgeClass = 'bg-gray-500/10 text-gray-400 border border-gray-500/20';
+                let statusText = 'ปิดบริการ';
+
+                if (isClosed) {
+                    dotColor = 'bg-gray-500';
+                    badgeClass = 'bg-gray-500/10 text-gray-400 border border-gray-500/20';
+                    statusText = 'ปิดบริการ (Closed)';
+                } else if (isAvailable) {
+                    dotColor = 'bg-emerald-400';
+                    badgeClass = 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20';
+                    statusText = 'คิวว่าง (Available)';
+                } else {
+                    dotColor = 'bg-red-400';
+                    badgeClass = 'bg-red-500/10 text-red-400 border border-red-500/20';
+                    statusText = 'ติดคิว (Busy)';
+                }
+
                 return `
             <div class="bg-dark-800 rounded-2xl border border-dark-700 p-5 shadow-lg flex items-center gap-4 relative overflow-hidden">
                 <div class="relative flex-shrink-0">
-                    <img src="${b.avatar}" class="w-16 h-16 rounded-full object-cover border-2 border-amber-500/50" alt="${b.name}">
-                    <span class="absolute bottom-0 right-0 w-4 h-4 rounded-full border-2 border-dark-800 ${isAvailable ? 'bg-emerald-500 animate-pulse' : 'bg-red-500'}"></span>
+                    <img src="${b.avatar || ''}" class="w-16 h-16 rounded-full object-cover border-2 border-amber-500/50" alt="${b.name}">
+                    <span class="absolute bottom-0 right-0 w-4 h-4 rounded-full border-2 border-dark-800 ${isClosed ? 'bg-gray-500' : (isAvailable ? 'bg-emerald-500 animate-pulse' : 'bg-red-500')}"></span>
                 </div>
                 <div class="flex-grow">
                     <h3 class="font-bold text-white text-base">${b.name}</h3>
-                    <p class="text-xs text-gray-400 mt-0.5">${b.exp}</p>
-                    <div class="mt-2 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${isAvailable ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-red-500/10 text-red-400 border border-red-500/20'}">
-                        <span class="w-1.5 h-1.5 rounded-full ${isAvailable ? 'bg-emerald-400' : 'bg-red-400'}"></span>
-                        <span>${isAvailable ? 'คิวว่าง (Available)' : 'ติดคิว (Busy)'}</span>
+                    <p class="text-xs text-gray-400 mt-0.5">${b.exp || ''}</p>
+                    <div class="mt-2 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${badgeClass}">
+                        <span class="w-1.5 h-1.5 rounded-full ${dotColor}"></span>
+                        <span>${statusText}</span>
                     </div>
                 </div>
             </div>
         `;
             }).join('');
         }
-
         // 5. Full Barbers Page List
         function renderFullBarbersList() {
             const container = document.getElementById('full-barbers-grid');
@@ -1817,13 +1980,6 @@
                     </div>
                 `;
             }).join('');
-        }
-
-        function selectBarberAndBook(barberId) {
-            state.bookingForm.selectedBarberId = barberId;
-            renderBarberSelectGrid();
-            updateBookingSummary();
-            navigateTo('booking');
         }
 
         // 6. User Bookings Table
@@ -2037,31 +2193,71 @@
             const container = document.getElementById('admin-barber-control-grid');
             if (!container) return;
 
-            container.innerHTML = state.barbers.map(b => {
-                const isAvailable = b.status === 'available';
-                return `
-                    <div class="bg-dark-900 border border-dark-700 p-4 rounded-xl flex items-center justify-between">
-                        <div class="flex items-center gap-3">
-                            <img src="${b.avatar}" class="w-10 h-10 rounded-full object-cover" alt="${b.name}">
-                            <div>
-                                <p class="text-xs font-bold text-white max-w-[100px] truncate">${b.name}</p>
-                                <span class="text-[10px] ${isAvailable ? 'text-emerald-400' : 'text-red-400'} font-semibold">
-                                    ${isAvailable ? 'คิวว่าง' : 'ติดคิวอยู่'}
-                                </span>
-                            </div>
-                        </div>
+            // 1. ดึงข้อมูลช่างล่าสุดจาก LocalStorage หรือ state
+            let currentBarbers = [];
+            try {
+                const savedBarbers = localStorage.getItem('barber_shop_barbers');
+                if (savedBarbers) {
+                    currentBarbers = JSON.parse(savedBarbers);
+                } else if (window.barbers) {
+                    currentBarbers = window.barbers;
+                } else if (state && state.barbers) {
+                    currentBarbers = state.barbers;
+                }
+            } catch (e) {
+                currentBarbers = state.barbers || [];
+            }
 
-                        <!-- Toggle Button -->
-                        <button onclick="toggleBarberStatus('${b.id}')" 
-                            class="px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${isAvailable
-                        ? 'bg-red-500/20 text-red-400 hover:bg-red-500 hover:text-white border border-red-500/30'
-                        : 'bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500 hover:text-dark-900 border border-emerald-500/30'
-                    }">
-                            <i class="fa-solid ${isAvailable ? 'fa-user-slash' : 'fa-user-check'}"></i>
-                            <span>${isAvailable ? 'เปลี่ยนเป็น ติดคิว' : 'เปลี่ยนเป็น ว่าง'}</span>
-                        </button>
+            // 2. ดึงสถานะเปิด/ปิดร้านจาก LocalStorage
+            const savedShopStatus = localStorage.getItem('barber_shop_open_status');
+            const isOpen = savedShopStatus !== null ? (savedShopStatus === 'true') : (typeof isShopOpen !== 'undefined' ? isShopOpen : true);
+
+            container.innerHTML = currentBarbers.map(b => {
+                // ถ้าร้านปิด (!isOpen) หรือสถานะช่างเป็น closed ให้บังคับเป็นปิดบริการ
+                const isClosed = !isOpen || b.status === 'closed';
+
+                // 🌟 แก้ไขจุดนี้: เช็กสถานะให้ยืดหยุ่นขึ้น (ถ้าไม่ใช่ closed หรือ busy ก็ให้มองว่าเป็น available)
+                const statusStr = String(b.status || '').trim().toLowerCase();
+                const isAvailable = !isClosed && (statusStr === 'available' || statusStr === 'ว่าง');
+
+                // 🌟 ส่วนของปุ่มกด: ตอนร้านปิดจะล็อกปุ่ม | ตอนร้านเปิดใช้ปุ่มดั้งเดิมของก้องเป๊ะๆ
+                let buttonHtml = '';
+                if (isClosed) {
+                    buttonHtml = `
+                <button disabled class="px-3 py-1.5 rounded-lg text-xs font-bold bg-gray-800 text-gray-500 cursor-not-allowed opacity-60 flex items-center gap-1.5">
+                    <i class="fa-solid fa-ban"></i>
+                    <span>ปิดบริการอยู่</span>
+                </button>
+            `;
+                } else {
+                    buttonHtml = `
+                <button onclick="toggleBarberStatus('${b.id}')" 
+                    class="px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${isAvailable
+                            ? 'bg-red-500/20 text-red-400 hover:bg-red-500 hover:text-white border border-red-500/30'
+                            : 'bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500 hover:text-dark-900 border border-emerald-500/30'
+                        }">
+                    <i class="fa-solid ${isAvailable ? 'fa-user-slash' : 'fa-user-check'}"></i>
+                    <span>${isAvailable ? 'เปลี่ยนเป็น ติดคิว' : 'เปลี่ยนเป็น ว่าง'}</span>
+                </button>
+            `;
+                }
+
+                return `
+            <div class="bg-dark-900 border border-dark-700 p-4 rounded-xl flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <img src="${b.avatar || ''}" class="w-10 h-10 rounded-full object-cover" alt="${b.name}">
+                    <div>
+                        <p class="text-xs font-bold text-white max-w-[100px] truncate">${b.name}</p>
+                        <span class="text-[10px] ${isClosed ? 'text-gray-400' : (isAvailable ? 'text-emerald-400' : 'text-red-400')} font-semibold">
+                            ${isClosed ? 'ปิดบริการ' : (isAvailable ? 'คิวว่าง' : 'ติดคิวอยู่')}
+                        </span>
                     </div>
-                `;
+                </div>
+
+                <!-- Toggle Button (ใช้ปุ่มดั้งเดิมของก้อง) -->
+                <div>${buttonHtml}</div>
+            </div>
+        `;
             }).join('');
         }
 
@@ -2072,8 +2268,12 @@
                 return;
             }
 
-            // 1. สลับสถานะตรงกันข้าม
-            const newStatus = barber.status === 'available' ? 'busy' : 'available';
+            // 🌟 1. เช็กสถานะปัจจุบันแบบยืดหยุ่น (รองรับทั้ง available และ ว่าง)
+            const currentStatusStr = String(barber.status || '').trim().toLowerCase();
+            const isCurrentlyAvailable = (currentStatusStr === 'available' || currentStatusStr === 'ว่าง' || currentStatusStr === 'true');
+
+            // ถ้ากำลังว่างอยู่ ให้เปลี่ยนเป็น busy (ติดคิว) ถ้าไม่ว่าง ให้กลับมาเป็น available (ว่าง)
+            const newStatus = isCurrentlyAvailable ? 'busy' : 'available';
 
             try {
                 // 2. ตรวจสอบและบันทึกสถานะใหม่ลงบน Firebase Firestore
@@ -2086,7 +2286,6 @@
                         return;
                     }
 
-                    // 🔍 ตรวจสอบ ID ที่กำลังจะส่งไปอัปเดต (ต้องตรงกับชื่อ Document ใน Firebase เช่น 'b1' หรือ 'b2')
                     console.log(`กำลังอัปเดต Document ID: "${id}" บน Firebase เป็นสถานะ: "${newStatus}"`);
 
                     const barberRef = doc(window.db, "barbers", id);
@@ -2104,10 +2303,17 @@
                 // 3. อัปเดตใน state ท้องถิ่นทันทีเพื่อความลื่นไหล
                 barber.status = newStatus;
 
-                // 4. เรนเดอร์หน้าจอส่วนต่างๆ ใหม่
+                // 🌟 3.1 บันทึกข้อมูล barbers ล่าสุดลงใน localStorage ทันที (ป้องกันข้อมูลหายตอนรีเฟรช)
+                try {
+                    localStorage.setItem('barber_shop_barbers', JSON.stringify(state.barbers));
+                } catch (e) {
+                    console.warn("ไม่สามารถบันทึกลง localStorage ได้:", e);
+                }
+
+                // 4. เรนเดอร์หน้าจอส่วนต่างๆ ใหม่ทันทีแบบ Real-time
                 if (typeof renderAdminBarberControls === 'function') renderAdminBarberControls();
                 if (typeof renderBarbersHomeStatus === 'function') renderBarbersHomeStatus();
-                if (typeof renderFullBarbersList === 'function') renderFullBarbersList();
+                if (typeof renderBarbersPage === 'function') renderBarbersPage();
                 if (typeof renderBarberSelectGrid === 'function') renderBarberSelectGrid();
 
                 // แจ้งเตือนผู้ใช้งาน
@@ -3408,6 +3614,372 @@
                 reader.onerror = (error) => reject(error);
             });
         }
+
+        // สถานะร้านปัจจุบัน (ค่าเริ่มต้นให้เป็น เปิดร้าน = true)
+
+        let isShopOpen = true; // ตัวแปรสถานะร้านหลัก
+
+        function toggleShopStatus() {
+            // 1. อ่านสถานะร้านปัจจุบันจาก LocalStorage
+            const currentStatus = localStorage.getItem('barber_shop_open_status');
+            let nextShopStatus = currentStatus !== null ? (currentStatus === 'true') : true;
+
+            // สลับสถานะ (เปิด <-> ปิด)
+            nextShopStatus = !nextShopStatus;
+
+            const btn = document.getElementById('shop-status-toggle-btn');
+            const dot = document.getElementById('shop-status-dot');
+            const text = document.getElementById('shop-status-text');
+
+            if (nextShopStatus) {
+                if (btn) btn.className = "px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition shadow-md bg-emerald-600 hover:bg-emerald-500 text-white";
+                if (dot) dot.className = "w-2 h-2 rounded-full bg-white animate-pulse";
+                if (text) text.textContent = "เปิดร้านอยู่";
+                if (typeof showToast === 'function') showToast('เปิดร้านรับคิวปกติแล้วครับ!', 'success');
+            } else {
+                if (btn) btn.className = "px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition shadow-md bg-gray-700 hover:bg-gray-600 text-gray-300";
+                if (dot) dot.className = "w-2 h-2 rounded-full bg-gray-400";
+                if (text) text.textContent = "ปิดร้านแล้ว";
+                if (typeof showToast === 'function') showToast('ปิดร้านแล้ว ช่างทั้งหมดถูกปรับเป็นสถานะปิดบริการ', 'info');
+            }
+
+            // 2. บันทึกสถานะร้านใหม่ลง LocalStorage
+            localStorage.setItem('barber_shop_open_status', nextShopStatus);
+            if (typeof isShopOpen !== 'undefined') {
+                isShopOpen = nextShopStatus;
+            }
+
+            // 🌟 3. จัดการอัปเดตสถานะช่างตามสถานะร้านแบบอัตโนมัติ
+            let barbersList = [];
+            try {
+                const savedBarbers = localStorage.getItem('barber_shop_barbers');
+                if (savedBarbers) {
+                    barbersList = JSON.parse(savedBarbers);
+                } else if (window.barbers) {
+                    barbersList = window.barbers;
+                } else if (typeof state !== 'undefined' && state.barbers) {
+                    barbersList = state.barbers;
+                }
+            } catch (e) {
+                barbersList = [];
+            }
+
+            // ถ้าร้านเปิด ให้คืนค่าช่างทั้งหมดเป็น 'available' (คิวว่าง) | ถ้าร้านปิด ให้ปรับเป็น 'closed'
+            barbersList.forEach(barber => {
+                barber.status = nextShopStatus ? 'available' : 'closed';
+            });
+
+            // บันทึกลง LocalStorage และ window.barbers / state.barbers ทันที
+            window.barbers = barbersList;
+            localStorage.setItem('barber_shop_barbers', JSON.stringify(barbersList));
+            if (typeof state !== 'undefined') {
+                state.barbers = barbersList;
+            }
+
+            // 4. ควบคุมแบนเนอร์หน้าแรก
+            const closedBanner = document.getElementById('shop-closed-banner');
+            if (closedBanner) {
+                if (!nextShopStatus) closedBanner.classList.remove('hidden');
+                else closedBanner.classList.add('hidden');
+            }
+
+            // 5. สั่งเรนเดอร์อัปเดตหน้าจอทุกส่วนทันที
+            if (typeof renderUI === 'function') renderUI();
+            if (typeof renderAdminBarberControls === 'function') renderAdminBarberControls();
+            if (typeof renderBarbersHomeStatus === 'function') renderBarbersHomeStatus();
+        }
+
+        function renderBarbersGrid() {
+            const container = document.getElementById('admin-barber-control-grid');
+            if (!container) return;
+
+            // 1. ดึงข้อมูลช่างล่าสุดจาก LocalStorage ชุดเดียวกัน
+            let currentBarbers = [];
+            try {
+                const savedBarbers = localStorage.getItem('barber_shop_barbers');
+                if (savedBarbers) {
+                    currentBarbers = JSON.parse(savedBarbers);
+                } else if (window.barbers) {
+                    currentBarbers = window.barbers;
+                } else if (typeof state !== 'undefined' && state.barbers) {
+                    currentBarbers = state.barbers;
+                }
+            } catch (e) {
+                currentBarbers = [];
+            }
+
+            // 2. ดึงสถานะเปิด/ปิดร้านจาก LocalStorage
+            const savedShopStatus = localStorage.getItem('barber_shop_open_status');
+            const isOpen = savedShopStatus !== null ? (savedShopStatus === 'true') : true;
+
+            container.innerHTML = currentBarbers.map(b => {
+                const isClosed = !isOpen || b.status === 'closed';
+
+                // เช็กสถานะว่างแบบยืดหยุ่น (รองรับทั้ง available และ ว่าง)
+                const statusStr = String(b.status || '').trim().toLowerCase();
+                const isAvailable = !isClosed && (statusStr === 'available' || statusStr === 'ว่าง');
+
+                // รูปแบบป้ายสถานะ
+                let dotColor = 'bg-gray-500';
+                let badgeClass = 'bg-gray-500/10 text-gray-400 border border-gray-500/20';
+                let statusText = 'ปิดบริการ';
+
+                if (isClosed) {
+                    dotColor = 'bg-gray-500';
+                    badgeClass = 'bg-gray-500/10 text-gray-400 border border-gray-500/20';
+                    statusText = 'ปิดบริการ (Closed)';
+                } else if (isAvailable) {
+                    dotColor = 'bg-emerald-400';
+                    badgeClass = 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20';
+                    statusText = 'คิวว่าง (Available)';
+                } else {
+                    dotColor = 'bg-red-400';
+                    badgeClass = 'bg-red-500/10 text-red-400 border border-red-500/20';
+                    statusText = 'ติดคิว (Busy)';
+                }
+
+                // 🌟 ส่วนของปุ่มกด: สลับหน้าตา สี และข้อความตามสถานะจริงของช่าง
+                let buttonHtml = '';
+                if (isClosed) {
+                    buttonHtml = `
+                <button disabled class="px-3 py-1.5 rounded-xl text-xs font-semibold bg-gray-800 text-gray-500 cursor-not-allowed opacity-60 flex items-center gap-1.5">
+                    ปิดบริการอยู่
+                </button>
+            `;
+                } else if (isAvailable) {
+                    // ถ้าตอนนี้ว่าง -> ปุ่มสีแดง ชวนกดเปลี่ยนเป็น "ติดคิว"
+                    buttonHtml = `
+                <button onclick="toggleBarberStatus('${b.id}')" class="px-3.5 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition shadow-md bg-red-600 hover:bg-red-500 text-white">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+                    เปลี่ยนเป็นติดคิว
+                </button>
+            `;
+                } else {
+                    // ถ้าตอนนี้ติดคิวอยู่ -> ปุ่มสีเขียว ชวนกดเปลี่ยนกลับเป็น "คิวว่าง"
+                    buttonHtml = `
+                <button onclick="toggleBarberStatus('${b.id}')" class="px-3.5 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition shadow-md bg-emerald-600 hover:bg-emerald-500 text-white">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                    เปลี่ยนเป็นว่าง
+                </button>
+            `;
+                }
+
+                return `
+            <div class="bg-dark-900 p-4 rounded-xl border border-dark-700 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <img src="${b.avatar || ''}" class="w-12 h-12 rounded-full object-cover border border-amber-500/40">
+                    <div>
+                        <h4 class="font-bold text-white text-sm">${b.name}</h4>
+                        <!-- แสดงป้ายสถานะสไตล์เดียวกันกับหน้าแรก -->
+                        <div class="mt-1.5 inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold ${badgeClass}">
+                            <span class="w-1.5 h-1.5 rounded-full ${dotColor}"></span>
+                            <span>${statusText}</span>
+                        </div>
+                    </div>
+                </div>
+                <div>${buttonHtml}</div>
+            </div>
+        `;
+            }).join('');
+        }
+
+        function toggleBarberStatus(barberId) {
+            // 1. เช็กสถานะเปิด/ปิดร้านจาก LocalStorage ก่อน
+            const savedShopStatus = localStorage.getItem('barber_shop_open_status');
+            const isOpen = savedShopStatus !== null ? (savedShopStatus === 'true') : true;
+
+            if (!isOpen) {
+                if (typeof showToast === 'function') {
+                    showToast('กรุณาเปิดร้านก่อนเปลี่ยนสถานะช่างครับ', 'warning');
+                } else {
+                    alert('กรุณาเปิดร้านก่อนเปลี่ยนสถานะช่างครับ');
+                }
+                return;
+            }
+
+            // 2. ดึงข้อมูลช่างล่าสุดจาก LocalStorage หรือตัวแปรกลาง
+            let barbersList = [];
+            try {
+                const savedBarbers = localStorage.getItem('barber_shop_barbers');
+                if (savedBarbers) {
+                    barbersList = JSON.parse(savedBarbers);
+                } else if (window.barbers) {
+                    barbersList = window.barbers;
+                } else if (typeof state !== 'undefined' && state.barbers) {
+                    barbersList = state.barbers;
+                }
+            } catch (e) {
+                barbersList = [];
+            }
+
+            // 3. ค้นหาช่างตาม ID ที่ถูกคลิก
+            const targetBarber = barbersList.find(b => String(b.id) === String(barberId));
+            if (!targetBarber) {
+                console.error('ไม่พบข้อมูลช่าง ID:', barberId);
+                return;
+            }
+
+            // 4. สลับสถานะ (ถ้าว่าง/available -> เปลี่ยนเป็น busy | ถ้าติดคิว -> กลับเป็น available)
+            const currentStatus = String(targetBarber.status || '').trim().toLowerCase();
+            if (currentStatus === 'available' || currentStatus === 'ว่าง') {
+                targetBarber.status = 'busy';
+            } else {
+                targetBarber.status = 'available';
+            }
+
+            // 5. บันทึกลง LocalStorage และตัวแปรกลางทุกตัวทันที
+            window.barbers = barbersList;
+            localStorage.setItem('barber_shop_barbers', JSON.stringify(barbersList));
+            if (typeof state !== 'undefined') {
+                state.barbers = barbersList;
+            }
+
+            // 🌟 6. สั่งเรนเดอร์อัปเดตหน้าจอทุกส่วน รวมถึงหน้า "ช่างของเรา" ทันทีแบบเรียลไทม์
+            if (typeof renderBarbersGrid === 'function') renderBarbersGrid();
+            if (typeof renderAdminBarberControls === 'function') renderAdminBarberControls();
+            if (typeof renderBarbersHomeStatus === 'function') renderBarbersHomeStatus(); // ฟังก์ชันเรนเดอร์หน้า "ช่างของเรา"
+            if (typeof renderUI === 'function') renderUI();
+
+            if (typeof showToast === 'function') {
+                showToast(`อัปเดตสถานะของ ${targetBarber.name} เรียบร้อยแล้ว`, 'success');
+            }
+        }
+
+        function renderBarbersPage() {
+            const container = document.getElementById('full-barbers-grid');
+            if (!container) return;
+
+            // 1. ดึงข้อมูลช่างล่าสุดจาก LocalStorage หรือตัวแปรกลาง
+            let currentBarbers = [];
+            try {
+                const savedBarbers = localStorage.getItem('barber_shop_barbers');
+                if (savedBarbers) {
+                    currentBarbers = JSON.parse(savedBarbers);
+                } else if (window.barbers) {
+                    currentBarbers = window.barbers;
+                } else if (typeof state !== 'undefined' && state.barbers) {
+                    currentBarbers = state.barbers;
+                }
+            } catch (e) {
+                currentBarbers = [];
+            }
+
+            // 2. ดึงสถานะเปิด/ปิดร้านจาก LocalStorage
+            const savedShopStatus = localStorage.getItem('barber_shop_open_status');
+            const isOpen = savedShopStatus !== null ? (savedShopStatus === 'true') : true;
+
+            container.innerHTML = currentBarbers.map(b => {
+                const isClosed = !isOpen || b.status === 'closed';
+
+                // 3. ตรวจสอบสถานะว่างแบบยืดหยุ่น
+                const statusStr = String(b.status || '').trim().toLowerCase();
+                const isAvailable = !isClosed && (
+                    statusStr === 'available' ||
+                    statusStr === 'ว่าง' ||
+                    b.isAvailable === true ||
+                    statusStr === 'true'
+                );
+
+                // 🌟 ปรับแต่งป้ายสถานะให้เป็นสีทึบ (Solid) อ่านง่ายและเด่นชัดขึ้น
+                let badgeClass = '';
+                let statusText = '';
+
+                if (isClosed) {
+                    badgeClass = 'bg-gray-700 text-gray-200 border border-gray-600 shadow-md';
+                    statusText = 'ปิดบริการ';
+                } else if (isAvailable) {
+                    badgeClass = 'bg-emerald-600 text-white border border-emerald-500 shadow-md';
+                    statusText = 'ว่าง';
+                } else {
+                    badgeClass = 'bg-red-600 text-white border border-red-500 shadow-md';
+                    statusText = 'ติดคิว';
+                }
+
+                return `
+            <div class="bg-dark-900 border border-dark-700 rounded-2xl p-6 shadow-xl flex flex-col justify-between relative overflow-hidden">
+                <div>
+                    <!-- รูปโปรไฟล์และ Badges สถานะแบบสีทึบ -->
+                    <div class="relative w-28 h-28 mx-auto mb-4">
+                        <img src="${b.avatar || ''}" class="w-full h-full rounded-full object-cover border-4 border-dark-700 shadow-md" alt="${b.name}">
+                        <span class="absolute -bottom-1 left-1/2 -translate-x-1/2 px-3.5 py-1 rounded-full text-xs font-bold ${badgeClass} whitespace-nowrap shadow-lg">
+                            ${statusText}
+                        </span>
+                    </div>
+
+                    <!-- ชื่อและรายละเอียดช่าง -->
+                    <div class="text-center mt-3">
+                        <h3 class="text-lg font-bold text-white">${b.name}</h3>
+                        <p class="text-xs text-amber-500 font-medium mt-0.5">${b.exp || 'ช่างประจำร้าน'}</p>
+                        <p class="text-xs text-gray-400 mt-3 line-clamp-2 leading-relaxed">
+                            ${b.bio || 'เชี่ยวชาญการตัดแต่งทรงผมชายสไตล์คลาสสิก ออกแบบทรงผมเข้ากับรูปหน้า'}
+                        </p>
+                    </div>
+                </div>
+
+                <!-- ปุ่มจองคิว -->
+                <div class="mt-6">
+                    <button onclick="selectBarberForBooking('${b.id}')" 
+                        class="w-full py-2.5 px-4 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 ${isAvailable
+                        ? 'bg-amber-500 hover:bg-amber-400 text-dark-900 shadow-lg shadow-amber-500/10'
+                        : 'bg-dark-800 text-gray-500 cursor-not-allowed opacity-60'}" 
+                        ${!isAvailable ? 'disabled' : ''}>
+                        <i class="fa-solid fa-calendar-plus"></i>
+                        <span>จองคิวกับช่างท่านนี้</span>
+                    </button>
+                </div>
+            </div>
+        `;
+            }).join('');
+        }
+
+        // function renderBookingBarbers() {
+        //     // 🌟 เปลี่ยน ID ให้ตรงกับ Container หรือ Dropdown เลือกช่างในหน้าจองคิวของก้อง
+        //     // (เช่น ถ้าเป็น Grid เลือกช่าง: 'booking-barbers-grid' หรือถ้าเป็น Dropdown: 'barber-select')
+        //     const container = document.getElementById('booking-barbers-grid');
+        //     if (!container) return;
+
+        //     // 1. ดึงข้อมูลช่างล่าสุดจาก LocalStorage หรือตัวแปรกลาง
+        //     let currentBarbers = [];
+        //     try {
+        //         const savedBarbers = localStorage.getItem('barber_shop_barbers');
+        //         if (savedBarbers) {
+        //             currentBarbers = JSON.parse(savedBarbers);
+        //         } else if (window.barbers) {
+        //             currentBarbers = window.barbers;
+        //         } else if (typeof state !== 'undefined' && state.barbers) {
+        //             currentBarbers = state.barbers;
+        //         }
+        //     } catch (e) {
+        //         currentBarbers = [];
+        //     }
+
+        //     // 2. ดึงสถานะเปิด/ปิดร้านจาก LocalStorage
+        //     const savedShopStatus = localStorage.getItem('barber_shop_open_status');
+        //     const isOpen = savedShopStatus !== null ? (savedShopStatus === 'true') : true;
+
+        //     container.innerHTML = currentBarbers.map(b => {
+        //         const isClosed = !isOpen || b.status === 'closed';
+
+        //         // 3. ตรวจสอบสถานะว่างแบบยืดหยุ่น
+        //         const statusStr = String(b.status || '').trim().toLowerCase();
+        //         const isAvailable = !isClosed && (
+        //             statusStr === 'available' ||
+        //             statusStr === 'ว่าง' ||
+        //             b.isAvailable === true ||
+        //             statusStr === 'true'
+        //         );
+
+        //         let statusText = isClosed ? 'ปิดบริการ' : (isAvailable ? 'ว่าง' : 'ติดคิว');
+        //         let badgeColor = isClosed ? 'text-gray-400' : (isAvailable ? 'text-emerald-400' : 'text-red-400');
+
+        //         return `
+        //     <div class="booking-barber-card ...">
+        //         <!-- โครงสร้างการแสดงผลช่างในหน้าจองคิว -->
+        //         <span class="${badgeColor}">(${statusText})</span>
+        //     </div>
+        // `;
+        //     }).join('');
+        // }
 
     </script>
     <!-- Modal ข้อมูลส่วนตัว -->
