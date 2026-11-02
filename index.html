@@ -895,7 +895,7 @@
 
             bookings: JSON.parse(localStorage.getItem('barber_bookings')) || [
                 {
-                    id: 'BK-1001',
+                    id: 'BK-0001',
                     userId: 'u1',
                     userName: 'สมชาย ชัยชนะ',
                     userPhone: '081-234-5678',
@@ -1962,10 +1962,17 @@
                 }
 
                 // สร้าง Object การจองใหม่
+                // 🌟 ดึงเลขนับคิวล่าสุดจาก localStorage (ถ้ายังไม่มีให้เริ่มที่ 0 แล้วบวก 1)
+                let bookingCounter = parseInt(localStorage.getItem('barber_booking_counter') || '0') + 1;
+                localStorage.setItem('barber_booking_counter', bookingCounter);
+
+                // จัดรูปแบบให้เป็น 4 หลักเสมอ เช่น KHC -0001, KHC -0002
+                const formattedBookingId = 'KH - ' + String(bookingCounter).padStart(4, '0');
+
                 const newBooking = {
-                    id: 'BK-' + Math.floor(1000 + Math.random() * 9000),
+                    id: formattedBookingId, // 👈 ใช้รหัสที่รันเลขเรียงลำดับ
                     userId: state.currentUser ? (state.currentUser.id || state.currentUser.firestoreId || 'u-user') : 'guest',
-                    userEmail: state.currentUser ? (state.currentUser.email || '').trim().toLowerCase() : '', // 👈 เพิ่มเก็บบันทึกอีเมลไว้เทียบสิทธิ์
+                    userEmail: state.currentUser ? (state.currentUser.email || '').trim().toLowerCase() : '',
                     userName: name,
                     userPhone: phone,
                     styleName: selectedStyleObj.name,
