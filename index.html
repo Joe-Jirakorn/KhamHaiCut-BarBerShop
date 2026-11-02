@@ -4253,6 +4253,59 @@
             }
         }
 
+        // ตัวอย่างฟังก์ชันอัปเดตสถานะร้านขึ้น Firebase
+        async function updateShopStatusToCloud(isOpen, customStatusText = '') {
+            try {
+                await db.collection('shop_settings').doc('status').set({
+                    isOpen: isOpen,
+                    statusText: customStatusText,
+                    updatedAt: new Date().toISOString()
+                }, { merge: true });
+
+                console.log("อัปเดตสถานะร้านขึ้นคลาวด์สำเร็จ");
+            } catch (error) {
+                console.error("เกิดข้อผิดพลาดในการอัปเดตสถานะ:", error);
+            }
+        }
+
+        // ฟังก์ชันฟังสถานะร้านแบบ Real-time สำหรับหน้า User และทุกๆ เครื่อง
+        function listenToShopStatus() {
+            db.collection('shop_settings').doc('status').onSnapshot((doc) => {
+                if (doc.exists) {
+                    const data = doc.data();
+                    const isShopOpen = data.isOpen;
+                    const statusText = data.statusText;
+
+                    // อัปเดต UI ของปุ่ม / แบนเนอร์แจ้งเตือนหน้าร้านของ User ทันที
+                    const closedBanner = document.getElementById('shop-closed-banner');
+                    const bookingBtn = document.getElementById('submit-booking-btn'); // ปุ่มจอง
+
+                    if (isShopOpen) {
+                        if (closedBanner) closedBanner.classList.add('hidden');
+                        if (bookingBtn) {
+                            bookingBtn.disabled = false;
+                            bookingBtn.textContent = "ยืนยันการจองคิว";
+                        }
+                    } else {
+                        if (closedBanner) {
+                            closedBanner.classList.remove('hidden');
+                            // ถ้ามีข้อความสถานะพิเศษ เช่น "ติดคิวอยู่ / พักเที่ยง" ให้แสดงตรงนี้ได้
+                            if (statusText) closedBanner.textContent = statusText;
+                        }
+                        if (bookingBtn) {
+                            bookingBtn.disabled = true;
+                            bookingBtn.textContent = "ร้านปิด / ปิดรับคิวชั่วคราว";
+                        }
+                    }
+                }
+            });
+        }
+
+        // เรียกใช้งานฟังก์ชันนี้ตอนโหลดหน้าเว็บ (DOMContentLoaded)
+        window.addEventListener('DOMContentLoaded', () => {
+            listenToShopStatus();
+        });
+
     </script>
     <!-- Modal ข้อมูลส่วนตัว -->
     <div id="profile-modal"
