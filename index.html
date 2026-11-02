@@ -1446,6 +1446,18 @@
                 const emailText = document.getElementById('user-email-text');
                 if (emailText) emailText.textContent = state.currentUser.email || '';
 
+                // 🌟 อัปเดตข้อมูลใน Modal หรือฟอร์มโปรไฟล์ (ถ้ามี) ให้ตรงกับค่าปัจจุบันเสมอ
+                const profileNameInput = document.getElementById('profile-name');
+                if (profileNameInput) profileNameInput.value = state.currentUser.name || '';
+
+                const profileAgeInput = document.getElementById('profile-age');
+                if (profileAgeInput) profileAgeInput.value = state.currentUser.age || '';
+
+                const profilePhoneInput = document.getElementById('profile-phone');
+                if (profilePhoneInput && document.activeElement !== profilePhoneInput) {
+                    profilePhoneInput.value = state.currentUser.phone || '';
+                }
+
                 const nameInput = document.getElementById('cust-name');
                 if (nameInput) nameInput.value = state.currentUser.name || '';
 
@@ -1457,7 +1469,6 @@
                         roleSwitcher.style.display = 'flex';
 
                         // 🌟 ค้นหาและจัดการปุ่ม "Admin" ด้านใน roleSwitcher
-                        // (ไม่ว่าจะใช้ onclick เป็น switchRole('admin') หรือมีคลาส/id เฉพาะ)
                         const adminBtn = roleSwitcher.querySelector('[onclick*="admin"]') || roleSwitcher.querySelector('.btn-admin');
 
                         if (adminBtn) {
