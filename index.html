@@ -966,6 +966,35 @@
                 });
             }
 
+            // 🌟 1.1 ผูก Event Listener สำหรับอัปโหลดและบีบอัดรูปโปรไฟล์ (รองรับมือถือ)
+            const avatarInput = document.getElementById('profile-avatar-input');
+            if (avatarInput) {
+                avatarInput.addEventListener('change', async (e) => {
+                    const file = e.target.files[0];
+                    if (file) {
+                        try {
+                            // เรียกใช้ฟังก์ชันบีบอัดรูปภาพเพื่อลดขนาดก่อนแปลงเป็น Base64
+                            tempProfileAvatarBase64 = await compressImage(file, 500, 500, 0.7);
+
+                            // พรีวิวรูปตัวอย่างบนหน้าจอทันที
+                            const previewImg = document.getElementById('profile-avatar-preview');
+                            if (previewImg) {
+                                previewImg.src = tempProfileAvatarBase64;
+                            }
+
+                            if (typeof showToast === 'function') {
+                                showToast('ย่อขนาดรูปภาพสำเร็จ!', 'success');
+                            }
+                        } catch (err) {
+                            console.error("Error compressing avatar image:", err);
+                            if (typeof showToast === 'function') {
+                                showToast('ไม่สามารถประมวลผลรูปภาพนี้ได้', 'error');
+                            }
+                        }
+                    }
+                });
+            }
+
             // 2. เรนเดอร์หน้าจอทั่วไป
             if (typeof updateUserUI === 'function') updateUserUI();
             if (typeof renderUI === 'function') renderUI();
