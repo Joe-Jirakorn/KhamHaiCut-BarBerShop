@@ -916,7 +916,7 @@
         /* ================= INITIALIZATION ================= */
         /* ================= INITIALIZATION ================= */
         window.addEventListener('DOMContentLoaded', async () => {
-            // 1. กู้คืนสถานะการเข้าสู่ระบบจาก LocalStorage (แก้ชื่อคีย์ให้ตรงกัน)
+            // 1. กู้คืนสถานะการเข้าสู่ระบบจาก LocalStorage
             const savedUser = localStorage.getItem('barber_current_user');
             if (savedUser) {
                 try {
@@ -947,7 +947,6 @@
                     phoneInput.readOnly = true;
                 }
 
-                // ถ้าในข้อมูล User มีอายุบันทึกไว้ ให้ดึงมาใส่และเลือกกลุ่มอายุให้อัตโนมัติ
                 if (ageInput && state.currentUser.age) {
                     ageInput.value = state.currentUser.age;
                     if (typeof handleAgeAutoSelect === 'function') {
@@ -956,7 +955,6 @@
                 }
             }
 
-            // 🛑 ผูก Event Listener สำหรับช่องกรอกอายุ
             const ageInputEl = document.getElementById('cust-age');
             if (ageInputEl) {
                 ageInputEl.addEventListener('input', (e) => {
@@ -966,50 +964,17 @@
                 });
             }
 
-            // 🌟 1.1 ผูก Event Listener สำหรับอัปโหลดและบีบอัดรูปโปรไฟล์ (รองรับมือถือ)
-            const avatarInput = document.getElementById('profile-avatar-input');
-            if (avatarInput) {
-                avatarInput.addEventListener('change', async (e) => {
-                    const file = e.target.files[0];
-                    if (file) {
-                        try {
-                            // เรียกใช้ฟังก์ชันบีบอัดรูปภาพเพื่อลดขนาดก่อนแปลงเป็น Base64
-                            tempProfileAvatarBase64 = await compressImage(file, 500, 500, 0.7);
-
-                            // พรีวิวรูปตัวอย่างบนหน้าจอทันที
-                            const previewImg = document.getElementById('profile-avatar-preview');
-                            if (previewImg) {
-                                previewImg.src = tempProfileAvatarBase64;
-                            }
-
-                            if (typeof showToast === 'function') {
-                                showToast('ย่อขนาดรูปภาพสำเร็จ!', 'success');
-                            }
-                        } catch (err) {
-                            console.error("Error compressing avatar image:", err);
-                            if (typeof showToast === 'function') {
-                                showToast('ไม่สามารถประมวลผลรูปภาพนี้ได้', 'error');
-                            }
-                        }
-                    }
-                });
-            }
-
             // 2. เรนเดอร์หน้าจอทั่วไป
             if (typeof updateUserUI === 'function') updateUserUI();
             if (typeof renderUI === 'function') renderUI();
             if (typeof renderHairstylesGrid === 'function') renderHairstylesGrid();
-
-            // เรนเดอร์การ์ดบริการเสริม
             if (typeof renderAddonsGrid === 'function') renderAddonsGrid();
-
             if (typeof renderAgeGroupsGrid === 'function') renderAgeGroupsGrid();
             if (typeof renderUserBookingsTable === 'function') renderUserBookingsTable();
             if (typeof renderAdminBookingsTable === 'function') renderAdminBookingsTable();
             if (typeof initChart === 'function') initChart();
             if (typeof updateRevenueStats === 'function') updateRevenueStats();
 
-            // 3. เปิดใช้งานระบบซิงค์สถานะช่างแบบ Real-time
             if (typeof initRealtimeBarbers === 'function') {
                 initRealtimeBarbers();
             }
@@ -3256,7 +3221,7 @@
             return parseInt(parts[0]) * 60 + parseInt(parts[1]);
         }
 
-        let tempProfileAvatarBase64 = ''; // ตัวแปรเก็บรูปภาพชั่วคราวก่อนกดบันทึก
+        let tempProfileAvatarBase64 = null; // ตัวแปรเก็บรูปภาพชั่วคราวก่อนกดบันทึก
 
         // 1. เปิด Modal ข้อมูลส่วนตัว และดึงข้อมูลปัจจุบันมาแสดง
         function openProfileModal() {
@@ -3289,15 +3254,28 @@
         }
 
         // 2. ฟังก์ชันแปลงไฟล์รูปภาพที่อัปโหลดเป็น Base64
-        function previewProfileImage(event) {
+        async function previewProfileImage(event) {
             const file = event.target.files[0];
             if (file) {
-                const reader = new FileReader();
-                reader.onload = function (e) {
-                    tempProfileAvatarBase64 = e.target.result;
-                    document.getElementById('profile-preview-img').src = tempProfileAvatarBase64;
-                };
-                reader.readAsDataURL(file);
+                try {
+                    // 🌟 เรียกใช้ compressImage เพื่อย่อขนาดและบีบอัดรูปก่อน (จำกัดไม่เกิน 500x500px, คุณภาพ 70%)
+                    tempProfileAvatarBase64 = await compressImage(file, 500, 500, 0.7);
+
+                    // แสดงรูปพรีวิวตามไอดีใน HTML ของก้อง
+                    const previewImg = document.getElementById('profile-preview-img');
+                    if (previewImg) {
+                        previewImg.src = tempProfileAvatarBase64;
+                    }
+
+                    if (typeof showToast === 'function') {
+                        showToast('ย่อขนาดรูปภาพสำเร็จ!', 'success');
+                    }
+                } catch (err) {
+                    console.error("Error compressing image:", err);
+                    if (typeof showToast === 'function') {
+                        showToast('ไม่สามารถประมวลผลรูปภาพนี้ได้', 'error');
+                    }
+                }
             }
         }
 
