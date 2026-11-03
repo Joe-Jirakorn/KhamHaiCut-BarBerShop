@@ -3030,34 +3030,50 @@
 
         // ฟังก์ชันฟังสถานะช่างแบบเรียลไทม์ฝั่ง User
         function initRealtimeBarbers() {
-            if (!window.db || !window.firebaseModules) return;
+            if (!window.db || !window.firebaseModules) {
+                setTimeout(initRealtimeBarbers, 500);
+                return;
+            }
 
             const { collection, onSnapshot } = window.firebaseModules;
 
             // ดึงและฟังข้อมูลจาก Collection "barbers" บน Firebase แบบเรียลไทม์
             onSnapshot(collection(window.db, "barbers"), (snapshot) => {
-                // 🛑 ใช้ state หลักของระบบแทน window.state
-                if (typeof state === 'undefined' || !state.barbers) return;
+                // 🌟 ป้องกันกรณีที่ state ยังไม่ถูกสร้าง ให้สร้างโครงสร้างอาร์เรย์รอกไว้เลย
+                if (typeof state === 'undefined') {
+                    window.state = {};
+                }
+                if (!state.barbers) {
+                    state.barbers = [];
+                }
 
                 snapshot.forEach((docSnap) => {
                     const firebaseData = docSnap.data();
-                    const docId = docSnap.id; // 'b1' หรือ 'b2'
+                    const docId = docSnap.id; // เช่น 'b1' หรือ 'b2'
 
                     // ค้นหาช่างใน state.barbers ตัวหลัก
-                    const targetBarber = state.barbers.find(b => b.id === docId);
+                    let targetBarber = state.barbers.find(b => b.id === docId);
 
                     if (targetBarber) {
-                        // อัปเดตเฉพาะสถานะจริงจาก Firebase ทับลงไป โดยไม่ลบรูปภาพหรือข้อมูลเดิมทิ้ง
+                        // อัปเดตสถานะและข้อมูลจาก Firebase ทับลงไป
                         targetBarber.status = firebaseData.status || 'available';
                         if (firebaseData.name) {
                             targetBarber.name = firebaseData.name;
                         }
+                    } else {
+                        // ถ้ายังไม่มีใน state ให้เพิ่มเข้าไปใหม่เลย (ป้องกันข้อมูลตกหล่น)
+                        state.barbers.push({
+                            id: docId,
+                            name: firebaseData.name || `ช่าง ${docId}`,
+                            status: firebaseData.status || 'available',
+                            ...firebaseData
+                        });
                     }
                 });
 
                 console.log("ซิงค์สถานะช่างเรียลไทม์สำเร็จ:", state.barbers);
 
-                // 🛑 สั่งเรนเดอร์หน้าจอทุกส่วนที่แสดงผลข้อมูลช่างให้อัปเดตตามทันที (รวมถึงหน้า Guest ตอนออกจากระบบ)
+                // 🌟 สั่งเรนเดอร์หน้าจอทุกส่วนที่เกี่ยวข้องทันที
                 if (typeof renderBarbersHomeStatus === 'function') renderBarbersHomeStatus();
                 if (typeof renderBarberSelectGrid === 'function') renderBarberSelectGrid();
                 if (typeof renderAdminBarberControls === 'function') renderAdminBarberControls();
@@ -4365,6 +4381,43 @@
                 console.log("เปลี่ยนสถานะร้านบน Firebase สำเร็จเป็น:", newStatus);
             } catch (error) {
                 console.error("เกิดข้อผิดพลาดในการเปลี่ยนสถานะร้าน:", error);
+            }
+        }
+
+        // 🌟 ฟังก์ชันสำหรับเปลี่ยนสถานะช่างและบันทึกลง Firebase Firestore แบบเรียลไทม์
+        async function changeBarberStatus(barberId, newStatus) {
+            if (!window.db || !window.firebaseModules) {
+                console.error("Firebase ยังไม่พร้อมใช้งาน");
+                return;
+            }
+
+            const { doc, updateDoc } = window.firebaseModules;
+
+            try {
+                // อ้างอิงไปที่เอกสารของช่างคนนั้นๆ ใน Collection "barbers"
+                const barberRef = doc(window.db, "barbers", barberId);
+
+                // อัปเดตสถานะใหม่ลงใน Firebase
+                await updateDoc(barberRef, {
+                    status: newStatus
+                });
+
+                console.log(`อัปเดตสถานะช่าง ${barberId} เป็น ${newStatus} สำเร็จ!`);
+
+                // (ทางเลือก) อัปเดตหน้าจอฝั่งตัวเองทันทีก่อนที่ Firebase จะส่งสัญญาณกลับมา เพื่อความรวดเร็ว
+                if (typeof state !== 'undefined' && state.barbers) {
+                    const target = state.barbers.find(b => b.id === barberId);
+                    if (target) {
+                        target.status = newStatus;
+                        if (typeof renderBarbersHomeStatus === 'function') renderBarbersHomeStatus();
+                        if (typeof renderBarberSelectGrid === 'function') renderBarberSelectGrid();
+                        if (typeof renderAdminBarberControls === 'function') renderAdminBarberControls();
+                    }
+                }
+
+            } catch (error) {
+                console.error("เกิดข้อผิดพลาดในการเปลี่ยนสถานะช่าง:", error);
+                alert("ไม่สามารถเปลี่ยนสถานะได้ กรุณาลองใหม่อีกครั้ง");
             }
         }
 
