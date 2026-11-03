@@ -4066,6 +4066,89 @@
             });
         }
 
+        function getChartDataByFilter(filterType) {
+            const bookings = state.bookings || [];
+
+            // สร้าง Gradient สีส้มสำหรับเติมใต้กราฟ (ป้องกัน Error ตัวแปรไม่พบ)
+            let backgroundColor = 'rgba(245, 158, 11, 0.1)';
+            try {
+                const ctx = document.getElementById('revenueChart')?.getContext('2d');
+                if (ctx) {
+                    const gradient = ctx.createLinearGradient(0, 0, 0, 300);
+                    gradient.addColorStop(0, 'rgba(245, 158, 11, 0.4)');
+                    gradient.addColorStop(1, 'rgba(245, 158, 11, 0.0)');
+                    backgroundColor = gradient;
+                }
+            } catch (e) {
+                console.warn("ไม่สามารถสร้าง Gradient ได้ ใช้สีสำรองแทน", e);
+            }
+
+            let labels = [];
+            let dataValues = [];
+
+            if (filterType === 'daily') {
+                // มุมมองรายวัน (ช่วงเวลาเปิดร้าน)
+                labels = ['10:00', '12:00', '14:00', '16:00', '18:00', '20:00'];
+                let slotTotals = { '10:00': 0, '12:00': 0, '14:00': 0, '16:00': 0, '18:00': 0, '20:00': 0 };
+
+                bookings.forEach(b => {
+                    if (b.status === 'cancelled') return;
+
+                    const todayStr = new Date().toISOString().split('T')[0];
+                    // ถ้าต้องการเช็คเฉพาะวันนี้ หรือจะดึงทุกวันมารวมกันดูก่อนก็ได้ครับ
+                    const price = Number(b.price) || 0;
+                    const hour = b.time ? b.time.substring(0, 2) + ':00' : '10:00';
+
+                    // หา Slot ที่ใกล้เคียงที่สุด
+                    let matchedSlot = Object.keys(slotTotals).reduce((prev, curr) => {
+                        return (Math.abs(parseInt(curr) - parseInt(hour)) < Math.abs(parseInt(prev) - parseInt(hour)) ? curr : prev);
+                    });
+
+                    if (slotTotals[matchedSlot] !== undefined) {
+                        slotTotals[matchedSlot] += price;
+                    }
+                });
+
+                dataValues = labels.map(label => slotTotals[label] || 0);
+
+            } else if (filterType === 'weekly') {
+                // มุมมองรายสัปดาห์
+                labels = ['จันทร์', 'อังคาร', 'พุธ', 'พฤหัสฯ', 'ศุกร์', 'เสาร์', 'อาทิตย์'];
+                let totalRevenue = bookings
+                    .filter(b => b.status !== 'cancelled')
+                    .reduce((sum, b) => sum + (Number(b.price) || 0), 0);
+
+                // กระจายยอดเงินลงไป หรือใส่ภาพรวม
+                dataValues = labels.map((l, idx) => (idx === 0 ? totalRevenue : 0));
+
+            } else {
+                // มุมมองรายเดือน
+                labels = ['สัปดาห์ที่ 1', 'สัปดาห์ที่ 2', 'สัปดาห์ที่ 3', 'สัปดาห์ที่ 4'];
+                let totalRevenue = bookings
+                    .filter(b => b.status !== 'cancelled')
+                    .reduce((sum, b) => sum + (Number(b.price) || 0), 0);
+
+                dataValues = [totalRevenue, 0, 0, 0];
+            }
+
+            return {
+                labels: labels,
+                datasets: [{
+                    label: 'รายได้',
+                    data: dataValues,
+                    fill: true,
+                    borderColor: '#f59e0b',
+                    backgroundColor: backgroundColor,
+                    tension: 0.4,
+                    borderWidth: 3,
+                    pointBackgroundColor: '#f59e0b',
+                    pointBorderColor: '#ffffff',
+                    pointBorderWidth: 2,
+                    pointRadius: 4
+                }]
+            };
+        }
+
     </script>
     <!-- Modal ข้อมูลส่วนตัว -->
     <div id="profile-modal"
