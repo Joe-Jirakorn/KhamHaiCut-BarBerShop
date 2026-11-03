@@ -1026,8 +1026,9 @@
             if (typeof initChart === 'function') initChart();
             if (typeof updateRevenueStats === 'function') updateRevenueStats();
 
-            // 3. เรนเดอร์ส่วนของช่าง
+            // 3. เรนเดอร์ส่วนของช่าง (รวม renderBarbersPage ที่เราใช้ปุ่มสีเทา)
             if (typeof renderAdminBarberControls === 'function') renderAdminBarberControls();
+            if (typeof renderBarbersPage === 'function') renderBarbersPage(); // <--- เรียกใช้งานฟังก์ชันหน้าช่างตัวจริงที่นี่
             if (typeof renderFullBarbersList === 'function') renderFullBarbersList();
             if (typeof renderBarberSelectGrid === 'function') renderBarberSelectGrid();
             if (typeof renderBarbersHomeStatus === 'function') renderBarbersHomeStatus();
