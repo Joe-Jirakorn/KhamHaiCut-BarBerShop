@@ -1660,24 +1660,11 @@
             const container = document.getElementById('barber-select-grid');
             if (!container) return;
 
-            // 🌟 1. ดึงข้อมูลล่าสุดจาก localStorage มาก่อนเป็นอันดับแรกเสมอ เพื่อป้องกันข้อมูลเก่าค้างหลังรีเฟรช
-            let currentBarbers = [];
-            try {
-                const savedBarbers = localStorage.getItem('barber_shop_barbers');
-                if (savedBarbers) {
-                    currentBarbers = JSON.parse(savedBarbers);
-                    // อัปเดตกลับเข้า state กลางด้วยเพื่อให้ข้อมูลซิงค์กัน
-                    state.barbers = currentBarbers;
-                } else {
-                    currentBarbers = state.barbers || [];
-                }
-            } catch (e) {
-                currentBarbers = state.barbers || [];
-            }
+            // 🌟 1. ดึงข้อมูลช่างจาก state กลาง (ซึ่งถูกอัปเดตแบบ Real-time จาก Firebase มาแล้ว)
+            const currentBarbers = state.barbers || [];
 
-            // 2. ดึงสถานะเปิด/ปิดร้าน
-            const savedShopStatus = localStorage.getItem('barber_shop_open_status');
-            const isOpen = savedShopStatus !== null ? (savedShopStatus === 'true') : true;
+            // 🌟 2. ใช้ตัวแปรสถานะเปิด/ปิดร้านกลาง (isShopOpen) ที่รับค่าจาก Real-time Listener ของ Firebase
+            const isOpen = typeof isShopOpen !== 'undefined' ? isShopOpen : true;
 
             container.innerHTML = currentBarbers.map(b => {
                 const isSelected = String(state.bookingForm.selectedBarberId) === String(b.id);
