@@ -2008,31 +2008,31 @@
             }).join('');
         }
         // 5. Full Barbers Page List
-        function renderFullBarbersList() {
-            const container = document.getElementById('full-barbers-grid');
-            if (!container) return;
+        // function renderFullBarbersList() {
+        //     const container = document.getElementById('full-barbers-grid');
+        //     if (!container) return;
 
-            container.innerHTML = state.barbers.map(b => {
-                const isAvailable = b.status === 'available';
-                return `
-                    <div class="bg-dark-800 rounded-2xl border border-dark-700 p-6 shadow-xl flex flex-col items-center text-center space-y-4">
-                        <div class="relative">
-                            <img src="${b.avatar}" class="w-24 h-24 rounded-full object-cover border-4 border-amber-500/30" alt="${b.name}">
-                            <span class="absolute bottom-1 right-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold ${isAvailable ? 'bg-emerald-500 text-dark-900' : 'bg-red-500 text-white'
-                    }">${isAvailable ? 'ว่าง' : 'ติดคิว'}</span>
-                        </div>
-                        <div>
-                            <h3 class="text-xl font-bold text-white">${b.name}</h3>
-                            <p class="text-xs text-amber-500 font-medium mt-0.5">${b.exp}</p>
-                        </div>
-                        <p class="text-xs text-gray-400">เชี่ยวชาญการตัดแต่งทรงผมชายสไตล์คลาสสิก ออกแบบทรงผมเข้ากับรูปหน้า และบริการกันโกนหนวดระดับพรีเมียม</p>
-                        <button onclick="selectBarberAndBook('${b.id}')" class="w-full bg-dark-700 hover:bg-amber-500 hover:text-dark-900 text-white font-semibold py-2.5 rounded-xl border border-dark-600 transition text-sm flex items-center justify-center gap-2">
-                            <i class="fa-solid fa-calendar-plus"></i> จองคิวกับช่างท่านนี้
-                        </button>
-                    </div>
-                `;
-            }).join('');
-        }
+        //     container.innerHTML = state.barbers.map(b => {
+        //         const isAvailable = b.status === 'available';
+        //         return `
+        //             <div class="bg-dark-800 rounded-2xl border border-dark-700 p-6 shadow-xl flex flex-col items-center text-center space-y-4">
+        //                 <div class="relative">
+        //                     <img src="${b.avatar}" class="w-24 h-24 rounded-full object-cover border-4 border-amber-500/30" alt="${b.name}">
+        //                     <span class="absolute bottom-1 right-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold ${isAvailable ? 'bg-emerald-500 text-dark-900' : 'bg-red-500 text-white'
+        //             }">${isAvailable ? 'ว่าง' : 'ติดคิว'}</span>
+        //                 </div>
+        //                 <div>
+        //                     <h3 class="text-xl font-bold text-white">${b.name}</h3>
+        //                     <p class="text-xs text-amber-500 font-medium mt-0.5">${b.exp}</p>
+        //                 </div>
+        //                 <p class="text-xs text-gray-400">เชี่ยวชาญการตัดแต่งทรงผมชายสไตล์คลาสสิก ออกแบบทรงผมเข้ากับรูปหน้า และบริการกันโกนหนวดระดับพรีเมียม</p>
+        //                 <button onclick="selectBarberAndBook('${b.id}')" class="w-full bg-dark-700 hover:bg-amber-500 hover:text-dark-900 text-white font-semibold py-2.5 rounded-xl border border-dark-600 transition text-sm flex items-center justify-center gap-2">
+        //                     <i class="fa-solid fa-calendar-plus"></i> จองคิวกับช่างท่านนี้
+        //                 </button>
+        //             </div>
+        //         `;
+        //     }).join('');
+        // }
 
         // 6. User Bookings Table
         function renderUserBookings() {
