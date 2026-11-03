@@ -3983,7 +3983,7 @@
 
             const { doc, onSnapshot } = window.firebaseModules;
 
-            // อ้างอิงไปที่เอกสารสถานะร้านค้าใน Firestore (สมมติเก็บไว้ที่ collection "settings", doc "shop")
+            // อ้างอิงไปที่เอกสารสถานะร้านค้าใน Firestore (เก็บไว้ที่ collection "settings", doc "shop")
             const shopRef = doc(window.db, "settings", "shop");
 
             onSnapshot(shopRef, (docSnap) => {
@@ -3998,6 +3998,33 @@
                     window.isShopOpen = isOpen;
                     if (typeof state !== 'undefined') {
                         state.isShopOpen = isOpen;
+                    }
+
+                    // 🌟 1. เพิ่มส่วนนี้: อัปเดตสถานะของช่างทุกคนให้สอดคล้องกับสถานะร้านทันที
+                    let barbersList = [];
+                    try {
+                        const savedBarbers = localStorage.getItem('barber_shop_barbers');
+                        if (savedBarbers) {
+                            barbersList = JSON.parse(savedBarbers);
+                        } else if (window.barbers) {
+                            barbersList = window.barbers;
+                        } else if (typeof state !== 'undefined' && state.barbers) {
+                            barbersList = state.barbers;
+                        }
+                    } catch (e) {
+                        barbersList = [];
+                    }
+
+                    // ถ้าร้านเปิด ช่างทั้งหมดจะเป็น 'available' | ถ้าร้านปิด ช่างทั้งหมดจะถูกปรับเป็น 'closed'
+                    barbersList.forEach(barber => {
+                        barber.status = isOpen ? 'available' : 'closed';
+                    });
+
+                    // บันทึกกลับลง LocalStorage และตัวแปรช่าง
+                    window.barbers = barbersList;
+                    localStorage.setItem('barber_shop_barbers', JSON.stringify(barbersList));
+                    if (typeof state !== 'undefined') {
+                        state.barbers = barbersList;
                     }
 
                     // อัปเดตหน้าตาปุ่มเปิด/ปิดร้านทันที
@@ -4023,9 +4050,12 @@
                         else closedBanner.classList.add('hidden');
                     }
 
-                    // สั่งเรนเดอร์หน้าจอส่วนอื่นๆ ซ้ำเพื่อให้ UI อัปเดตตาม
+                    // 🌟 2. สั่งเรนเดอร์หน้าจอส่วนของช่างและ UI ทั้งหมดซ้ำทันที
                     if (typeof renderUI === 'function') renderUI();
                     if (typeof renderBarbersHomeStatus === 'function') renderBarbersHomeStatus();
+                    if (typeof renderAdminBarberControls === 'function') renderAdminBarberControls();
+                    if (typeof renderFullBarbersList === 'function') renderFullBarbersList();
+                    if (typeof renderBarberSelectGrid === 'function') renderBarberSelectGrid();
                 }
             }, (error) => {
                 console.error("เกิดข้อผิดพลาดในการซิงค์สถานะร้านแบบเรียลไทม์:", error);
