@@ -3583,13 +3583,18 @@
 
         let isShopOpen = true; // ตัวแปรสถานะร้านหลัก
 
-        function toggleShopStatus() {
-            // 1. อ่านสถานะร้านปัจจุบันจาก LocalStorage
-            const currentStatus = localStorage.getItem('barber_shop_open_status');
-            let nextShopStatus = currentStatus !== null ? (currentStatus === 'true') : true;
+        async function toggleShopStatus() {
+            // 1. เช็กความพร้อมของ Firebase โมดูล
+            if (!window.db || !window.firebaseModules) {
+                alert("Firebase ยังไม่พร้อมใช้งาน กรุณารอสักครู่");
+                return;
+            }
 
-            // สลับสถานะ (เปิด <-> ปิด)
-            nextShopStatus = !nextShopStatus;
+            const { doc, setDoc } = window.firebaseModules;
+
+            // 2. อ่านสถานะปัจจุบันจากตัวแปรกลางหรือ DOM
+            const currentStatus = typeof window.isShopOpen !== 'undefined' ? window.isShopOpen : true;
+            let nextShopStatus = !currentStatus;
 
             const btn = document.getElementById('shop-status-toggle-btn');
             const dot = document.getElementById('shop-status-dot');
@@ -3607,47 +3612,46 @@
                 if (typeof showToast === 'function') showToast('ปิดร้านแล้ว ช่างทั้งหมดถูกปรับเป็นสถานะปิดบริการ', 'info');
             }
 
-            // 2. บันทึกสถานะร้านใหม่ลง LocalStorage
+            // อัปเดตตัวแปรกลางในเครื่องทันทีเพื่อความไว
+            window.isShopOpen = nextShopStatus;
             localStorage.setItem('barber_shop_open_status', nextShopStatus);
-            if (typeof isShopOpen !== 'undefined') {
-                isShopOpen = nextShopStatus;
-            }
 
-            // 🌟 3. จัดการอัปเดตสถานะช่างตามสถานะร้านแบบอัตโนมัติ
-            let barbersList = [];
+            // 🌟 3. ส่งข้อมูลสถานะร้านขึ้นไปเก็บบน Firebase Firestore ทันที (เพื่อให้เครื่องอื่นซิงค์ตาม)
             try {
-                const savedBarbers = localStorage.getItem('barber_shop_barbers');
-                if (savedBarbers) {
-                    barbersList = JSON.parse(savedBarbers);
-                } else if (window.barbers) {
-                    barbersList = window.barbers;
-                } else if (typeof state !== 'undefined' && state.barbers) {
-                    barbersList = state.barbers;
-                }
+                const statusRef = doc(window.db, "settings", "shopStatus");
+                await setDoc(statusRef, {
+                    isOpen: nextShopStatus,
+                    updatedAt: new Date().toISOString()
+                }, { merge: true });
+
+                console.log("บันทึกสถานะร้านลง Firebase สำเร็จ:", nextShopStatus ? "เปิดร้าน" : "ปิดร้าน");
+            } catch (error) {
+                console.error("เกิดข้อผิดพลาดในการบันทึกสถานะร้านลง Firebase:", error);
+            }
+
+            // 🌟 4. อัปเดตสถานะช่างทั้งหมดลง Firebase ด้วย (ถ้าต้องการให้ปิดร้านแล้วช่างปิดตาม)
+            try {
+                const { collection, getDocs, updateDoc } = window.firebaseModules;
+                const querySnapshot = await getDocs(collection(window.db, "barbers"));
+
+                querySnapshot.forEach(async (documentSnapshot) => {
+                    const barberRef = doc(window.db, "barbers", documentSnapshot.id);
+                    await updateDoc(barberRef, {
+                        status: nextShopStatus ? 'available' : 'closed'
+                    });
+                });
             } catch (e) {
-                barbersList = [];
+                console.error("ไม่สามารถอัปเดตสถานะช่างบน Firebase ได้:", e);
             }
 
-            // ถ้าร้านเปิด ให้คืนค่าช่างทั้งหมดเป็น 'available' (คิวว่าง) | ถ้าร้านปิด ให้ปรับเป็น 'closed'
-            barbersList.forEach(barber => {
-                barber.status = nextShopStatus ? 'available' : 'closed';
-            });
-
-            // บันทึกลง LocalStorage และ window.barbers / state.barbers ทันที
-            window.barbers = barbersList;
-            localStorage.setItem('barber_shop_barbers', JSON.stringify(barbersList));
-            if (typeof state !== 'undefined') {
-                state.barbers = barbersList;
-            }
-
-            // 4. ควบคุมแบนเนอร์หน้าแรก
+            // 5. ควบคุมแบนเนอร์หน้าแรก
             const closedBanner = document.getElementById('shop-closed-banner');
             if (closedBanner) {
                 if (!nextShopStatus) closedBanner.classList.remove('hidden');
                 else closedBanner.classList.add('hidden');
             }
 
-            // 5. สั่งเรนเดอร์อัปเดตหน้าจอทุกส่วนทันที
+            // 6. สั่งเรนเดอร์อัปเดตหน้าจอทุกส่วนทันที
             if (typeof renderUI === 'function') renderUI();
             if (typeof renderAdminBarberControls === 'function') renderAdminBarberControls();
             if (typeof renderBarbersHomeStatus === 'function') renderBarbersHomeStatus();
