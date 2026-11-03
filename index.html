@@ -3836,22 +3836,30 @@
 
             if (!state.currentUser) return;
 
-            // 🌟 แก้ไข: ใช้ค่าเดิมจาก state.currentUser โดยตรง เพราะช่อง input ถูก disabled ไว้ (ป้องกันค่าว่างในมือถือ)
+            // 🌟 ดึงค่าจากฟอร์ม
             const newName = state.currentUser.name;
-            const newAge = state.currentUser.age;
-            const newPhone = document.getElementById('profile-phone').value.trim(); // เบอร์ยังแก้ไขได้ปกติ
+            const newPhone = document.getElementById('profile-phone').value.trim(); // เบอร์โทรศัพท์
 
-            // อัปเดตค่าลงใน Object ปัจจุบัน
+            // 🌟 ดึงค่าวันเกิดจาก Input และคำนวณอายุใหม่สดๆ ตรงนี้เลย
+            const birthdateInput = document.getElementById('profile-birthdate');
+            const newBirthdate = birthdateInput ? birthdateInput.value : (state.currentUser.birthdate || '');
+
+            // เรียกใช้ฟังก์ชันคำนวณอายุ (ถ้ามี) หรือคำนวณเผื่อไว้
+            const newAge = typeof calculateAge === 'function' ? calculateAge(newBirthdate) : (state.currentUser.age || 0);
+
+            // อัปเดตค่าลงใน Object state.currentUser ปัจจุบัน
             state.currentUser.phone = newPhone;
+            state.currentUser.birthdate = newBirthdate;
+            state.currentUser.age = newAge;
+
             if (tempProfileAvatarBase64) {
                 state.currentUser.avatar = tempProfileAvatarBase64;
             }
 
             try {
-                // 🌟 0. ดึงข้อมูลช่างล่าสุดจาก localStorage มาไว้ใน state.barbers ก่อนเริ่มเช็ก
+                // 1. ซิงก์ข้อมูลลงใน Local state.barbers (รองรับทั้งจับคู่ด้วย Email หรือ ID)
                 state.barbers = JSON.parse(localStorage.getItem('barber_shop_barbers')) || state.barbers;
 
-                // 1. ซิงก์ข้อมูลลงใน Local state.barbers (รองรับทั้งจับคู่ด้วย Email หรือ ID)
                 if (state.barbers && Array.isArray(state.barbers)) {
                     let matched = false;
                     for (let barber of state.barbers) {
@@ -3869,20 +3877,20 @@
                         }
                     }
 
-                    // บันทึกอาเรย์ช่างที่อัปเดตแล้วลง LocalStorage ทันที
                     localStorage.setItem('barber_shop_barbers', JSON.stringify(state.barbers));
-                    console.log("สถานะการซิงก์ช่าง:", matched ? "สำเร็จ" : "ไม่พบอีเมลช่างที่ตรงกัน");
                 }
 
-                // 2. อัปเดตข้อมูล User ลง Firebase Firestore (ถ้ามี firestoreId)
+                // 2. อัปเดตข้อมูล User ลง Firebase Firestore (รวมถึงวันเกิดและอายุใหม่)
                 if (window.db && window.firebaseModules && state.currentUser.firestoreId) {
                     const { doc, updateDoc } = window.firebaseModules;
                     const userDocRef = doc(window.db, "users", state.currentUser.firestoreId);
                     await updateDoc(userDocRef, {
                         name: newName,
                         phone: newPhone,
+                        birthdate: newBirthdate,
                         age: newAge,
-                        avatar: state.currentUser.avatar
+                        avatar: state.currentUser.avatar,
+                        updatedAt: new Date().toISOString()
                     });
                 }
 
@@ -3892,23 +3900,12 @@
                 // อัปเดตหน้าจอ UI ทั้งหมดทันทีแบบ Real-time
                 updateUserUI();
 
-                if (typeof renderAgeGroupsGrid === 'function') {
-                    renderAgeGroupsGrid();
-                }
+                if (typeof renderAgeGroupsGrid === 'function') renderAgeGroupsGrid();
+                if (typeof renderBarberSelectGrid === 'function') renderBarberSelectGrid();
+                if (typeof renderBarbers === 'function') renderBarbers();
+                if (typeof renderBarbersHomeStatus === 'function') renderBarbersHomeStatus();
 
-                if (typeof renderBarberSelectGrid === 'function') {
-                    renderBarberSelectGrid(); // อัปเดตช่องเลือกช่างทันที
-                }
-
-                if (typeof renderBarbers === 'function') {
-                    renderBarbers(); // อัปเดตหน้ารายชื่อช่างทันที
-                }
-
-                if (typeof renderBarbersHomeStatus === 'function') {
-                    renderBarbersHomeStatus(); // อัปเดตการ์ดสถานะช่างหน้าแรกทันทีแบบเรียลไทม์
-                }
-
-                showToast('บันทึกข้อมูลส่วนตัวสำเร็จ!', 'success');
+                showToast('บันทึกข้อมูลส่วนตัวและอายุสำเร็จ!', 'success');
                 closeModal('profile-modal');
 
             } catch (error) {
@@ -4372,6 +4369,79 @@
             });
         }
 
+        // ฟังก์ชันคำนวณอายุจริงจากวันเกิด (รองรับการคำนวณปี เดือน วัน ให้แม่นยำ)
+        function calculateAge(birthdateStr) {
+            if (!birthdateStr) return 0;
+            const birthDate = new Date(birthdateStr);
+            const today = new Date();
+
+            let age = today.getFullYear() - birthDate.getFullYear();
+            const monthDiff = today.getMonth() - birthDate.getMonth();
+
+            // ถ้ายังไม่ถึงเดือนเกิด หรือถึงเดือนเกิดแล้วแต่ยังไม่ถึงวันเกิด ให้ลบอายุออก 1 ปี
+            if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+                age--;
+            }
+            return age < 0 ? 0 : age;
+        }
+
+        // ฟังก์ชันกดปุ่ม "บันทึกการแก้ไข" ในหน้าโปรไฟล์
+        async function saveUserProfile(event) {
+            if (event) event.preventDefault();
+
+            if (!state.currentUser) {
+                alert("กรุณาเข้าสู่ระบบก่อนบันทึกข้อมูล");
+                return;
+            }
+
+            // ดึงค่าจากฟอร์ม Input
+            const phoneInput = document.getElementById('profile-phone');
+            const birthdateInput = document.getElementById('profile-birthdate'); // ฟิลด์วันเกิดที่เราจะเพิ่มใน HTML
+            const nameInput = document.getElementById('profile-name');
+
+            const newPhone = phoneInput ? phoneInput.value.trim() : '';
+            const newBirthdate = birthdateInput ? birthdateInput.value : '';
+            const newName = nameInput ? nameInput.value.trim() : state.currentUser.name;
+
+            // 🌟 คำนวณอายุอัตโนมัติจากวันเกิดที่เลือก
+            const calculatedAge = calculateAge(newBirthdate);
+
+            // อัปเดตข้อมูลลงใน state.currentUser
+            state.currentUser.name = newName;
+            state.currentUser.phone = newPhone;
+            state.currentUser.birthdate = newBirthdate;
+            state.currentUser.age = calculatedAge; // บันทึกอายุใหม่
+
+            // บันทึกลง LocalStorage
+            localStorage.setItem('barber_current_user', JSON.stringify(state.currentUser));
+
+            // บันทึกลง Firebase Firestore (ถ้าเชื่อมต่อระบบ Firebase ไว้)
+            try {
+                if (window.firebaseModules && window.db && state.currentUser.firestoreId) {
+                    const { doc, updateDoc } = window.firebaseModules;
+                    const userRef = doc(window.db, "users", state.currentUser.firestoreId);
+
+                    await updateDoc(userRef, {
+                        name: newName,
+                        phone: newPhone,
+                        birthdate: newBirthdate,
+                        age: calculatedAge,
+                        updatedAt: new Date().toISOString()
+                    });
+                }
+
+                alert('บันทึกข้อมูลส่วนตัวและอัปเดตอายุเรียบร้อยแล้ว!');
+
+                // อัปเดตหน้าจอ UI ทั้งหมดทันที
+                if (typeof updateUserUI === 'function') updateUserUI();
+
+            } catch (error) {
+                console.error("Error saving user profile: ", error);
+                alert("เกิดข้อผิดพลาดในการบันทึกข้อมูล");
+            }
+        }
+
+
 
     </script>
     <!-- Modal ข้อมูลส่วนตัว -->
@@ -4420,18 +4490,25 @@
                         readonly>
                 </div>
 
-                <!-- เบอร์โทรศัพท์ -->
+                <!-- 🌟 เบอร์โทรศัพท์ (แก้ไขได้) -->
                 <div>
-                    <label class="block text-xs text-gray-400 mb-1">เบอร์โทรศัพท์</label>
-                    <input type="text" id="profile-phone"
-                        class="w-full bg-dark-900 border border-dark-700 rounded-xl px-4 py-2 text-sm text-white focus:border-amber-500 outline-none">
+                    <label class="block text-xs font-semibold text-gray-400 mb-1">เบอร์โทรศัพท์</label>
+                    <input type="tel" id="profile-phone"
+                        class="w-full bg-dark-700 border border-dark-600 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-amber-500">
                 </div>
 
-                <!-- อายุ -->
+                <!-- วันเกิด -->
                 <div>
-                    <label class="block text-xs font-semibold text-gray-400 mb-1">อายุ</label>
-                    <input type="number" id="profile-age" disabled
-                        class="w-full bg-dark-900 border border-dark-700 rounded-xl px-4 py-2.5 text-white text-sm opacity-60 cursor-not-allowed">
+                    <label class="block text-xs font-semibold text-gray-400 mb-1">วันเกิด</label>
+                    <input type="date" id="profile-birthdate" onchange="autoCalculateAgeFromBirthdate()"
+                        class="w-full bg-dark-700 border border-dark-600 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-amber-500">
+                </div>
+
+                <!-- ช่องแสดงอายุ (คำนวณอัตโนมัติ) -->
+                <div>
+                    <label class="block text-xs font-semibold text-gray-400 mb-1">อายุ (คำนวณให้อัตโนมัติ)</label>
+                    <input type="number" id="profile-age" readonly
+                        class="w-full bg-dark-900 border border-dark-700 rounded-xl px-4 py-2.5 text-amber-400 font-semibold text-sm cursor-not-allowed">
                 </div>
 
                 <!-- ปุ่มบันทึก -->
