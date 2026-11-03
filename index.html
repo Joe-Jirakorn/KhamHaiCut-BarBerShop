@@ -526,8 +526,8 @@
                         </div>
 
                         <!-- Confirm Booking Button -->
-                        <button onclick="submitBooking()"
-                            class="w-full bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-dark-900 font-extrabold py-4 rounded-xl shadow-lg shadow-amber-500/20 transition transform hover:-translate-y-0.5 text-center block text-lg">
+                        <button id="submitBookingBtn" onclick="submitBooking(event, this)"
+                            class="w-full bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-dark-900 font-extrabold py-4 rounded-xl shadow-lg shadow-amber-500/20 transition transform hover:-translate-y-0.5 text-center block text-lg disabled:opacity-50 disabled:cursor-not-allowed">
                             <i class="fa-solid fa-check-circle"></i> ยืนยันการจองคิว
                         </button>
                         <p class="text-xs text-center text-gray-500">ชำระเงินที่ร้านเมื่อรับบริการเสร็จสิ้น</p>
@@ -2038,56 +2038,71 @@
         }
 
         /* ================= BOOKING SUBMISSION ================= */
-        async function submitBooking() {
-            // 1. ดึงค่าไอดีที่เลือกจาก bookingForm หรือ state หลัก (รองรับทั้ง 2 แบบเพื่อกันพลาด)
-            const styleId = state.bookingForm?.selectedStyleId || state.selectedStyle;
-            const ageId = state.bookingForm?.selectedAgeId || state.selectedAgeGroup;
-            const barberId = state.bookingForm?.selectedBarberId || state.selectedBarber;
+        async function submitBooking(event, btnElement) {
+            if (event) event.preventDefault();
 
-            // ค้นหาข้อมูลจริงจากอาเรย์ใน state (hairstyles, ageGroups, barbers)
-            const selectedStyleObj = state.hairstyles.find(h => h.id === styleId || h === state.selectedStyle);
-            const selectedAgeObj = state.ageGroups.find(a => a.id === ageId || a === state.selectedAgeGroup);
-            const selectedBarberObj = state.barbers.find(b => b.id === barberId || b === state.selectedBarber);
+            // ดึงปุ่มผ่านพารามิเตอร์ หรือใช้ ID สำรองเพื่อความปลอดภัย
+            const btn = btnElement || document.getElementById('submitBookingBtn');
+            if (btn && btn.disabled) return;
 
-            // ตรวจสอบว่าเลือกทรงผม กลุ่มอายุ และช่างครบถ้วนหรือไม่
-            if (!selectedStyleObj || !selectedAgeObj || !selectedBarberObj) {
-                alert("กรุณาเลือกทรงผม กลุ่มอายุ และช่างตัดผมให้ครบถ้วนครับ");
-                return;
+            // 1. เก็บ HTML เดิมของปุ่มไว้
+            const originalHTML = btn ? btn.innerHTML : '';
+
+            // 2. ล็อกปุ่มกันกดซ้ำ + แสดงไอคอนหมุน (Loading)
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i> กำลังบันทึกคิว...`;
             }
-
-            // 🛑 2. ดึงรายการบริการเสริมที่ผู้ใช้เลือก (selected: true) จาก state.bookingForm.addons
-            const selectedAddons = state.bookingForm.addons
-                ? state.bookingForm.addons.filter(addon => addon.selected)
-                : [];
-
-            // ดึงค่าจากฟอร์ม Input
-            const dateInput = document.getElementById('booking-date');
-            const timeInput = document.getElementById('booking-time');
-            const nameInput = document.getElementById('cust-name');
-            const phoneInput = document.getElementById('cust-phone');
-
-            const date = dateInput ? dateInput.value : '';
-            const time = timeInput ? timeInput.value : '';
-            const name = nameInput ? nameInput.value.trim() : '';
-            const phone = phoneInput ? phoneInput.value.trim() : '';
-
-            if (!date || !time || !name || !phone) {
-                alert("กรุณากรอกข้อมูลวันที่ เวลา และข้อมูลติดต่อให้ครบถ้วน");
-                return;
-            }
-
-            // 3. คำนวณราคา (ราคาหลักทรงผมตามเรทอายุ + ราคารวมบริการเสริมทั้งหมด)
-            const base = selectedStyleObj.basePrice || selectedStyleObj.price || 80;
-            const mult = selectedAgeObj.rate !== undefined ? selectedAgeObj.rate : (selectedAgeObj.multiplier || 1.0);
-            const haircutPrice = Math.round(base * mult);
-
-            // คำนวณราคาบริการเสริมบวกเพิ่ม (ถ้ามีเลือก)
-            const addonsTotal = selectedAddons.reduce((sum, addon) => sum + (addon.price || 0), 0);
-
-            // ราคารวมสุทธิ
-            const netTotal = haircutPrice + addonsTotal;
 
             try {
+                // 1. ดึงค่าไอดีที่เลือกจาก bookingForm หรือ state หลัก (รองรับทั้ง 2 แบบเพื่อกันพลาด)
+                const styleId = state.bookingForm?.selectedStyleId || state.selectedStyle;
+                const ageId = state.bookingForm?.selectedAgeId || state.selectedAgeGroup;
+                const barberId = state.bookingForm?.selectedBarberId || state.selectedBarber;
+
+                // ค้นหาข้อมูลจริงจากอาเรย์ใน state (hairstyles, ageGroups, barbers)
+                const selectedStyleObj = state.hairstyles.find(h => h.id === styleId || h === state.selectedStyle);
+                const selectedAgeObj = state.ageGroups.find(a => a.id === ageId || a === state.selectedAgeGroup);
+                const selectedBarberObj = state.barbers.find(b => b.id === barberId || b === state.selectedBarber);
+
+                // ตรวจสอบว่าเลือกทรงผม กลุ่มอายุ และช่างครบถ้วนหรือไม่
+                if (!selectedStyleObj || !selectedAgeObj || !selectedBarberObj) {
+                    alert("กรุณาเลือกทรงผม กลุ่มอายุ และช่างตัดผมให้ครบถ้วนครับ");
+                    return;
+                }
+
+                // 🛑 2. ดึงรายการบริการเสริมที่ผู้ใช้เลือก (selected: true) จาก state.bookingForm.addons
+                const selectedAddons = state.bookingForm.addons
+                    ? state.bookingForm.addons.filter(addon => addon.selected)
+                    : [];
+
+                // ดึงค่าจากฟอร์ม Input
+                const dateInput = document.getElementById('booking-date');
+                const timeInput = document.getElementById('booking-time');
+                const nameInput = document.getElementById('cust-name');
+                const phoneInput = document.getElementById('cust-phone');
+
+                const date = dateInput ? dateInput.value : '';
+                const time = timeInput ? timeInput.value : '';
+                const name = nameInput ? nameInput.value.trim() : '';
+                const phone = phoneInput ? phoneInput.value.trim() : '';
+
+                if (!date || !time || !name || !phone) {
+                    alert("กรุณากรอกข้อมูลวันที่ เวลา และข้อมูลติดต่อให้ครบถ้วน");
+                    return;
+                }
+
+                // 3. คำนวณราคา (ราคาหลักทรงผมตามเรทอายุ + ราคารวมบริการเสริมทั้งหมด)
+                const base = selectedStyleObj.basePrice || selectedStyleObj.price || 80;
+                const mult = selectedAgeObj.rate !== undefined ? selectedAgeObj.rate : (selectedAgeObj.multiplier || 1.0);
+                const haircutPrice = Math.round(base * mult);
+
+                // คำนวณราคาบริการเสริมบวกเพิ่ม (ถ้ามีเลือก)
+                const addonsTotal = selectedAddons.reduce((sum, addon) => sum + (addon.price || 0), 0);
+
+                // ราคารวมสุทธิ
+                const netTotal = haircutPrice + addonsTotal;
+
                 // 🛑 4. ตรวจสอบการจองเวลาชนกัน (Time Slot Conflict Check) จาก Firebase ก่อนบันทึก
                 if (window.firebaseModules && window.db) {
                     const { collection, getDocs, query, where } = window.firebaseModules;
@@ -2117,7 +2132,6 @@
                     }
                 }
 
-                // 🌟 5. คำนวณรหัสจองแบบ Global Running (ดึงข้อมูลทั้งหมดจาก Firebase มาเทียบหาเลขสูงสุด)
                 // 🌟 5. คำนวณรหัสจองแบบ Global Running (ดึงข้อมูลทั้งหมดจาก Firebase มาเทียบหาเลขสูงสุด)
                 let maxNumber = 0;
                 if (window.firebaseModules && window.db) {
@@ -2201,6 +2215,12 @@
             } catch (error) {
                 console.error("Error saving booking to Firebase: ", error);
                 alert("เกิดข้อผิดพลาดในการบันทึกข้อมูล กรุณาลองใหม่อีกครั้ง");
+            } finally {
+                // 3. คืนค่าปุ่มกลับมาเป็นปกติเสมอ ไม่ว่าจะสำเร็จหรือเกิดข้อผิดพลาด
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = originalHTML;
+                }
             }
         }
 
@@ -4069,7 +4089,7 @@
         function getChartDataByFilter(filterType) {
             const bookings = state.bookings || [];
 
-            // สร้าง Gradient สีส้มสำหรับเติมใต้กราฟ (ป้องกัน Error ตัวแปรไม่พบ)
+            // สร้าง Gradient สีส้มสำหรับเติมใต้กราฟ
             let backgroundColor = 'rgba(245, 158, 11, 0.1)';
             try {
                 const ctx = document.getElementById('revenueChart')?.getContext('2d');
@@ -4080,55 +4100,68 @@
                     backgroundColor = gradient;
                 }
             } catch (e) {
-                console.warn("ไม่สามารถสร้าง Gradient ได้ ใช้สีสำรองแทน", e);
+                console.warn("Gradient error:", e);
             }
 
             let labels = [];
             let dataValues = [];
+            const todayStr = new Date().toISOString().split('T')[0];
 
             if (filterType === 'daily') {
-                // มุมมองรายวัน (ช่วงเวลาเปิดร้าน)
-                labels = ['10:00', '12:00', '14:00', '16:00', '18:00', '20:00'];
-                let slotTotals = { '10:00': 0, '12:00': 0, '14:00': 0, '16:00': 0, '18:00': 0, '20:00': 0 };
+                labels = ['09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00'];
+                let slotTotals = { '09:00': 0, '10:00': 0, '11:00': 0, '12:00': 0, '13:00': 0, '14:00': 0, '15:00': 0, '16:00': 0, '17:00': 0, '18:00': 0, '19:00': 0, '20:00': 0 };
 
                 bookings.forEach(b => {
                     if (b.status === 'cancelled') return;
+                    if (b.date === todayStr) {
+                        const price = Number(b.price) || 0;
+                        const bookingTime = b.time || "09:00"; // เช่น "15:00"
+                        const hourNum = parseInt(bookingTime.split(':')[0], 10);
 
-                    const todayStr = new Date().toISOString().split('T')[0];
-                    // ถ้าต้องการเช็คเฉพาะวันนี้ หรือจะดึงทุกวันมารวมกันดูก่อนก็ได้ครับ
-                    const price = Number(b.price) || 0;
-                    const hour = b.time ? b.time.substring(0, 2) + ':00' : '10:00';
+                        // แปลงชั่วโมงเป็น Key ตรงตัว เช่น 15 กลายเป็น "15:00"
+                        let slotKey = String(hourNum).padStart(2, '0') + ':00';
 
-                    // หา Slot ที่ใกล้เคียงที่สุด
-                    let matchedSlot = Object.keys(slotTotals).reduce((prev, curr) => {
-                        return (Math.abs(parseInt(curr) - parseInt(hour)) < Math.abs(parseInt(prev) - parseInt(hour)) ? curr : prev);
-                    });
-
-                    if (slotTotals[matchedSlot] !== undefined) {
-                        slotTotals[matchedSlot] += price;
+                        if (slotTotals[slotKey] !== undefined) {
+                            slotTotals[slotKey] += price;
+                        }
                     }
                 });
 
                 dataValues = labels.map(label => slotTotals[label] || 0);
-
             } else if (filterType === 'weekly') {
-                // มุมมองรายสัปดาห์
                 labels = ['จันทร์', 'อังคาร', 'พุธ', 'พฤหัสฯ', 'ศุกร์', 'เสาร์', 'อาทิตย์'];
-                let totalRevenue = bookings
-                    .filter(b => b.status !== 'cancelled')
-                    .reduce((sum, b) => sum + (Number(b.price) || 0), 0);
+                let dayTotals = [0, 0, 0, 0, 0, 0, 0];
 
-                // กระจายยอดเงินลงไป หรือใส่ภาพรวม
-                dataValues = labels.map((l, idx) => (idx === 0 ? totalRevenue : 0));
+                bookings.forEach(b => {
+                    if (b.status === 'cancelled') return;
+                    if (!b.date) return;
+
+                    const price = Number(b.price) || 0;
+                    const dayOfWeek = new Date(b.date).getDay();
+                    let adjustedIndex = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+                    dayTotals[adjustedIndex] += price;
+                });
+
+                dataValues = dayTotals;
 
             } else {
-                // มุมมองรายเดือน
                 labels = ['สัปดาห์ที่ 1', 'สัปดาห์ที่ 2', 'สัปดาห์ที่ 3', 'สัปดาห์ที่ 4'];
-                let totalRevenue = bookings
-                    .filter(b => b.status !== 'cancelled')
-                    .reduce((sum, b) => sum + (Number(b.price) || 0), 0);
+                let weekTotals = [0, 0, 0, 0];
 
-                dataValues = [totalRevenue, 0, 0, 0];
+                bookings.forEach(b => {
+                    if (b.status === 'cancelled') return;
+                    if (!b.date) return;
+
+                    const price = Number(b.price) || 0;
+                    const dayOfMonth = new Date(b.date).getDate();
+
+                    if (dayOfMonth <= 7) weekTotals[0] += price;
+                    else if (dayOfMonth <= 14) weekTotals[1] += price;
+                    else if (dayOfMonth <= 21) weekTotals[2] += price;
+                    else weekTotals[3] += price;
+                });
+
+                dataValues = weekTotals;
             }
 
             return {
