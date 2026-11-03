@@ -4,9 +4,9 @@
 <head>
     <script type="module">
         // นำเข้า Firebase App และ Firestore จาก CDN ที่ถูกต้อง
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore, collection, addDoc, onSnapshot, getDocs, query, where, updateDoc, doc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-        import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-analytics.js";
+        import {initializeApp} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import {getFirestore, collection, addDoc, onSnapshot, getDocs, query, where, updateDoc, doc} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import {getAnalytics} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-analytics.js";
         const firebaseConfig = {
             apiKey: "AIzaSyDVenyDbUvNMGdvgDxoqLuUCHl0jzBw_jA",
             authDomain: "khamhaicut.firebaseapp.com",
@@ -20,7 +20,7 @@
         const analytics = getAnalytics(app);
         const db = getFirestore(app);
         window.db = db;
-        window.firebaseModules = { collection, addDoc, onSnapshot, getDocs, query, where, updateDoc, doc };
+        window.firebaseModules = {collection, addDoc, onSnapshot, getDocs, query, where, updateDoc, doc};
         console.log("Firebase Connected Successfully!");
     </script>
     <meta charset="UTF-8">
@@ -828,31 +828,31 @@
 
             // Hairstyle Catalog
             hairstyles: [
-                { id: 'h1', name: 'Comma (คอมม่า)', basePrice: 80, desc: 'ตัดด้านข้างแบบอันเดอร์คัทหรือเฟด ให้ลุคที่ดูทันสมัย ละมุน และช่วยปรับรูปหน้าให้ดูโดดเด่น', img: 'https://i.postimg.cc/cCYKFkFv/images.jpg' },
-                { id: 'h2', name: 'Two-Block (ทูบล็อค)', basePrice: 80, desc: 'ทรงผมชายสไตล์เกาหลีที่แบ่งผมออกเป็น 2 ส่วนชัดเจน โดยตัดผมด้านข้างและด้านหลังให้สั้น', img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQCp6Tuel1CAr2mPE6arIbV4voCHP47vS-fc37_5uz8qg&s=10' },
-                { id: 'h3', name: 'Mullet (มัลเล็ต)', basePrice: 80, desc: 'ทรงเสยเนี๊ยบ ลุคสมาร์ท หล่อสุขุม', img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQSuJIHAi7jO-IZbgsrCb5B0xRfa0Ap0TXW5vPkF7zIyw&s=10' },
-                { id: 'h4', name: 'Buzz Cut (บัสคัต)', basePrice: 80, desc: 'สกินเฮดแกะลาย ลุคสปอร์ต ดูแลรักษาง่าย', img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSYy8eNpUcaf4IDAYYgT430c87UzmHEHf6pv2WrdNVqCw&s=10' },
-                { id: 'h5', name: 'Crop (คร็อป)', basePrice: 80, desc: 'ตัดสั้นมีเท็กซ์เจอร์ เหมาะกับรูปหน้าทุกแบบ', img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ6Guw3ZWQGQcL7HrNuqMFnuG1fZEzwrMCtryCaWMCWGw&s' },
-                { id: 'h6', name: 'Taper Fade (เทเปอร์เฟด)', basePrice: 80, desc: 'แพ็กเกจตัดผม + กันโกนแต่งหนวดเคราครบสูตร', img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSlDNvXNEFYNoi7XJihOgu_bMONxbaI8wwiZFak-NYQpA&s=10' },
-                { id: 'h7', name: 'Slicked Back (สลิคแบล็ค)', basePrice: 80, desc: 'การเซ็ตผมแบบเสยปาดเรียบไปด้านหลัง ผมด้านหน้าค่อนข้างยาว ไถด้านข้างให้สั้นแบบอันเดอร์คัต', img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSDcc_xa4XfLvmCBgsDekU5QLkkdAwybZj_CXcOzmbR2g&s=10' },
-                { id: 'h8', name: 'Undercut (อันเดอร์คัต)', basePrice: 80, desc: 'ตัดด้านข้างให้สั้นกว่าตรงกลาง เป็นทรงที่ดูแลง่าย ไม่ร้อนเหมาะกับอากาศบ้านเรามาก ๆ เซ็ตง่ายทำได้หลายลุค', img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQcFjL5ges-lJ42L_yUxjp_3ihUmsh4I9OiCZKxzpYw1w&s=10' },
-                { id: 'h9', name: 'Skinhead Fade (สกินเฟด)', basePrice: 80, desc: 'ไล่ลำดับความเข้มลงไปจากด้านข้างถึงท้ายทอย เป็นทรงที่ทำแล้วได้ลุคเท่ๆ กวนๆ ดูเป็นหนุ่มอารมณ์ดี ที่มีความเอาจริง เอาจัง', img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTpSrZp93j6-r3OYOnZA_GpYD08F2EpeifVG8Jnu9I0YA&s=10' },
-                { id: 'h10', name: 'Skinhead (สกินเฮด)', basePrice: 80, desc: 'คลาสสิค และเป็นที่นิยมของหนุ่ม ๆ มาอย่างยาวนาน พักหลัง ๆ มานี้ก็จะได้เห็นไอดอลหนุ่มชาวจีนทำผมทรงนี้', img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQhhwsGbfYZsEmf8yjyYKL9eNALIaisgnzOdaiibNmg4g&s=10' },
-                { id: 'h11', name: 'Side Part (ไซด์พาท,ปัดเป๋)', basePrice: 80, desc: 'ทรงผมผู้ชายที่เรียบง่าย ดูดี ไม่เคยตกยุค ทรงนี้มีความนิยมมาตั้งแต่ศตวรรษที่ 19 แล้ว ดังนั้นจึงเป็นอีกทรงผมชายที่คลาสสิก', img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRUbANz7vI2Vc6uL4O8XiCoXufd_easMpSHZAFJFgHGPw&s=10' },
-                { id: 'h12', name: 'Pompadour (ปอมปาดัว)', basePrice: 80, desc: 'ตัดผมด้านข้างและด้านหลังสั้น ด้านบนยาว เสยผมด้านหน้าขึ้นสูง  ปาดโหนก', img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTNYrsQ07w4lEOV5i21sWknnaOzCbvihURfMTkBMrOoKw&s=10' },
+                {id: 'h1', name: 'Comma (คอมม่า)', basePrice: 80, desc: 'ตัดด้านข้างแบบอันเดอร์คัทหรือเฟด ให้ลุคที่ดูทันสมัย ละมุน และช่วยปรับรูปหน้าให้ดูโดดเด่น', img: 'https://i.postimg.cc/cCYKFkFv/images.jpg'},
+                {id: 'h2', name: 'Two-Block (ทูบล็อค)', basePrice: 80, desc: 'ทรงผมชายสไตล์เกาหลีที่แบ่งผมออกเป็น 2 ส่วนชัดเจน โดยตัดผมด้านข้างและด้านหลังให้สั้น', img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQCp6Tuel1CAr2mPE6arIbV4voCHP47vS-fc37_5uz8qg&s=10'},
+                {id: 'h3', name: 'Mullet (มัลเล็ต)', basePrice: 80, desc: 'ทรงเสยเนี๊ยบ ลุคสมาร์ท หล่อสุขุม', img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQSuJIHAi7jO-IZbgsrCb5B0xRfa0Ap0TXW5vPkF7zIyw&s=10'},
+                {id: 'h4', name: 'Buzz Cut (บัสคัต)', basePrice: 80, desc: 'สกินเฮดแกะลาย ลุคสปอร์ต ดูแลรักษาง่าย', img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSYy8eNpUcaf4IDAYYgT430c87UzmHEHf6pv2WrdNVqCw&s=10'},
+                {id: 'h5', name: 'Crop (คร็อป)', basePrice: 80, desc: 'ตัดสั้นมีเท็กซ์เจอร์ เหมาะกับรูปหน้าทุกแบบ', img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ6Guw3ZWQGQcL7HrNuqMFnuG1fZEzwrMCtryCaWMCWGw&s'},
+                {id: 'h6', name: 'Taper Fade (เทเปอร์เฟด)', basePrice: 80, desc: 'แพ็กเกจตัดผม + กันโกนแต่งหนวดเคราครบสูตร', img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSlDNvXNEFYNoi7XJihOgu_bMONxbaI8wwiZFak-NYQpA&s=10'},
+                {id: 'h7', name: 'Slicked Back (สลิคแบล็ค)', basePrice: 80, desc: 'การเซ็ตผมแบบเสยปาดเรียบไปด้านหลัง ผมด้านหน้าค่อนข้างยาว ไถด้านข้างให้สั้นแบบอันเดอร์คัต', img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSDcc_xa4XfLvmCBgsDekU5QLkkdAwybZj_CXcOzmbR2g&s=10'},
+                {id: 'h8', name: 'Undercut (อันเดอร์คัต)', basePrice: 80, desc: 'ตัดด้านข้างให้สั้นกว่าตรงกลาง เป็นทรงที่ดูแลง่าย ไม่ร้อนเหมาะกับอากาศบ้านเรามาก ๆ เซ็ตง่ายทำได้หลายลุค', img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQcFjL5ges-lJ42L_yUxjp_3ihUmsh4I9OiCZKxzpYw1w&s=10'},
+                {id: 'h9', name: 'Skinhead Fade (สกินเฟด)', basePrice: 80, desc: 'ไล่ลำดับความเข้มลงไปจากด้านข้างถึงท้ายทอย เป็นทรงที่ทำแล้วได้ลุคเท่ๆ กวนๆ ดูเป็นหนุ่มอารมณ์ดี ที่มีความเอาจริง เอาจัง', img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTpSrZp93j6-r3OYOnZA_GpYD08F2EpeifVG8Jnu9I0YA&s=10'},
+                {id: 'h10', name: 'Skinhead (สกินเฮด)', basePrice: 80, desc: 'คลาสสิค และเป็นที่นิยมของหนุ่ม ๆ มาอย่างยาวนาน พักหลัง ๆ มานี้ก็จะได้เห็นไอดอลหนุ่มชาวจีนทำผมทรงนี้', img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQhhwsGbfYZsEmf8yjyYKL9eNALIaisgnzOdaiibNmg4g&s=10'},
+                {id: 'h11', name: 'Side Part (ไซด์พาท,ปัดเป๋)', basePrice: 80, desc: 'ทรงผมผู้ชายที่เรียบง่าย ดูดี ไม่เคยตกยุค ทรงนี้มีความนิยมมาตั้งแต่ศตวรรษที่ 19 แล้ว ดังนั้นจึงเป็นอีกทรงผมชายที่คลาสสิก', img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRUbANz7vI2Vc6uL4O8XiCoXufd_easMpSHZAFJFgHGPw&s=10'},
+                {id: 'h12', name: 'Pompadour (ปอมปาดัว)', basePrice: 80, desc: 'ตัดผมด้านข้างและด้านหลังสั้น ด้านบนยาว เสยผมด้านหน้าขึ้นสูง  ปาดโหนก', img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTNYrsQ07w4lEOV5i21sWknnaOzCbvihURfMTkBMrOoKw&s=10'},
             ],
 
             // Age Categories & Rate Multipliers
             ageGroups: [
-                { id: 'a1', label: 'เด็ก ', minAge: '1-14 ปี', rate: 0.625, discountLabel: 'ราคาปกติ', icon: 'fa-child' },
-                { id: 'a2', label: 'วัยรุ่น ', minAge: '15-18 ปี', rate: 0.750, discountLabel: 'ราคาปกติ', icon: 'fa-user' },
-                { id: 'a3', label: 'ผู้ใหญ่', minAge: '18-80 ปีขึ้นไป', rate: 1.0, discountLabel: 'ราคาปกติ', icon: 'fa-person-cane' }
+                {id: 'a1', label: 'เด็ก ', minAge: '1-14 ปี', rate: 0.625, discountLabel: 'ราคาปกติ', icon: 'fa-child'},
+                {id: 'a2', label: 'วัยรุ่น ', minAge: '15-18 ปี', rate: 0.750, discountLabel: 'ราคาปกติ', icon: 'fa-user'},
+                {id: 'a3', label: 'ผู้ใหญ่', minAge: '18-80 ปีขึ้นไป', rate: 1.0, discountLabel: 'ราคาปกติ', icon: 'fa-person-cane'}
             ],
 
             // Barbers Data
             barbers: JSON.parse(localStorage.getItem('barber_shop_barbers')) || [
-                { id: 'b1', name: 'ช่างก้อง (เจ้าของร้าน)', email: 'phongsakorn2115@gmail.com', status: 'available', exp: 'ประสบการณ์ 1 ปี ชื่นชอบด้านการเฟด', avatar: 'https://i.postimg.cc/8FR1mMtP/858525001-1129326712975883-8607776798710260414-n.jpg' },
-                { id: 'b2', name: 'ช่างโจ (ช่างประจำร้าน)', email: 'phongsakorn7420@gmail.com', status: 'available', exp: 'ประสบการณ์ 5 ปี เชี่ยวชาญเฟดสายอเมริกัน', avatar: 'https://i.postimg.cc/qMrLWY3v/863844196-1134350642473490-5849783856972700037-n.jpg' },
+                {id: 'b1', name: 'ช่างก้อง (เจ้าของร้าน)', email: 'phongsakorn2115@gmail.com', status: 'available', exp: 'ประสบการณ์ 1 ปี ชื่นชอบด้านการเฟด', avatar: 'https://i.postimg.cc/8FR1mMtP/858525001-1129326712975883-8607776798710260414-n.jpg'},
+                {id: 'b2', name: 'ช่างโจ (ช่างประจำร้าน)', email: 'phongsakorn7420@gmail.com', status: 'available', exp: 'ประสบการณ์ 5 ปี เชี่ยวชาญเฟดสายอเมริกัน', avatar: 'https://i.postimg.cc/qMrLWY3v/863844196-1134350642473490-5849783856972700037-n.jpg'},
             ],
 
             // Booking Form State (เพิ่ม addons เข้ามาเพื่อรองรับบริการเสริม)
@@ -861,9 +861,9 @@
                 selectedAgeId: 'a2',
                 selectedBarberId: 'b1',
                 addons: [
-                    { id: 'addon-shave', name: 'โกนหนวดหรือแต่ง', price: 20, icon: 'fa-solid fa-razor', selected: false },
-                    { id: 'addon-dye', name: 'ย้อมผมดำ', price: 120, icon: 'fa-solid fa-paint-brush', selected: false },
-                    { id: 'addon-wash', name: 'บริการสระ', price: 60, icon: 'fa-solid fa-shower', selected: false }
+                    {id: 'addon-shave', name: 'โกนหนวดหรือแต่ง', price: 20, icon: 'fa-solid fa-razor', selected: false},
+                    {id: 'addon-dye', name: 'ย้อมผมดำ', price: 120, icon: 'fa-solid fa-paint-brush', selected: false},
+                    {id: 'addon-wash', name: 'บริการสระ', price: 60, icon: 'fa-solid fa-shower', selected: false}
                 ],
                 date: new Date().toISOString().split('T')[0],
                 time: '14:00'
@@ -940,37 +940,6 @@
                 });
             }
 
-            // 🌟 โหลดและอัปเดตสถานะปุ่ม เปิด/ปิดร้าน และแบนเนอร์แจ้งเตือน จาก LocalStorage ตอนเปิดหน้าเว็บ
-            const savedShopStatus = localStorage.getItem('barber_shop_open_status');
-            if (savedShopStatus !== null) {
-                isShopOpen = savedShopStatus === 'true';
-                const btn = document.getElementById('shop-status-toggle-btn');
-                const dot = document.getElementById('shop-status-dot');
-                const text = document.getElementById('shop-status-text');
-
-                if (btn && dot && text) {
-                    if (isShopOpen) {
-                        btn.className = "px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition shadow-md bg-emerald-600 hover:bg-emerald-500 text-white";
-                        dot.className = "w-2 h-2 rounded-full bg-white animate-pulse";
-                        text.textContent = "เปิดร้านอยู่";
-                    } else {
-                        btn.className = "px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition shadow-md bg-gray-700 hover:bg-gray-600 text-gray-300";
-                        dot.className = "w-2 h-2 rounded-full bg-gray-400";
-                        text.textContent = "ปิดร้านแล้ว";
-                    }
-                }
-            }
-
-            // 🌟 เช็กและแสดง/ซ่อน แบนเนอร์แจ้งเตือนร้านปิดในหน้าแรก
-            const closedBanner = document.getElementById('shop-closed-banner');
-            if (closedBanner) {
-                if (!isShopOpen) {
-                    closedBanner.classList.remove('hidden');
-                } else {
-                    closedBanner.classList.add('hidden');
-                }
-            }
-
             // 2. เรนเดอร์หน้าจอทั่วไป
             if (typeof updateUserUI === 'function') updateUserUI();
             if (typeof renderUI === 'function') renderUI();
@@ -982,13 +951,17 @@
             if (typeof initChart === 'function') initChart();
             if (typeof updateRevenueStats === 'function') updateRevenueStats();
 
-            // 🌟 เพิ่มการสั่งอัปเดตแดชบอร์ดรายได้จากข้อมูลจริงทันทีตอนรีเฟรชหน้าจอ
             if (typeof updateAdminRevenueDashboard === 'function') {
                 updateAdminRevenueDashboard('daily');
             }
 
+            // 3. 🌟 เรียกใช้งาน Real-time Listeners ทั้งส่วนของช่างและคิวการจอง พร้อมกันทันที
             if (typeof initRealtimeBarbers === 'function') {
                 initRealtimeBarbers();
+            }
+
+            if (typeof initRealtimeBookings === 'function') {
+                initRealtimeBookings();
             }
         });
 
@@ -1011,18 +984,18 @@
 
             // ฟังก์ชันซ่อนหน้าฝั่ง User ทั้งหมด
             const hideAllUserViews = () => {
-                if (pageHome) { pageHome.style.display = 'none'; }
-                if (bookingSection) { bookingSection.style.display = 'none'; }
-                if (barbersSection) { barbersSection.style.display = 'none'; }
-                if (historySection) { historySection.style.display = 'none'; }
+                if (pageHome) {pageHome.style.display = 'none';}
+                if (bookingSection) {bookingSection.style.display = 'none';}
+                if (barbersSection) {barbersSection.style.display = 'none';}
+                if (historySection) {historySection.style.display = 'none';}
             };
 
             // 1. หน้าหลัก
             if (target === 'home') {
                 hideAdminView(); // ซ่อนแอดมินก่อน
                 hideAllUserViews();
-                if (pageHome) { pageHome.style.display = 'block'; }
-                window.scrollTo({ top: 0, behavior: 'smooth' });
+                if (pageHome) {pageHome.style.display = 'block';}
+                window.scrollTo({top: 0, behavior: 'smooth'});
             }
 
             // 2. จองคิวตัดผม (🌟 สั่งอัปเดตทั้งกริดเลือกช่างและข้อมูลสรุปผลทันทีที่เปิดหน้านี้)
@@ -1031,7 +1004,7 @@
                 hideAllUserViews();
                 if (bookingSection) {
                     bookingSection.style.display = 'block';
-                    bookingSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    bookingSection.scrollIntoView({behavior: 'smooth', block: 'start'});
 
                     // 🌟 เพิ่มบรรทัดนี้เพื่อให้เรนเดอร์สถานะช่างใหม่ทันทีที่เข้าหน้าจองคิว
                     if (typeof renderBarberSelectGrid === 'function') {
@@ -1053,7 +1026,7 @@
 
                 if (barbersSection) {
                     barbersSection.style.display = 'block';
-                    barbersSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    barbersSection.scrollIntoView({behavior: 'smooth', block: 'start'});
 
                     if (typeof renderBarbersPage === 'function') {
                         renderBarbersPage();
@@ -1061,8 +1034,8 @@
 
                     showToast('แสดงข้อมูลช่างทั้งหมด', 'success');
                 } else {
-                    if (pageHome) { pageHome.style.display = 'block'; }
-                    window.scrollTo({ top: 800, behavior: 'smooth' });
+                    if (pageHome) {pageHome.style.display = 'block';}
+                    window.scrollTo({top: 800, behavior: 'smooth'});
                     showToast('แสดงข้อมูลช่าง', 'success');
                 }
             }
@@ -1081,7 +1054,7 @@
 
                 if (historySection) {
                     historySection.style.display = 'block';
-                    historySection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    historySection.scrollIntoView({behavior: 'smooth', block: 'start'});
 
                     if (typeof renderUserBookingsPage === 'function') {
                         renderUserBookingsPage();
@@ -1089,7 +1062,7 @@
 
                     showToast('แสดงประวัติการจองของคุณ', 'success');
                 } else {
-                    if (pageHome) { pageHome.style.display = 'block'; }
+                    if (pageHome) {pageHome.style.display = 'block';}
                     showToast('เข้าสู่ระบบสำเร็จ', 'success');
                 }
             }
@@ -1140,45 +1113,45 @@
             // 2. ควบคุมการแสดงผลแบบ "สลับหน้า" อย่างเด็ดขาด
             if (role === 'admin') {
                 // 👑 โหมด Admin: เปิดครบทุกส่วนรวมถึงหัวข้อหลังบ้าน
-                if (pageHome) { pageHome.classList.add('hidden'); pageHome.style.display = 'none'; }
-                if (bookingSection) { bookingSection.classList.add('hidden'); bookingSection.style.display = 'none'; }
-                if (barbersSection) { barbersSection.classList.add('hidden'); barbersSection.style.display = 'none'; }
-                if (historySection) { historySection.classList.add('hidden'); historySection.style.display = 'none'; }
+                if (pageHome) {pageHome.classList.add('hidden'); pageHome.style.display = 'none';}
+                if (bookingSection) {bookingSection.classList.add('hidden'); bookingSection.style.display = 'none';}
+                if (barbersSection) {barbersSection.classList.add('hidden'); barbersSection.style.display = 'none';}
+                if (historySection) {historySection.classList.add('hidden'); historySection.style.display = 'none';}
 
-                if (pageAdmin) { pageAdmin.classList.remove('hidden'); pageAdmin.style.display = 'block'; }
-                if (adminControlHeaderBox) { adminControlHeaderBox.classList.remove('hidden'); adminControlHeaderBox.style.display = 'block'; }
-                if (revenueCardsContainer) { revenueCardsContainer.classList.remove('hidden'); revenueCardsContainer.style.display = 'grid'; }
-                if (revenueSectionWrapper) { revenueSectionWrapper.classList.remove('hidden'); revenueSectionWrapper.style.display = 'block'; }
-                if (revenueSection) { revenueSection.classList.remove('hidden'); revenueSection.style.display = 'block'; }
-                if (revenueFilters) { revenueFilters.classList.remove('hidden'); revenueFilters.style.display = 'flex'; }
-                if (revenueCanvas) { revenueCanvas.classList.remove('hidden'); revenueCanvas.style.display = 'block'; }
-                if (barberStatusControl) { barberStatusControl.classList.remove('hidden'); barberStatusControl.style.display = 'block'; }
-                if (allBookingsTable) { allBookingsTable.classList.remove('hidden'); allBookingsTable.style.display = 'block'; }
+                if (pageAdmin) {pageAdmin.classList.remove('hidden'); pageAdmin.style.display = 'block';}
+                if (adminControlHeaderBox) {adminControlHeaderBox.classList.remove('hidden'); adminControlHeaderBox.style.display = 'block';}
+                if (revenueCardsContainer) {revenueCardsContainer.classList.remove('hidden'); revenueCardsContainer.style.display = 'grid';}
+                if (revenueSectionWrapper) {revenueSectionWrapper.classList.remove('hidden'); revenueSectionWrapper.style.display = 'block';}
+                if (revenueSection) {revenueSection.classList.remove('hidden'); revenueSection.style.display = 'block';}
+                if (revenueFilters) {revenueFilters.classList.remove('hidden'); revenueFilters.style.display = 'flex';}
+                if (revenueCanvas) {revenueCanvas.classList.remove('hidden'); revenueCanvas.style.display = 'block';}
+                if (barberStatusControl) {barberStatusControl.classList.remove('hidden'); barberStatusControl.style.display = 'block';}
+                if (allBookingsTable) {allBookingsTable.classList.remove('hidden'); allBookingsTable.style.display = 'block';}
 
                 showToast('สลับเป็นโหมด Admin สำเร็จ', 'success');
 
             } else if (role === 'barber') {
                 // ✂️ โหมด Barber: เปิดหลังบ้าน แต่สั่งซ่อน "ADMIN CONTROL", "การ์ดรายได้", "กราฟ" และขยับเนื้อหาขึ้น
-                if (pageHome) { pageHome.classList.add('hidden'); pageHome.style.display = 'none'; }
-                if (bookingSection) { bookingSection.classList.add('hidden'); bookingSection.style.display = 'none'; }
-                if (barbersSection) { barbersSection.classList.add('hidden'); barbersSection.style.display = 'none'; }
-                if (historySection) { historySection.classList.add('hidden'); historySection.style.display = 'none'; }
+                if (pageHome) {pageHome.classList.add('hidden'); pageHome.style.display = 'none';}
+                if (bookingSection) {bookingSection.classList.add('hidden'); bookingSection.style.display = 'none';}
+                if (barbersSection) {barbersSection.classList.add('hidden'); barbersSection.style.display = 'none';}
+                if (historySection) {historySection.classList.add('hidden'); historySection.style.display = 'none';}
 
-                if (pageAdmin) { pageAdmin.classList.remove('hidden'); pageAdmin.style.display = 'block'; }
+                if (pageAdmin) {pageAdmin.classList.remove('hidden'); pageAdmin.style.display = 'block';}
 
                 // 🛑 ซ่อนหัวข้อ ADMIN CONTROL ระบบหลังบ้านร้านตัดผม ในโหมด Barber
-                if (adminControlHeaderBox) { adminControlHeaderBox.classList.add('hidden'); adminControlHeaderBox.style.display = 'none'; }
+                if (adminControlHeaderBox) {adminControlHeaderBox.classList.add('hidden'); adminControlHeaderBox.style.display = 'none';}
 
                 // 🛑 สั่งซ่อนการ์ดรายได้และกราฟ
-                if (revenueCardsContainer) { revenueCardsContainer.classList.add('hidden'); revenueCardsContainer.style.display = 'none'; }
-                if (revenueSectionWrapper) { revenueSectionWrapper.classList.add('hidden'); revenueSectionWrapper.style.display = 'none'; }
-                if (revenueSection) { revenueSection.classList.add('hidden'); revenueSection.style.display = 'none'; }
-                if (revenueFilters) { revenueFilters.classList.add('hidden'); revenueFilters.style.display = 'none'; }
-                if (revenueCanvas) { revenueCanvas.classList.add('hidden'); revenueCanvas.style.display = 'none'; }
+                if (revenueCardsContainer) {revenueCardsContainer.classList.add('hidden'); revenueCardsContainer.style.display = 'none';}
+                if (revenueSectionWrapper) {revenueSectionWrapper.classList.add('hidden'); revenueSectionWrapper.style.display = 'none';}
+                if (revenueSection) {revenueSection.classList.add('hidden'); revenueSection.style.display = 'none';}
+                if (revenueFilters) {revenueFilters.classList.add('hidden'); revenueFilters.style.display = 'none';}
+                if (revenueCanvas) {revenueCanvas.classList.add('hidden'); revenueCanvas.style.display = 'none';}
 
                 // ให้แสดงส่วนจัดการสถานะช่างและตารางคิวตามปกติ
-                if (barberStatusControl) { barberStatusControl.classList.remove('hidden'); barberStatusControl.style.display = 'block'; }
-                if (allBookingsTable) { allBookingsTable.classList.remove('hidden'); allBookingsTable.style.display = 'block'; }
+                if (barberStatusControl) {barberStatusControl.classList.remove('hidden'); barberStatusControl.style.display = 'block';}
+                if (allBookingsTable) {allBookingsTable.classList.remove('hidden'); allBookingsTable.style.display = 'block';}
 
                 showToast('สลับเป็นโหมด Barber สำเร็จ', 'success');
 
@@ -1189,15 +1162,15 @@
                     pageHome.style.display = 'block';
                 }
 
-                if (pageAdmin) { pageAdmin.classList.add('hidden'); pageAdmin.style.display = 'none'; }
-                if (adminControlHeaderBox) { adminControlHeaderBox.classList.add('hidden'); adminControlHeaderBox.style.display = 'none'; }
-                if (revenueCardsContainer) { revenueCardsContainer.classList.add('hidden'); revenueCardsContainer.style.display = 'none'; }
-                if (revenueSectionWrapper) { revenueSectionWrapper.classList.add('hidden'); revenueSectionWrapper.style.display = 'none'; }
-                if (revenueSection) { revenueSection.classList.add('hidden'); revenueSection.style.display = 'none'; }
-                if (revenueFilters) { revenueFilters.classList.add('hidden'); revenueFilters.style.display, 'none'; }
-                if (revenueCanvas) { revenueCanvas.classList.add('hidden'); revenueCanvas.style.display = 'none'; }
-                if (barberStatusControl) { barberStatusControl.classList.add('hidden'); barberStatusControl.style.display = 'none'; }
-                if (allBookingsTable) { allBookingsTable.classList.add('hidden'); allBookingsTable.style.display = 'none'; }
+                if (pageAdmin) {pageAdmin.classList.add('hidden'); pageAdmin.style.display = 'none';}
+                if (adminControlHeaderBox) {adminControlHeaderBox.classList.add('hidden'); adminControlHeaderBox.style.display = 'none';}
+                if (revenueCardsContainer) {revenueCardsContainer.classList.add('hidden'); revenueCardsContainer.style.display = 'none';}
+                if (revenueSectionWrapper) {revenueSectionWrapper.classList.add('hidden'); revenueSectionWrapper.style.display = 'none';}
+                if (revenueSection) {revenueSection.classList.add('hidden'); revenueSection.style.display = 'none';}
+                if (revenueFilters) {revenueFilters.classList.add('hidden'); revenueFilters.style.display, 'none';}
+                if (revenueCanvas) {revenueCanvas.classList.add('hidden'); revenueCanvas.style.display = 'none';}
+                if (barberStatusControl) {barberStatusControl.classList.add('hidden'); barberStatusControl.style.display = 'none';}
+                if (allBookingsTable) {allBookingsTable.classList.add('hidden'); allBookingsTable.style.display = 'none';}
 
                 showToast('สลับเป็นโหมด User สำเร็จ', 'success');
             }
@@ -1218,9 +1191,9 @@
 
             // เลื่อนหน้าจอ
             if (role === 'user') {
-                window.scrollTo({ top: 0, behavior: 'smooth' });
+                window.scrollTo({top: 0, behavior: 'smooth'});
             } else if (pageAdmin) {
-                pageAdmin.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                pageAdmin.scrollIntoView({behavior: 'smooth', block: 'start'});
             }
         }
         function updateRoleButtonStyles(activeRole) {
@@ -1256,7 +1229,7 @@
                 return;
             }
 
-            const { collection, getDocs, addDoc, query, where } = window.firebaseModules;
+            const {collection, getDocs, addDoc, query, where} = window.firebaseModules;
             const usersRef = collection(window.db, "users");
 
             if (type === 'login') {
@@ -1281,7 +1254,7 @@
 
                     let foundUser = null;
                     querySnapshot.forEach((docSnap) => {
-                        foundUser = { firestoreId: docSnap.id, ...docSnap.data() };
+                        foundUser = {firestoreId: docSnap.id, ...docSnap.data()};
                     });
 
                     // ตรวจสอบรหัสผ่าน
@@ -1535,8 +1508,8 @@
             // 4. เคลียร์ช่อง Input ในฟอร์มจองทันที
             const nameInput = document.getElementById('cust-name');
             const phoneInput = document.getElementById('cust-phone');
-            if (nameInput) { nameInput.value = ''; nameInput.readOnly = false; }
-            if (phoneInput) { phoneInput.value = ''; phoneInput.readOnly = false; }
+            if (nameInput) {nameInput.value = ''; nameInput.readOnly = false;}
+            if (phoneInput) {phoneInput.value = ''; phoneInput.readOnly = false;}
 
             // แจ้งเตือนผู้ใช้
             showToast('ออกจากระบบเรียบร้อยแล้ว', 'info');
@@ -1569,8 +1542,8 @@
             }
         }
 
-        function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
-        function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+        function openModal(id) {document.getElementById(id).classList.remove('hidden');}
+        function closeModal(id) {document.getElementById(id).classList.add('hidden');}
 
         /* ================= RENDER FUNCTIONS ================= */
 
@@ -2055,7 +2028,7 @@
             try {
                 // 🛑 4. ตรวจสอบการจองเวลาชนกัน (Time Slot Conflict Check) จาก Firebase ก่อนบันทึก
                 if (window.firebaseModules && window.db) {
-                    const { collection, getDocs, query, where } = window.firebaseModules;
+                    const {collection, getDocs, query, where} = window.firebaseModules;
                     const bookingsRef = collection(window.db, "bookings");
 
                     // ค้นหาคิวในวัน เวลา และช่างคนเดียวกันจากฐานข้อมูลจริง
@@ -2239,7 +2212,7 @@
             try {
                 // 2. ตรวจสอบและบันทึกสถานะใหม่ลงบน Firebase Firestore
                 if (window.db && window.firebaseModules) {
-                    const { doc, updateDoc } = window.firebaseModules;
+                    const {doc, updateDoc} = window.firebaseModules;
 
                     if (!doc || !updateDoc) {
                         console.error("❌ Firebase modules (doc, updateDoc) ไม่พร้อมใช้งาน");
@@ -2364,12 +2337,12 @@
                 try {
                     // 2. บันทึกสถานะลงบน Firebase Firestore (คลาวด์)
                     if (window.db && window.firebaseModules) {
-                        const { doc, updateDoc } = window.firebaseModules;
+                        const {doc, updateDoc} = window.firebaseModules;
                         let targetFirestoreId = bk.firestoreId;
 
                         // กรณีไม่มี firestoreId ในตัวแปร ให้ลอง query หาจากรหัส BK-xxxx
                         if (!targetFirestoreId && bk.id) {
-                            const { collection, getDocs, query, where } = window.firebaseModules;
+                            const {collection, getDocs, query, where} = window.firebaseModules;
                             const q = query(collection(window.db, "bookings"), where("id", "==", bk.id));
                             const querySnapshot = await getDocs(q);
                             if (!querySnapshot.empty) {
@@ -2467,7 +2440,7 @@
                     responsive: true,
                     maintainAspectRatio: false,
                     plugins: {
-                        legend: { display: false },
+                        legend: {display: false},
                         tooltip: {
                             backgroundColor: '#181b20',
                             titleColor: '#f59e0b',
@@ -2485,14 +2458,14 @@
                     },
                     scales: {
                         x: {
-                            grid: { color: '#22272e' },
-                            ticks: { color: '#9ca3af' }
+                            grid: {color: '#22272e'},
+                            ticks: {color: '#9ca3af'}
                         },
                         y: {
-                            grid: { color: '#22272e' },
+                            grid: {color: '#22272e'},
                             ticks: {
                                 color: '#9ca3af',
-                                callback: function (value) { return '฿' + value; }
+                                callback: function (value) {return '฿' + value;}
                             }
                         }
                     }
@@ -2510,7 +2483,7 @@
                 btn.className = 'px-3 py-1.5 rounded-md text-xs font-semibold text-gray-400 hover:text-white transition';
             });
 
-            const activeBtnMap = { 'daily': 'chart-filter-day', 'weekly': 'chart-filter-week', 'monthly': 'chart-filter-month' };
+            const activeBtnMap = {'daily': 'chart-filter-day', 'weekly': 'chart-filter-week', 'monthly': 'chart-filter-month'};
             const activeBtn = document.getElementById(activeBtnMap[filterType]);
             if (activeBtn) {
                 activeBtn.className = 'px-3 py-1.5 rounded-md text-xs font-semibold transition bg-amber-500 text-dark-900';
@@ -2685,17 +2658,17 @@
                     responsive: true,
                     maintainAspectRatio: false,
                     plugins: {
-                        legend: { labels: { color: '#e6edf3' } }
+                        legend: {labels: {color: '#e6edf3'}}
                     },
                     scales: {
                         x: {
-                            ticks: { color: '#9ca3af' },
-                            grid: { color: '#22272e' }
+                            ticks: {color: '#9ca3af'},
+                            grid: {color: '#22272e'}
                         },
                         y: {
                             beginAtZero: true,
-                            ticks: { color: '#9ca3af' },
-                            grid: { color: '#22272e' }
+                            ticks: {color: '#9ca3af'},
+                            grid: {color: '#22272e'}
                         }
                     }
                 }
@@ -2849,7 +2822,7 @@
 
             try {
                 if (window.db && window.firebaseModules) {
-                    const { doc, updateDoc, collection, getDocs, query, where } = window.firebaseModules;
+                    const {doc, updateDoc, collection, getDocs, query, where} = window.firebaseModules;
                     let targetFirestoreId = booking.firestoreId;
 
                     // 🔍 หากไม่มี firestoreId ให้ดึงรหัส Document ID จริงจาก Firebase โดยเทียบจากฟิลด์ id (เช่น BK-xxxx)
@@ -2964,7 +2937,7 @@
 
             if (existingIndex >= 0) {
                 // อัปเดตข้อมูลให้เป็นปัจจุบัน
-                state.users[existingIndex] = { ...state.users[existingIndex], ...userToSave };
+                state.users[existingIndex] = {...state.users[existingIndex], ...userToSave};
             } else {
                 // เพิ่มผู้ใช้ใหม่เข้าไปในลิสต์
                 state.users.push(userToSave);
@@ -2995,8 +2968,10 @@
         // ฟังก์ชันฟังข้อมูลการจองแบบ Real-time จาก Firebase
         // ฟังก์ชันฟังข้อมูลแบบเรียลไทม์จาก Firebase
         function initRealtimeBookings() {
+            // 🌟 เพิ่มระบบเช็กความพร้อมแบบวนซ้ำ ป้องกันกรณีมือถือโหลดสคริปต์ Firebase ช้ากว่าคอม
             if (!window.db || !window.firebaseModules) {
-                console.warn("Firebase ยังไม่พร้อมใช้งาน");
+                console.warn("Firebase ยังไม่พร้อมใช้งาน กำลังลองใหม่อีกครั้งในเสี้ยววินาที...");
+                setTimeout(initRealtimeBookings, 500); // ถ้ายังไม่มา ให้ลองเช็กใหม่ทุกๆ 0.5 วินาที
                 return;
             }
 
@@ -3006,7 +2981,7 @@
                 (snapshot) => {
                     state.bookings = [];
                     snapshot.forEach((doc) => {
-                        state.bookings.push({ firestoreId: doc.id, ...doc.data() });
+                        state.bookings.push({firestoreId: doc.id, ...doc.data()});
                     });
 
                     // สั่งอัปเดตตารางและสถิติในหน้าจอทันที
@@ -3027,10 +3002,16 @@
                 }
             );
         }
+
+        // สั่งให้ทำงานเมื่อโหลดหน้าเว็บสมบูรณ์
         window.addEventListener('DOMContentLoaded', () => {
-            setTimeout(() => {
+            // เรียกใช้งานฟังก์ชันเรียลไทม์ทันที (ให้ระบบเช็กตัวแปรจัดการตัวเองผ่านฟังก์ชันด้านบนได้เลย)
+            if (typeof initRealtimeBookings === 'function') {
                 initRealtimeBookings();
-            }, 1000);
+            }
+            if (typeof initRealtimeBarbers === 'function') {
+                initRealtimeBarbers();
+            }
         });
 
         async function updateBarberStatus(barberDocId, newStatus) {
@@ -3040,7 +3021,7 @@
             }
 
             try {
-                const { doc, updateDoc } = window.firebaseModules;
+                const {doc, updateDoc} = window.firebaseModules;
 
                 // อัปเดตฟิลด์ status ลงในคอลเลกชัน barbers ตาม Document ID ของช่าง (เช่น 'barber-kong')
                 const barberRef = doc(window.db, "barbers", barberDocId);
@@ -3063,7 +3044,7 @@
         function initRealtimeBarbers() {
             if (!window.db || !window.firebaseModules) return;
 
-            const { collection, onSnapshot } = window.firebaseModules;
+            const {collection, onSnapshot} = window.firebaseModules;
 
             // ดึงและฟังข้อมูลจาก Collection "barbers" บน Firebase แบบเรียลไทม์
             onSnapshot(collection(window.db, "barbers"), (snapshot) => {
@@ -3110,7 +3091,7 @@
             if (!window.db || !window.firebaseModules) return;
 
             try {
-                const { collection, getDocs } = window.firebaseModules;
+                const {collection, getDocs} = window.firebaseModules;
                 const querySnapshot = await getDocs(collection(window.db, "barbers"));
 
                 querySnapshot.forEach((docSnap) => {
@@ -3145,14 +3126,14 @@
 
             // กำหนดรายการบริการเสริมพร้อมราคาล่าสุดที่ต้องการ
             const latestAddons = [
-                { id: 'addon-shave', name: 'โกนหนวดหรือแต่ง', price: 20, icon: 'fa-solid fa-scissors' },
-                { id: 'addon-dye', name: 'ย้อมผมดำ', price: 170, icon: 'fa-solid fa-fill-drip' }, // 👈 บังคับราคา 170 ตรงนี้
-                { id: 'addon-wash', name: 'บริการสระ', price: 60, icon: 'fa-solid fa-shower' }
+                {id: 'addon-shave', name: 'โกนหนวดหรือแต่ง', price: 20, icon: 'fa-solid fa-scissors'},
+                {id: 'addon-dye', name: 'ย้อมผมดำ', price: 170, icon: 'fa-solid fa-fill-drip'}, // 👈 บังคับราคา 170 ตรงนี้
+                {id: 'addon-wash', name: 'บริการสระ', price: 60, icon: 'fa-solid fa-shower'}
             ];
 
             // ถ้ายังไม่มี addons ให้สร้างใหม่ / ถ้ามีแล้ว ให้ดึงสถานะ selected เดิมมาใช้ แต่ "อัปเดตราคาใหม่ให้เป็นปัจจุบัน"
             if (!state.bookingForm.addons) {
-                state.bookingForm.addons = latestAddons.map(a => ({ ...a, selected: false }));
+                state.bookingForm.addons = latestAddons.map(a => ({...a, selected: false}));
             } else {
                 // อัปเดตราคาให้ตรงกับปัจจุบันเสมอ โดยรักษาสถานะ (selected) ที่ผู้ใช้เคยติ๊กไว้
                 state.bookingForm.addons = latestAddons.map(latest => {
@@ -3344,7 +3325,7 @@
                 return;
             }
 
-            const { collection, getDocs, query, where } = window.firebaseModules;
+            const {collection, getDocs, query, where} = window.firebaseModules;
             const bookingsRef = collection(window.db, "bookings");
 
             try {
@@ -3510,7 +3491,7 @@
 
                 // 2. อัปเดตข้อมูล User ลง Firebase Firestore (ถ้ามี firestoreId)
                 if (window.db && window.firebaseModules && state.currentUser.firestoreId) {
-                    const { doc, updateDoc } = window.firebaseModules;
+                    const {doc, updateDoc} = window.firebaseModules;
                     const userDocRef = doc(window.db, "users", state.currentUser.firestoreId);
                     await updateDoc(userDocRef, {
                         name: newName,
@@ -4065,11 +4046,11 @@
                     responsive: true,
                     maintainAspectRatio: false,
                     plugins: {
-                        legend: { display: false }
+                        legend: {display: false}
                     },
                     scales: {
-                        x: { ticks: { color: '#9ca3af' }, grid: { color: '#22272e' } },
-                        y: { beginAtZero: true, ticks: { color: '#9ca3af' }, grid: { color: '#22272e' } }
+                        x: {ticks: {color: '#9ca3af'}, grid: {color: '#22272e'}},
+                        y: {beginAtZero: true, ticks: {color: '#9ca3af'}, grid: {color: '#22272e'}}
                     }
                 }
             });
@@ -4138,17 +4119,17 @@
                         responsive: true,
                         maintainAspectRatio: false,
                         plugins: {
-                            legend: { display: false }
+                            legend: {display: false}
                         },
                         scales: {
                             y: {
                                 beginAtZero: true,
-                                grid: { color: 'rgba(55, 65, 81, 0.4)' },
-                                ticks: { color: '#9ca3af', font: { size: 11 } }
+                                grid: {color: 'rgba(55, 65, 81, 0.4)'},
+                                ticks: {color: '#9ca3af', font: {size: 11}}
                             },
                             x: {
-                                grid: { display: false },
-                                ticks: { color: '#9ca3af', font: { size: 11 } }
+                                grid: {display: false},
+                                ticks: {color: '#9ca3af', font: {size: 11}}
                             }
                         }
                     }
@@ -4215,7 +4196,7 @@
                     responsive: true,
                     maintainAspectRatio: false,
                     plugins: {
-                        legend: { display: false },
+                        legend: {display: false},
                         tooltip: {
                             backgroundColor: '#181b20',
                             titleColor: '#f59e0b',
@@ -4233,14 +4214,14 @@
                     },
                     scales: {
                         x: {
-                            grid: { color: '#22272e' },
-                            ticks: { color: '#9ca3af' }
+                            grid: {color: '#22272e'},
+                            ticks: {color: '#9ca3af'}
                         },
                         y: {
-                            grid: { color: '#22272e' },
+                            grid: {color: '#22272e'},
                             ticks: {
                                 color: '#9ca3af',
-                                callback: function (value) { return '฿' + value; }
+                                callback: function (value) {return '฿' + value;}
                             },
                             beginAtZero: true
                         }
@@ -4260,7 +4241,7 @@
                     isOpen: isOpen,
                     statusText: customStatusText,
                     updatedAt: new Date().toISOString()
-                }, { merge: true });
+                }, {merge: true});
 
                 console.log("อัปเดตสถานะร้านขึ้นคลาวด์สำเร็จ");
             } catch (error) {
