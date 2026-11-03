@@ -1026,14 +1026,21 @@
             if (typeof initChart === 'function') initChart();
             if (typeof updateRevenueStats === 'function') updateRevenueStats();
 
-            // 🌟 3. เพิ่มฟังก์ชันเรนเดอร์ส่วนของช่างตรงนี้ เพื่อให้โหลดพร้อมกันตั้งแต่เปิดเว็บครั้งแรกไม่ต้องรีเฟรช
+            // 3. เรนเดอร์ส่วนของช่าง
             if (typeof renderAdminBarberControls === 'function') renderAdminBarberControls();
             if (typeof renderFullBarbersList === 'function') renderFullBarbersList();
             if (typeof renderBarberSelectGrid === 'function') renderBarberSelectGrid();
             if (typeof renderBarbersHomeStatus === 'function') renderBarbersHomeStatus();
 
+            // 🌟 4. เปิดใช้งาน Real-time Listener ครบถ้วนทั้งช่าง สถานะร้าน และคิวจอง
             if (typeof initRealtimeBarbers === 'function') {
                 initRealtimeBarbers();
+            }
+            if (typeof initRealtimeShopStatus === 'function') {
+                initRealtimeShopStatus();
+            }
+            if (typeof initRealtimeBookings === 'function') {
+                initRealtimeBookings();
             }
         });
 
@@ -3970,54 +3977,60 @@
             }).join('');
         }
 
-        // function renderBookingBarbers() {
-        //     // 🌟 เปลี่ยน ID ให้ตรงกับ Container หรือ Dropdown เลือกช่างในหน้าจองคิวของก้อง
-        //     // (เช่น ถ้าเป็น Grid เลือกช่าง: 'booking-barbers-grid' หรือถ้าเป็น Dropdown: 'barber-select')
-        //     const container = document.getElementById('booking-barbers-grid');
-        //     if (!container) return;
+        // 🌟 ฟังก์ชันฟังสถานะเปิด-ปิดร้านแบบเรียลไทม์
+        function initRealtimeShopStatus() {
+            if (!window.db || !window.firebaseModules) return;
 
-        //     // 1. ดึงข้อมูลช่างล่าสุดจาก LocalStorage หรือตัวแปรกลาง
-        //     let currentBarbers = [];
-        //     try {
-        //         const savedBarbers = localStorage.getItem('barber_shop_barbers');
-        //         if (savedBarbers) {
-        //             currentBarbers = JSON.parse(savedBarbers);
-        //         } else if (window.barbers) {
-        //             currentBarbers = window.barbers;
-        //         } else if (typeof state !== 'undefined' && state.barbers) {
-        //             currentBarbers = state.barbers;
-        //         }
-        //     } catch (e) {
-        //         currentBarbers = [];
-        //     }
+            const { doc, onSnapshot } = window.firebaseModules;
 
-        //     // 2. ดึงสถานะเปิด/ปิดร้านจาก LocalStorage
-        //     const savedShopStatus = localStorage.getItem('barber_shop_open_status');
-        //     const isOpen = savedShopStatus !== null ? (savedShopStatus === 'true') : true;
+            // อ้างอิงไปที่เอกสารสถานะร้านค้าใน Firestore (สมมติเก็บไว้ที่ collection "settings", doc "shop")
+            const shopRef = doc(window.db, "settings", "shop");
 
-        //     container.innerHTML = currentBarbers.map(b => {
-        //         const isClosed = !isOpen || b.status === 'closed';
+            onSnapshot(shopRef, (docSnap) => {
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    const isOpen = data.isOpen;
 
-        //         // 3. ตรวจสอบสถานะว่างแบบยืดหยุ่น
-        //         const statusStr = String(b.status || '').trim().toLowerCase();
-        //         const isAvailable = !isClosed && (
-        //             statusStr === 'available' ||
-        //             statusStr === 'ว่าง' ||
-        //             b.isAvailable === true ||
-        //             statusStr === 'true'
-        //         );
+                    console.log("🔥 [Realtime] สถานะร้านเปลี่ยนแปลง:", isOpen);
 
-        //         let statusText = isClosed ? 'ปิดบริการ' : (isAvailable ? 'ว่าง' : 'ติดคิว');
-        //         let badgeColor = isClosed ? 'text-gray-400' : (isAvailable ? 'text-emerald-400' : 'text-red-400');
+                    // บันทึกลง LocalStorage และตัวแปรกลาง
+                    localStorage.setItem('barber_shop_open_status', isOpen);
+                    window.isShopOpen = isOpen;
+                    if (typeof state !== 'undefined') {
+                        state.isShopOpen = isOpen;
+                    }
 
-        //         return `
-        //     <div class="booking-barber-card ...">
-        //         <!-- โครงสร้างการแสดงผลช่างในหน้าจองคิว -->
-        //         <span class="${badgeColor}">(${statusText})</span>
-        //     </div>
-        // `;
-        //     }).join('');
-        // }
+                    // อัปเดตหน้าตาปุ่มเปิด/ปิดร้านทันที
+                    const btn = document.getElementById('shop-status-toggle-btn');
+                    const dot = document.getElementById('shop-status-dot');
+                    const text = document.getElementById('shop-status-text');
+                    const closedBanner = document.getElementById('shop-closed-banner');
+
+                    if (btn && dot && text) {
+                        if (isOpen) {
+                            btn.className = "px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition shadow-md bg-emerald-600 hover:bg-emerald-500 text-white";
+                            dot.className = "w-2 h-2 rounded-full bg-white animate-pulse";
+                            text.textContent = "เปิดร้านอยู่";
+                        } else {
+                            btn.className = "px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition shadow-md bg-gray-700 hover:bg-gray-600 text-gray-300";
+                            dot.className = "w-2 h-2 rounded-full bg-gray-400";
+                            text.textContent = "ปิดร้านแล้ว";
+                        }
+                    }
+
+                    if (closedBanner) {
+                        if (!isOpen) closedBanner.classList.remove('hidden');
+                        else closedBanner.classList.add('hidden');
+                    }
+
+                    // สั่งเรนเดอร์หน้าจอส่วนอื่นๆ ซ้ำเพื่อให้ UI อัปเดตตาม
+                    if (typeof renderUI === 'function') renderUI();
+                    if (typeof renderBarbersHomeStatus === 'function') renderBarbersHomeStatus();
+                }
+            }, (error) => {
+                console.error("เกิดข้อผิดพลาดในการซิงค์สถานะร้านแบบเรียลไทม์:", error);
+            });
+        }
 
     </script>
     <!-- Modal ข้อมูลส่วนตัว -->
