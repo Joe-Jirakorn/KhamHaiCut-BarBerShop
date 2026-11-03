@@ -936,113 +936,113 @@
         /* ================= INITIALIZATION ================= */
         /* ================= INITIALIZATION ================= */
         window.addEventListener('DOMContentLoaded', async () => {
-    // 1. กู้คืนสถานะการเข้าสู่ระบบจาก LocalStorage
-    const savedUser = localStorage.getItem('barber_current_user');
-    if (savedUser) {
-        try {
-            state.currentUser = JSON.parse(savedUser);
-        } catch (e) {
-            console.error("Failed to parse saved user:", e);
-            state.currentUser = null;
-        }
-    }
-
-    const bookingDateInput = document.getElementById('booking-date');
-    if (bookingDateInput) {
-        bookingDateInput.value = state.bookingForm.date;
-        bookingDateInput.min = new Date().toISOString().split('T')[0];
-    }
-
-    if (state.currentUser) {
-        const nameInput = document.getElementById('cust-name');
-        const phoneInput = document.getElementById('cust-phone');
-        const ageInput = document.getElementById('cust-age');
-
-        if (nameInput) {
-            nameInput.value = state.currentUser.name || '';
-            nameInput.readOnly = true;
-        }
-        if (phoneInput) {
-            phoneInput.value = state.currentUser.phone || '';
-            phoneInput.readOnly = true;
-        }
-
-        if (ageInput && state.currentUser.age) {
-            ageInput.value = state.currentUser.age;
-            if (typeof handleAgeAutoSelect === 'function') {
-                handleAgeAutoSelect(state.currentUser.age);
+            // 1. กู้คืนสถานะการเข้าสู่ระบบจาก LocalStorage
+            const savedUser = localStorage.getItem('barber_current_user');
+            if (savedUser) {
+                try {
+                    state.currentUser = JSON.parse(savedUser);
+                } catch (e) {
+                    console.error("Failed to parse saved user:", e);
+                    state.currentUser = null;
+                }
             }
-        }
-    }
 
-    const ageInputEl = document.getElementById('cust-age');
-    if (ageInputEl) {
-        ageInputEl.addEventListener('input', (e) => {
-            if (typeof handleAgeAutoSelect === 'function') {
-                handleAgeAutoSelect(e.target.value);
+            const bookingDateInput = document.getElementById('booking-date');
+            if (bookingDateInput) {
+                bookingDateInput.value = state.bookingForm.date;
+                bookingDateInput.min = new Date().toISOString().split('T')[0];
+            }
+
+            if (state.currentUser) {
+                const nameInput = document.getElementById('cust-name');
+                const phoneInput = document.getElementById('cust-phone');
+                const ageInput = document.getElementById('cust-age');
+
+                if (nameInput) {
+                    nameInput.value = state.currentUser.name || '';
+                    nameInput.readOnly = true;
+                }
+                if (phoneInput) {
+                    phoneInput.value = state.currentUser.phone || '';
+                    phoneInput.readOnly = true;
+                }
+
+                if (ageInput && state.currentUser.age) {
+                    ageInput.value = state.currentUser.age;
+                    if (typeof handleAgeAutoSelect === 'function') {
+                        handleAgeAutoSelect(state.currentUser.age);
+                    }
+                }
+            }
+
+            const ageInputEl = document.getElementById('cust-age');
+            if (ageInputEl) {
+                ageInputEl.addEventListener('input', (e) => {
+                    if (typeof handleAgeAutoSelect === 'function') {
+                        handleAgeAutoSelect(e.target.value);
+                    }
+                });
+            }
+
+            // โหลดและอัปเดตสถานะปุ่ม เปิด/ปิดร้าน และแบนเนอร์แจ้งเตือน จาก LocalStorage ตอนเปิดหน้าเว็บ
+            const savedShopStatus = localStorage.getItem('barber_shop_open_status');
+            if (savedShopStatus !== null) {
+                isShopOpen = savedShopStatus === 'true';
+                const btn = document.getElementById('shop-status-toggle-btn');
+                const dot = document.getElementById('shop-status-dot');
+                const text = document.getElementById('shop-status-text');
+
+                if (btn && dot && text) {
+                    if (isShopOpen) {
+                        btn.className = "px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition shadow-md bg-emerald-600 hover:bg-emerald-500 text-white";
+                        dot.className = "w-2 h-2 rounded-full bg-white animate-pulse";
+                        text.textContent = "เปิดร้านอยู่";
+                    } else {
+                        btn.className = "px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition shadow-md bg-gray-700 hover:bg-gray-600 text-gray-300";
+                        dot.className = "w-2 h-2 rounded-full bg-gray-400";
+                        text.textContent = "ปิดร้านแล้ว";
+                    }
+                }
+            }
+
+            // เช็กและแสดง/ซ่อน แบนเนอร์แจ้งเตือนร้านปิดในหน้าแรก
+            const closedBanner = document.getElementById('shop-closed-banner');
+            if (closedBanner) {
+                if (!isShopOpen) {
+                    closedBanner.classList.remove('hidden');
+                } else {
+                    closedBanner.classList.add('hidden');
+                }
+            }
+
+            // 2. เรนเดอร์หน้าจอทั่วไป
+            if (typeof updateUserUI === 'function') updateUserUI();
+            if (typeof renderUI === 'function') renderUI();
+            if (typeof renderHairstylesGrid === 'function') renderHairstylesGrid();
+            if (typeof renderAddonsGrid === 'function') renderAddonsGrid();
+            if (typeof renderAgeGroupsGrid === 'function') renderAgeGroupsGrid();
+            if (typeof renderUserBookingsTable === 'function') renderUserBookingsTable();
+            if (typeof renderAdminBookingsTable === 'function') renderAdminBookingsTable();
+            if (typeof initChart === 'function') initChart();
+            if (typeof updateRevenueStats === 'function') updateRevenueStats();
+
+            // 3. เรนเดอร์ส่วนของช่าง (ใช้ renderFullBarbersList เป็นตัวหลักตัวเดียวเพื่อป้องกันการ์ดซ้อน)
+            if (typeof renderAdminBarberControls === 'function') renderAdminBarberControls();
+            if (typeof renderFullBarbersList === 'function') renderFullBarbersList();
+            if (typeof renderBarberSelectGrid === 'function') renderBarberSelectGrid();
+            if (typeof renderBarbersHomeStatus === 'function') renderBarbersHomeStatus();
+
+            // 4. เปิดใช้งาน Real-time Listener ครบถ้วนทั้งช่าง สถานะร้าน และคิวจอง
+            if (typeof initRealtimeBarbers === 'function') {
+                initRealtimeBarbers();
+            }
+            if (typeof initRealtimeShopStatus === 'function') {
+                initRealtimeShopStatus();
+            }
+            if (typeof initRealtimeBookings === 'function') {
+                initRealtimeBookings();
             }
         });
-    }
-
-    // โหลดและอัปเดตสถานะปุ่ม เปิด/ปิดร้าน และแบนเนอร์แจ้งเตือน จาก LocalStorage ตอนเปิดหน้าเว็บ
-    const savedShopStatus = localStorage.getItem('barber_shop_open_status');
-    if (savedShopStatus !== null) {
-        isShopOpen = savedShopStatus === 'true';
-        const btn = document.getElementById('shop-status-toggle-btn');
-        const dot = document.getElementById('shop-status-dot');
-        const text = document.getElementById('shop-status-text');
-
-        if (btn && dot && text) {
-            if (isShopOpen) {
-                btn.className = "px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition shadow-md bg-emerald-600 hover:bg-emerald-500 text-white";
-                dot.className = "w-2 h-2 rounded-full bg-white animate-pulse";
-                text.textContent = "เปิดร้านอยู่";
-            } else {
-                btn.className = "px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition shadow-md bg-gray-700 hover:bg-gray-600 text-gray-300";
-                dot.className = "w-2 h-2 rounded-full bg-gray-400";
-                text.textContent = "ปิดร้านแล้ว";
-            }
-        }
-    }
-
-    // เช็กและแสดง/ซ่อน แบนเนอร์แจ้งเตือนร้านปิดในหน้าแรก
-    const closedBanner = document.getElementById('shop-closed-banner');
-    if (closedBanner) {
-        if (!isShopOpen) {
-            closedBanner.classList.remove('hidden');
-        } else {
-            closedBanner.classList.add('hidden');
-        }
-    }
-
-    // 2. เรนเดอร์หน้าจอทั่วไป
-    if (typeof updateUserUI === 'function') updateUserUI();
-    if (typeof renderUI === 'function') renderUI();
-    if (typeof renderHairstylesGrid === 'function') renderHairstylesGrid();
-    if (typeof renderAddonsGrid === 'function') renderAddonsGrid();
-    if (typeof renderAgeGroupsGrid === 'function') renderAgeGroupsGrid();
-    if (typeof renderUserBookingsTable === 'function') renderUserBookingsTable();
-    if (typeof renderAdminBookingsTable === 'function') renderAdminBookingsTable();
-    if (typeof initChart === 'function') initChart();
-    if (typeof updateRevenueStats === 'function') updateRevenueStats();
-
-    // 3. เรนเดอร์ส่วนของช่าง (ใช้ renderFullBarbersList เป็นตัวหลักตัวเดียวเพื่อป้องกันการ์ดซ้อน)
-    if (typeof renderAdminBarberControls === 'function') renderAdminBarberControls();
-    if (typeof renderFullBarbersList === 'function') renderFullBarbersList(); 
-    if (typeof renderBarberSelectGrid === 'function') renderBarberSelectGrid();
-    if (typeof renderBarbersHomeStatus === 'function') renderBarbersHomeStatus();
-
-    // 4. เปิดใช้งาน Real-time Listener ครบถ้วนทั้งช่าง สถานะร้าน และคิวจอง
-    if (typeof initRealtimeBarbers === 'function') {
-        initRealtimeBarbers();
-    }
-    if (typeof initRealtimeShopStatus === 'function') {
-        initRealtimeShopStatus();
-    }
-    if (typeof initRealtimeBookings === 'function') {
-        initRealtimeBookings();
-    }
-});
 
         /* ================= NAVIGATION & ROUTING ================= */
         // ฟังก์ชันกลางสำหรับจัดการการคลิกเมนูด้านบน
@@ -3286,46 +3286,49 @@
 
             const { collection, onSnapshot } = window.firebaseModules;
 
-            // ดึงและฟังข้อมูลจาก Collection "barbers" บน Firebase แบบเรียลไทม์
-            onSnapshot(collection(window.db, "barbers"), (snapshot) => {
-                // 🛑 ใช้ state หลักของระบบแทน window.state
-                if (typeof state === 'undefined' || !state.barbers) return;
-
-                snapshot.forEach((docSnap) => {
-                    const firebaseData = docSnap.data();
-                    const docId = docSnap.id; // 'b1' หรือ 'b2'
-
-                    // ค้นหาช่างใน state.barbers ตัวหลัก
-                    const targetBarber = state.barbers.find(b => b.id === docId);
-
-                    if (targetBarber) {
-                        // อัปเดตเฉพาะสถานะจริงจาก Firebase ทับลงไป โดยไม่ลบรูปภาพหรือข้อมูลเดิมทิ้ง
-                        targetBarber.status = firebaseData.status || 'available';
-                        if (firebaseData.name) {
-                            targetBarber.name = firebaseData.name;
-                        }
+            try {
+                onSnapshot(collection(window.db, "barbers"), (snapshot) => {
+                    if (snapshot.empty) {
+                        console.warn("⚠️ ไม่พบข้อมูลช่างใน Firestore ตรวจสอบชื่อ Collection อีกครั้ง");
+                        return;
                     }
+
+                    if (typeof state === 'undefined') window.state = {};
+                    if (!state.barbers) state.barbers = [];
+
+                    const firebaseBarbers = [];
+                    snapshot.forEach((docSnap) => {
+                        firebaseBarbers.push({ id: docSnap.id, ...docSnap.data() });
+                    });
+
+                    if (state.barbers.length === 0) {
+                        state.barbers = firebaseBarbers;
+                    } else {
+                        firebaseBarbers.forEach(fbBarber => {
+                            const targetBarber = state.barbers.find(b => b.id === fbBarber.id);
+                            if (targetBarber) {
+                                targetBarber.status = fbBarber.status || targetBarber.status || 'available';
+                                if (fbBarber.name) targetBarber.name = fbBarber.name;
+                                if (fbBarber.avatar) targetBarber.avatar = fbBarber.avatar;
+                            } else {
+                                state.barbers.push(fbBarber);
+                            }
+                        });
+                    }
+
+                    // เรนเดอร์อัปเดตหน้าจอทั้งหมดทันที
+                    if (typeof renderBarbersHomeStatus === 'function') renderBarbersHomeStatus();
+                    if (typeof renderBarberSelectGrid === 'function') renderBarberSelectGrid();
+                    if (typeof renderAdminBarberControls === 'function') renderAdminBarberControls();
+                    if (typeof renderFullBarbersList === 'function') renderFullBarbersList();
+
+                }, (error) => {
+                    console.error("Firestore Connection Error (404/400):", error);
                 });
-
-                console.log("ซิงค์สถานะช่างเรียลไทม์สำเร็จ:", state.barbers);
-
-                // 🛑 สั่งเรนเดอร์หน้าจอทุกส่วนที่แสดงผลข้อมูลช่างให้อัปเดตตามทันที (รวมถึงหน้า Guest ตอนออกจากระบบ)
-                if (typeof renderBarbersHomeStatus === 'function') renderBarbersHomeStatus();
-                if (typeof renderBarberSelectGrid === 'function') renderBarberSelectGrid();
-                if (typeof renderAdminBarberControls === 'function') renderAdminBarberControls();
-                if (typeof renderFullBarbersList === 'function') renderFullBarbersList();
-
-            }, (error) => {
-                console.error("เกิดข้อผิดพลาดในการซิงค์ข้อมูลช่างแบบเรียลไทม์:", error);
-            });
+            } catch (e) {
+                console.error("Failed to initialize realtime barbers:", e);
+            }
         }
-
-        // สั่งให้ทำงานเมื่อเปิดหน้าเว็บ
-        window.addEventListener('DOMContentLoaded', () => {
-            setTimeout(() => {
-                initRealtimeBarbers();
-            }, 1200);
-        });
 
         async function loadBarbersFromFirebase() {
             if (!window.db || !window.firebaseModules) return;
@@ -3999,99 +4002,7 @@
         `;
             }).join('');
         }
-        // function renderBarbersPage() {
-        //     const container = document.getElementById('full-barbers-grid');
-        //     if (!container) return;
 
-        //     // 1. ดึงข้อมูลช่างล่าสุดจาก LocalStorage หรือตัวแปรกลาง
-        //     let currentBarbers = [];
-        //     try {
-        //         const savedBarbers = localStorage.getItem('barber_shop_barbers');
-        //         if (savedBarbers) {
-        //             currentBarbers = JSON.parse(savedBarbers);
-        //         } else if (window.barbers) {
-        //             currentBarbers = window.barbers;
-        //         } else if (typeof state !== 'undefined' && state.barbers) {
-        //             currentBarbers = state.barbers;
-        //         }
-        //     } catch (e) {
-        //         currentBarbers = [];
-        //     }
-
-        //     // 🌟 2. กำหนดลิงก์รูปภาพสำรองประจำตัวช่าง (ยึดตาม id ของช่าง b1 และ b2 เสมอ)
-        //     const defaultAvatars = {
-        //         'b1': 'https://i.postimg.cc/8FR1mMtP/858525001-1129326712975883-8607776798710260414-n.jpg',
-        //         'b2': 'https://i.postimg.cc/qMrLWY3v/863844196-1134350642473490-5849783856972700037-n.jpg'
-        //     };
-
-        //     // 3. ดึงสถานะเปิด/ปิดร้านจาก LocalStorage
-        //     const savedShopStatus = localStorage.getItem('barber_shop_open_status');
-        //     const isOpen = savedShopStatus !== null ? (savedShopStatus === 'true') : true;
-
-        //     container.innerHTML = currentBarbers.map(b => {
-        //         // 🌟 4. บังคับดึงรูปจาก defaultAvatars ตาม id ก่อนเสมอ เพื่อป้องกันรูปร่วง
-        //         const barberImage = defaultAvatars[b.id] || b.avatar || b.image || '';
-
-        //         const isClosed = !isOpen || b.status === 'closed';
-
-        //         // 5. ตรวจสอบสถานะว่างสำหรับแสดงป้าย Badge ที่รูปโปรไฟล์
-        //         const statusStr = String(b.status || '').trim().toLowerCase();
-        //         const isAvailable = !isClosed && (
-        //             statusStr === 'available' ||
-        //             statusStr === 'ว่าง' ||
-        //             b.isAvailable === true ||
-        //             statusStr === 'true'
-        //         );
-
-        //         let badgeClass = '';
-        //         let statusText = '';
-
-        //         if (isClosed) {
-        //             badgeClass = 'bg-gray-700 text-gray-200 border border-gray-600 shadow-md';
-        //             statusText = 'ปิดบริการ';
-        //         } else if (isAvailable) {
-        //             badgeClass = 'bg-emerald-600 text-white border border-emerald-500 shadow-md';
-        //             statusText = 'ว่าง';
-        //         } else {
-        //             badgeClass = 'bg-red-600 text-white border border-red-500 shadow-md';
-        //             statusText = 'ติดคิว';
-        //         }
-
-        //         return `
-        //     <div class="bg-dark-900 border border-dark-700 rounded-2xl p-6 shadow-xl flex flex-col justify-between relative overflow-hidden">
-        //         <div>
-        //             <!-- รูปโปรไฟล์และ Badges สถานะแบบสีทึบ -->
-        //             <div class="relative w-28 h-28 mx-auto mb-4">
-        //                 <img src="${barberImage}" class="w-full h-full rounded-full object-cover border-4 border-dark-700 shadow-md" alt="${b.name}">
-        //                 <span class="absolute -bottom-1 left-1/2 -translate-x-1/2 px-3.5 py-1 rounded-full text-xs font-bold ${badgeClass} whitespace-nowrap shadow-lg">
-        //                     ${statusText}
-        //                 </span>
-        //             </div>
-
-        //             <!-- ชื่อและรายละเอียดช่าง -->
-        //             <div class="text-center mt-3">
-        //                 <h3 class="text-lg font-bold text-white">${b.name}</h3>
-        //                 <p class="text-xs text-amber-500 font-medium mt-0.5">${b.exp || 'ช่างประจำร้าน'}</p>
-        //                 <p class="text-xs text-gray-400 mt-3 line-clamp-2 leading-relaxed">
-        //                     ${b.bio || 'เชี่ยวชาญการตัดแต่งทรงผมชายสไตล์คลาสสิก ออกแบบทรงผมเข้ากับรูปหน้า'}
-        //                 </p>
-        //             </div>
-        //         </div>
-
-        //         <!-- ปุ่มจองคิว (ล็อกโทนสีเทา/มืดสม่ำเสมอ ไม่เปลี่ยนสีและไม่มีอาการแว๊บ) -->
-        //         <div class="mt-6">
-        //             <button onclick="selectBarberForBooking('${b.id}')" 
-        //                 class="w-full py-2.5 px-4 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 bg-dark-800 hover:bg-dark-700 text-gray-300 border border-dark-700 shadow-md">
-        //                 <i class="fa-solid fa-calendar-plus text-amber-500"></i>
-        //                 <span>จองคิวกับช่างท่านนี้</span>
-        //             </button>
-        //         </div>
-        //     </div>
-        // `;
-        //     }).join('');
-        // }
-
-        // 🌟 ฟังก์ชันฟังสถานะเปิด-ปิดร้านแบบเรียลไทม์
         function initRealtimeShopStatus() {
             if (!window.db || !window.firebaseModules) return;
 
