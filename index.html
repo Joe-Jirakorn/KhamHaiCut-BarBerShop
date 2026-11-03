@@ -4247,8 +4247,8 @@
 
             const { doc, onSnapshot } = window.firebaseModules;
 
-            // 🌟 2. ใช้ฟังก์ชัน doc() และ onSnapshot() แบบถูกต้องตามหลัก Firebase Modular SDK
-            onSnapshot(doc(window.db, "shop_settings", "status"), (docSnap) => {
+            // 🌟 2. ปรับ Path ให้ตรงกับ Firestore จริง ("settings" -> "shopStatus")
+            onSnapshot(doc(window.db, "settings", "shopStatus"), (docSnap) => {
                 if (docSnap.exists()) {
                     const data = docSnap.data();
                     const isShopOpen = data.isOpen;
@@ -4284,6 +4284,8 @@
                     }
 
                     console.log("ซิงค์สถานะร้านเรียลไทม์สำเร็จ: ", isShopOpen ? "เปิดร้านอยู่" : "ปิดร้านแล้ว");
+                } else {
+                    console.warn("ไม่พบ Document settings/shopStatus บน Firestore กรุณาตรวจสอบการสร้างข้อมูลเริ่มต้น");
                 }
             }, (error) => {
                 console.error("เกิดข้อผิดพลาดในการซิงค์สถานะร้าน:", error);
