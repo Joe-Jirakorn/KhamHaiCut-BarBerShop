@@ -1721,19 +1721,20 @@
             const container = document.getElementById('barber-select-grid');
             if (!container) return;
 
-            // 🌟 1. ดึงข้อมูลล่าสุดจาก localStorage มาก่อนเป็นอันดับแรกเสมอ เพื่อป้องกันข้อมูลเก่าค้างหลังรีเฟรช
-            let currentBarbers = [];
-            try {
-                const savedBarbers = localStorage.getItem('barber_shop_barbers');
-                if (savedBarbers) {
-                    currentBarbers = JSON.parse(savedBarbers);
-                    // อัปเดตกลับเข้า state กลางด้วยเพื่อให้ข้อมูลซิงค์กัน
-                    state.barbers = currentBarbers;
-                } else {
-                    currentBarbers = state.barbers || [];
+            // 🌟 1. ใช้ state.barbers เป็นหลัก เพื่อให้ซิงค์กับ Real-time จาก Firebase เสมอ
+            let currentBarbers = state.barbers || [];
+
+            // ถ้า state ว่างเปล่า ค่อยลองดึงจาก localStorage มาใช้สำรองชั่วคราว
+            if (currentBarbers.length === 0) {
+                try {
+                    const savedBarbers = localStorage.getItem('barber_shop_barbers');
+                    if (savedBarbers) {
+                        currentBarbers = JSON.parse(savedBarbers);
+                        state.barbers = currentBarbers;
+                    }
+                } catch (e) {
+                    currentBarbers = [];
                 }
-            } catch (e) {
-                currentBarbers = state.barbers || [];
             }
 
             // 2. ดึงสถานะเปิด/ปิดร้าน
@@ -1744,7 +1745,7 @@
                 const isSelected = String(state.bookingForm.selectedBarberId) === String(b.id);
                 const isClosed = !isOpen || b.status === 'closed';
 
-                // 3. ตรวจสอบสถานะว่างแบบยืดหยุ่น (รองรับทั้ง available และ ว่าง)
+                // 3. ตรวจสอบสถานะว่างแบบยืดหยุ่น (รองรับทั้ง available, ว่าง และ busy)
                 const statusStr = String(b.status || '').trim().toLowerCase();
                 const isAvailable = !isClosed && (
                     statusStr === 'available' ||
@@ -3111,10 +3112,24 @@
             try {
                 const { doc, updateDoc } = window.firebaseModules;
 
-                // อัปเดตฟิลด์ status ลงในคอลเลกชัน barbers ตาม Document ID ของช่าง (เช่น 'barber-kong')
+                // 🚀 1. อัปเดต State และเรนเดอร์หน้าจอทันที (Optimistic Update)
+                // เพื่อให้บนมือถือตอบสนองไวทันใจโดยไม่ต้องรอสัญญานเน็ตวิ่งกลับมาจาก Firebase
+                if (Array.isArray(state.barbers)) {
+                    const targetBarber = state.barbers.find(b => b.id === barberDocId);
+                    if (targetBarber) {
+                        targetBarber.status = newStatus;
+                    }
+                }
+
+                // สั่งวาดหน้าจอใหม่ทันทีทั้งในส่วนจัดการช่างและหน้าเลือกคิว
+                if (typeof renderBarbers === 'function') renderBarbers();
+                if (typeof renderBarberSelectGrid === 'function') renderBarberSelectGrid();
+
+                // ☁️ 2. ส่งคำสั่งอัปเดตจริงลง Firebase Firestore
                 const barberRef = doc(window.db, "barbers", barberDocId);
                 await updateDoc(barberRef, {
-                    status: newStatus // ค่าจะเป็น 'available' (คิวว่าง) หรือ 'busy' (ติดคิว)
+                    status: newStatus, // 'available' หรือ 'busy'
+                    updatedAt: new Date().toISOString()
                 });
 
                 console.log(`อัปเดตสถานะช่าง ${barberDocId} เป็น ${newStatus} สำเร็จ`);
@@ -3122,9 +3137,15 @@
                 if (typeof showToast === 'function') {
                     showToast(`เปลี่ยนสถานะช่างเป็น '${newStatus === 'available' ? 'คิวว่าง' : 'ติดคิว'}' สำเร็จ`, 'success');
                 }
+
             } catch (error) {
                 console.error("เกิดข้อผิดพลาดในการอัปเดตสถานะช่าง:", error);
                 alert("ไม่สามารถเปลี่ยนสถานะช่างได้: " + error.message);
+
+                // ถ้าเกิดข้อผิดพลาด ให้ดึงข้อมูลจริงจากเซิร์ฟเวอร์มาซิงค์ใหม่อีกรอบ
+                if (typeof fetchBarbers === 'function') {
+                    fetchBarbers();
+                }
             }
         }
 
@@ -4192,6 +4213,8 @@
                 }]
             };
         }
+
+
 
     </script>
     <!-- Modal ข้อมูลส่วนตัว -->
