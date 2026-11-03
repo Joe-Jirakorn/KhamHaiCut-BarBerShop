@@ -936,7 +936,7 @@
         /* ================= INITIALIZATION ================= */
         /* ================= INITIALIZATION ================= */
         window.addEventListener('DOMContentLoaded', async () => {
-            // 1. กู้คืนสถานะการเข้าสู่ระบบจาก LocalStorage
+            // 1. กู้คืนสถานะการเข้าสู่ระบบจาก LocalStorage (ถ้ามี)
             const savedUser = localStorage.getItem('barber_current_user');
             if (savedUser) {
                 try {
@@ -945,6 +945,9 @@
                     console.error("Failed to parse saved user:", e);
                     state.currentUser = null;
                 }
+            } else {
+                // 🌟 หากยังไม่ล็อกอิน ให้ state.currentUser เป็น null ตามเดิม (เพื่อแสดงปุ่มเข้าสู่ระบบ)
+                state.currentUser = null;
             }
 
             const bookingDateInput = document.getElementById('booking-date');
@@ -953,11 +956,10 @@
                 bookingDateInput.value = state.bookingForm.date;
                 bookingDateInput.min = todayStr;
 
-                // 🌟 เพิ่มการดักจับเมื่อเปลี่ยนวันที่ เพื่อบล็อกไม่ให้จอง "วันนี้" หากร้านปิดอยู่
+                // ดักจับเมื่อเปลี่ยนวันที่ เพื่อบล็อกไม่ให้จอง "วันนี้" หากร้านปิดอยู่
                 bookingDateInput.addEventListener('change', (e) => {
                     const selectedDate = e.target.value;
 
-                    // เช็กสถานะร้านปัจจุบันจากตัวแปร isShopOpen หรือ LocalStorage
                     const savedShopStatus = localStorage.getItem('barber_shop_open_status');
                     const isOpen = savedShopStatus !== null ? (savedShopStatus === 'true') : true;
 
@@ -973,7 +975,6 @@
                             alert('ร้านปิดให้บริการวันนี้ ไม่สามารถจองคิวได้ กรุณาเลือกวันอื่นครับ');
                         }
 
-                        // ล้างค่าวันที่ออก ป้องกันการกดจอง
                         bookingDateInput.value = '';
                         if (typeof state !== 'undefined' && state.bookingForm) {
                             state.bookingForm.date = '';
@@ -982,11 +983,12 @@
                 });
             }
 
-            if (state.currentUser) {
-                const nameInput = document.getElementById('cust-name');
-                const phoneInput = document.getElementById('cust-phone');
-                const ageInput = document.getElementById('cust-age');
+            const nameInput = document.getElementById('cust-name');
+            const phoneInput = document.getElementById('cust-phone');
+            const ageInput = document.getElementById('cust-age');
 
+            if (state.currentUser) {
+                // กรณีเข้าสู่ระบบแล้ว: เติมข้อมูลและล็อกไม่ให้แก้ไข
                 if (nameInput) {
                     nameInput.value = state.currentUser.name || '';
                     nameInput.readOnly = true;
@@ -995,18 +997,28 @@
                     phoneInput.value = state.currentUser.phone || '';
                     phoneInput.readOnly = true;
                 }
-
                 if (ageInput && state.currentUser.age) {
                     ageInput.value = state.currentUser.age;
                     if (typeof handleAgeAutoSelect === 'function') {
                         handleAgeAutoSelect(state.currentUser.age);
                     }
                 }
+            } else {
+                // 🌟 กรณีไม่ได้เข้าสู่ระบบ (Guest): ปลดล็อกช่องชื่อและเบอร์โทรให้สามารถพิมพ์กรอกเองได้อิสระ
+                if (nameInput) {
+                    nameInput.value = '';
+                    nameInput.readOnly = false;
+                    nameInput.placeholder = 'กรอกชื่อ-นามสกุลของคุณ';
+                }
+                if (phoneInput) {
+                    phoneInput.value = '';
+                    phoneInput.readOnly = false;
+                    phoneInput.placeholder = 'กรอกเบอร์โทรศัพท์';
+                }
             }
 
-            const ageInputEl = document.getElementById('cust-age');
-            if (ageInputEl) {
-                ageInputEl.addEventListener('input', (e) => {
+            if (ageInput) {
+                ageInput.addEventListener('input', (e) => {
                     if (typeof handleAgeAutoSelect === 'function') {
                         handleAgeAutoSelect(e.target.value);
                     }
@@ -1148,15 +1160,8 @@
                 }
             }
 
-            // 4. ประวัติการจอง (เปิดหน้า และสั่ง Render ข้อมูลประวัติ)
+            // 4. ประวัติการจอง (🌟 เปิดให้ Guest และทุกคนสามารถเข้าดูหน้าประวัติได้ปกติ)
             else if (target === 'my-bookings') {
-                const isLoggedIn = (state.currentUser && (state.currentUser.email || state.currentUser.uid)) || localStorage.getItem('barber_current_user') || localStorage.getItem('currentUser') || localStorage.getItem('user');
-
-                if (!isLoggedIn) {
-                    showToast('กรุณาเข้าสู่ระบบเพื่อดูประวัติการจอง', 'info');
-                    return;
-                }
-
                 hideAdminView();
                 hideAllUserViews();
 
@@ -1166,12 +1171,14 @@
 
                     if (typeof renderUserBookingsPage === 'function') {
                         renderUserBookingsPage();
+                    } else if (typeof renderUserBookingsTable === 'function') {
+                        renderUserBookingsTable();
                     }
 
                     showToast('แสดงประวัติการจองของคุณ', 'success');
                 } else {
                     if (pageHome) { pageHome.style.display = 'block'; }
-                    showToast('เข้าสู่ระบบสำเร็จ', 'success');
+                    showToast('แสดงประวัติการจอง', 'success');
                 }
             }
         }
@@ -2399,6 +2406,16 @@
                     localStorage.setItem('barber_bookings', JSON.stringify(state.bookings));
                 }
 
+                // 🌟 6. บันทิกรหัสจองเก็บไว้ในเครื่อง (สำหรับ Guest) เพื่อให้ดึงประวัติมาแสดงผลได้ทันที
+                const isUserLoggedIn = state.currentUser && (state.currentUser.email || state.currentUser.id) && !state.currentUser.isGuest;
+                if (!isUserLoggedIn) {
+                    const savedGuestIds = JSON.parse(localStorage.getItem('my_guest_booking_ids') || '[]');
+                    if (!savedGuestIds.includes(newBooking.id)) {
+                        savedGuestIds.push(newBooking.id);
+                        localStorage.setItem('my_guest_booking_ids', JSON.stringify(savedGuestIds));
+                    }
+                }
+
                 alert(`จองคิวสำเร็จ! รหัสจองของคุณคือ ${newBooking.id} (ยอดรวม ${netTotal} บาท)`);
 
                 // ล้างค่าบริการเสริมที่เลือกไว้หลังจองเสร็จ (รีเซ็ตฟอร์ม)
@@ -3030,12 +3047,12 @@
         });
 
         function renderUserBookingsTable() {
-            // 🛑 1. ไม่ดึงจาก LocalStorage แล้ว แต่ใช้ state.bookings ที่ซิงค์มาจาก Firebase โดยตรง
+            // 🛑 1. ตรวจสอบความถูกต้องของ state.bookings ที่ซิงค์มาจาก Firebase Real-time
             if (!Array.isArray(state.bookings)) {
                 state.bookings = [];
             }
 
-            // 2. ค้นหาตารางโดยอ้างอิงจาก id="user-bookings-table-body" ใน HTML ของคุณ
+            // 2. ค้นหาตารางโดยอ้างอิงจาก id="user-bookings-table-body" ใน HTML
             const tableContainer = document.getElementById('user-bookings-table-body');
 
             if (!tableContainer) {
@@ -3046,10 +3063,10 @@
             // เคลียร์ข้อมูลเก่าทิ้งก่อนเรนเดอร์ใหม่
             tableContainer.innerHTML = '';
 
-            // 3. ดึงข้อมูลการจองทั้งหมดมาแสดง
+            // 🌟 3. ให้แสดงรายการจองทั้งหมดในระบบ เพื่อให้ทุกคนเห็นภาพรวมตารางคิวและบริหารเวลาได้
             const userBookings = state.bookings;
 
-            // ถ้าไม่มีประวัติการจอง
+            // ถ้าไม่มีประวัติการจองในระบบเลย
             if (userBookings.length === 0) {
                 tableContainer.innerHTML = `
             <tr>
@@ -3075,21 +3092,24 @@
                     statusBadge = '<span class="px-2 py-1 bg-red-500/20 text-red-400 rounded-full text-xs">ยกเลิกแล้ว</span>';
                 }
 
-                // 🛑 ตรวจสอบสิทธิ์ความเป็นเจ้าของคิวแบบยืดหยุ่น (เทียบทั้ง ID และ Email)
-                const currentUserId = state.currentUser ? (state.currentUser.id || state.currentUser.firestoreId || '') : '';
-                const currentUserEmail = state.currentUser && state.currentUser.email ? state.currentUser.email.trim().toLowerCase() : '';
-                const currentUserRole = state.currentUser && state.currentUser.role ? state.currentUser.role.toLowerCase() : 'customer';
+                // 🛑 ตรวจสอบสิทธิ์ความเป็นเจ้าของคิว เพื่อจำกัดสิทธิ์ปุ่มยกเลิกเฉพาะเจ้าของคิวหรือแอดมิน/ช่าง
+                const currentUser = state.currentUser;
+                const currentUserId = currentUser ? (currentUser.id || currentUser.firestoreId || '') : '';
+                const currentUserEmail = currentUser && currentUser.email ? currentUser.email.trim().toLowerCase() : '';
+                const currentUserRole = currentUser && currentUser.role ? currentUser.role.toLowerCase() : 'customer';
 
-                // เช็กว่าเป็นเจ้าของคิวไหม (รองรับทั้งกรณีเทียบผ่าน userId หรือ userEmail/email)
                 const isOwnerById = currentUserId && (booking.userId === currentUserId || booking.firestoreId === currentUserId);
                 const isOwnerByEmail = currentUserEmail && (booking.userEmail === currentUserEmail || booking.email === currentUserEmail);
-                const isOwner = isOwnerById || isOwnerByEmail;
 
+                const savedGuestBookingIds = JSON.parse(localStorage.getItem('my_guest_booking_ids') || '[]');
+                const isGuestOwner = savedGuestBookingIds.includes(booking.id);
+
+                const isOwner = isOwnerById || isOwnerByEmail || isGuestOwner;
                 const isAdminOrBarber = currentUserRole === 'admin' || currentUserRole === 'barber';
 
                 let actionButtonHTML = '';
                 if (booking.status === 'pending') {
-                    // ถ้าเป็นเจ้าของคิว หรือเป็นแอดมิน/ช่าง ถึงจะแสดงปุ่มยกเลิก
+                    // แสดงปุ่มยกเลิกเฉพาะคิวของตัวเอง หรือแอดมิน/ช่างเท่านั้น เพื่อความปลอดภัย
                     if (isOwner || isAdminOrBarber) {
                         actionButtonHTML = `
                     <button onclick="cancelBooking('${booking.id || booking.firestoreId}')" class="px-3 py-1 bg-red-600/30 hover:bg-red-600 text-red-300 hover:text-white rounded text-xs transition-colors">
@@ -3097,6 +3117,7 @@
                     </button>
                 `;
                     } else {
+                        // คิวของคนอื่น จะแสดงเป็นขีด '-' ป้องกันไม่ให้คนอื่นมากดcancleเล่น
                         actionButtonHTML = `<span class="text-gray-500 text-xs">-</span>`;
                     }
                 } else if (booking.status === 'completed') {
