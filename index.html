@@ -1026,6 +1026,12 @@
             if (typeof initChart === 'function') initChart();
             if (typeof updateRevenueStats === 'function') updateRevenueStats();
 
+            // 🌟 3. เพิ่มฟังก์ชันเรนเดอร์ส่วนของช่างตรงนี้ เพื่อให้โหลดพร้อมกันตั้งแต่เปิดเว็บครั้งแรกไม่ต้องรีเฟรช
+            if (typeof renderAdminBarberControls === 'function') renderAdminBarberControls();
+            if (typeof renderFullBarbersList === 'function') renderFullBarbersList();
+            if (typeof renderBarberSelectGrid === 'function') renderBarberSelectGrid();
+            if (typeof renderBarbersHomeStatus === 'function') renderBarbersHomeStatus();
+
             if (typeof initRealtimeBarbers === 'function') {
                 initRealtimeBarbers();
             }
