@@ -2285,22 +2285,23 @@
             const container = document.getElementById('admin-barber-control-grid');
             if (!container) return;
 
-            // 1. ดึงข้อมูลช่างล่าสุดจาก LocalStorage หรือ state
+            // 🌟 1. ยึด state.barbers เป็นอันดับแรกเพื่อให้รับค่า Real-time จาก Firebase ทันที
             let currentBarbers = [];
-            try {
-                const savedBarbers = localStorage.getItem('barber_shop_barbers');
-                if (savedBarbers) {
-                    currentBarbers = JSON.parse(savedBarbers);
-                } else if (window.barbers) {
-                    currentBarbers = window.barbers;
-                } else if (state && state.barbers) {
-                    currentBarbers = state.barbers;
+            if (typeof state !== 'undefined' && state.barbers && state.barbers.length > 0) {
+                currentBarbers = state.barbers;
+            } else {
+                try {
+                    const savedBarbers = localStorage.getItem('barber_shop_barbers');
+                    if (savedBarbers) {
+                        currentBarbers = JSON.parse(savedBarbers);
+                        if (typeof state !== 'undefined') state.barbers = currentBarbers;
+                    }
+                } catch (e) {
+                    currentBarbers = [];
                 }
-            } catch (e) {
-                currentBarbers = state.barbers || [];
             }
 
-            // 🌟 2. กำหนดลิงก์รูปภาพสำรองประจำตัวช่าง (ป้องกันรูปร่วงในหน้าแอดมิน)
+            // 2. กำหนดลิงก์รูปภาพสำรองประจำตัวช่าง
             const defaultAvatars = {
                 'b1': 'https://i.postimg.cc/8FR1mMtP/858525001-1129326712975883-8607776798710260414-n.jpg',
                 'b2': 'https://i.postimg.cc/qMrLWY3v/863844196-1134350642473490-5849783856972700037-n.jpg'
@@ -2311,15 +2312,12 @@
             const isOpen = savedShopStatus !== null ? (savedShopStatus === 'true') : (typeof isShopOpen !== 'undefined' ? isShopOpen : true);
 
             container.innerHTML = currentBarbers.map(b => {
-                // 🌟 ดึงรูปจาก b.avatar หรือถ้าไม่มีให้ใช้ลิงก์สำรองตาม id ของช่างทันที
                 const barberImage = b.avatar || defaultAvatars[b.id] || '';
-
-                // ถ้าร้านปิด (!isOpen) หรือสถานะช่างเป็น closed ให้บังคับเป็นปิดบริการ
                 const isClosed = !isOpen || b.status === 'closed';
 
                 const statusStr = String(b.status || '').trim().toLowerCase();
 
-                // 🌟 ปรับปรุงการเช็กสถานะให้ยืดหยุ่นรองรับทุกรูปแบบเหมือนฟังก์ชันอื่น
+                // เช็กสถานะยืดหยุ่นรองรับทุกค่า
                 const isAvailable = !isClosed && (
                     statusStr === 'available' ||
                     statusStr === 'ว่าง' ||
@@ -3976,7 +3974,7 @@
 
                 const isClosed = !isOpen || b.status === 'closed';
 
-                // 4. ตรวจสอบสถานะว่างแบบยืดหยุ่น
+                // 4. ตรวจสอบสถานะว่างแบบยืดหยุ่น (เอาไว้โชว์ป้ายสถานะที่รูปเหมือนเดิม)
                 const statusStr = String(b.status || '').trim().toLowerCase();
                 const isAvailable = !isClosed && (
                     statusStr === 'available' ||
@@ -4020,13 +4018,10 @@
                     </div>
                 </div>
 
-                <!-- ปุ่มจองคิว -->
+                <!-- ปุ่มจองคิว (ล็อคสีเหลืองถาวร กดได้ตลอด) -->
                 <div class="mt-6">
                     <button onclick="selectBarberForBooking('${b.id}')" 
-                        class="w-full py-2.5 px-4 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 ${isAvailable
-                        ? 'bg-amber-500 hover:bg-amber-400 text-dark-900 shadow-lg shadow-amber-500/10'
-                        : 'bg-dark-800 text-gray-500 cursor-not-allowed opacity-60'}" 
-                        ${!isAvailable ? 'disabled' : ''}>
+                        class="w-full py-2.5 px-4 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 bg-amber-500 hover:bg-amber-400 text-dark-900 shadow-lg shadow-amber-500/10">
                         <i class="fa-solid fa-calendar-plus"></i>
                         <span>จองคิวกับช่างท่านนี้</span>
                     </button>
