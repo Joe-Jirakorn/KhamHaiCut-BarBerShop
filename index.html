@@ -912,24 +912,7 @@
                 date: new Date().toISOString().split('T')[0],
                 time: '14:00'
             },
-
-            bookings: JSON.parse(localStorage.getItem('barber_bookings')) || [
-                {
-                    id: 'BK-0001',
-                    userId: 'u1',
-                    userName: 'สมชาย ชัยชนะ',
-                    userPhone: '081-234-5678',
-                    styleName: 'Fade & Undercut',
-                    ageGroupLabel: 'ผู้ใหญ่ (Adults)',
-                    barberName: 'ช่างก้อง (เจ้าของร้าน)',
-                    date: new Date().toISOString().split('T')[0],
-                    time: '11:00',
-                    price: 350,
-                    status: 'completed',
-                    createdAt: new Date().toISOString()
-                }
-            ],
-
+            bookings: JSON.parse(localStorage.getItem('barber_bookings')) || [],
             chartFilter: 'daily',
             revenueChartInstance: null
         };
@@ -2123,7 +2106,6 @@
 
                     querySnapshot.forEach((docSnap) => {
                         const existing = docSnap.data();
-                        // ถ้ามีคิวในเวลานี้และสถานะไม่ใช่ 'cancelled' ถือว่าชนทันที!
                         if (existing.status !== 'cancelled') {
                             hasConflict = true;
                         }
@@ -2131,20 +2113,43 @@
 
                     if (hasConflict) {
                         alert(`ติดจอง! ช่วงเวลา ${time} ในวันที่ ${date} กับช่าง ${selectedBarberObj.name} มีผู้จองไปแล้ว กรุณาเลือกช่วงเวลาอื่นครับ`);
-                        return; // หยุดการทำงาน ไม่บันทึกซ้ำ
+                        return;
                     }
                 }
 
-                // สร้าง Object การจองใหม่
-                // 🌟 ดึงเลขนับคิวล่าสุดจาก localStorage (ถ้ายังไม่มีให้เริ่มที่ 0 แล้วบวก 1)
-                let bookingCounter = parseInt(localStorage.getItem('barber_booking_counter') || '0') + 1;
-                localStorage.setItem('barber_booking_counter', bookingCounter);
+                // 🌟 5. คำนวณรหัสจองแบบ Global Running (ดึงข้อมูลทั้งหมดจาก Firebase มาเทียบหาเลขสูงสุด)
+                // 🌟 5. คำนวณรหัสจองแบบ Global Running (ดึงข้อมูลทั้งหมดจาก Firebase มาเทียบหาเลขสูงสุด)
+                let maxNumber = 0;
+                if (window.firebaseModules && window.db) {
+                    const { collection, getDocs } = window.firebaseModules;
+                    const allBookingsSnapshot = await getDocs(collection(window.db, "bookings"));
 
-                // จัดรูปแบบให้เป็น 4 หลักเสมอ เช่น KHC -0001, KHC -0002
-                const formattedBookingId = 'KH - ' + String(bookingCounter).padStart(4, '0');
+                    // ถ้าระบบว่างเปล่า (ไม่มีข้อมูลการจองหลงเหลือเลย) ให้เริ่มนับจาก 0 ทันที
+                    if (allBookingsSnapshot.empty) {
+                        maxNumber = 0;
+                    } else {
+                        allBookingsSnapshot.forEach((docSnap) => {
+                            const data = docSnap.data();
+                            const bookingId = data.id || ""; // เช่น "KH - 0001"
+
+                            // ดึงตัวเลขท้ายรหัสออกมาแปลงเป็นตัวเลข
+                            const match = bookingId.match(/(\d+)$/);
+                            if (match) {
+                                const num = parseInt(match[1], 10);
+                                if (num > maxNumber) {
+                                    maxNumber = num;
+                                }
+                            }
+                        });
+                    }
+                }
+
+                // บวกเพิ่มทีละ 1 จากค่ายอดสูงสุดในระบบจริง
+                const nextBookingNum = maxNumber + 1;
+                const formattedBookingId = 'KH - ' + String(nextBookingNum).padStart(4, '0');
 
                 const newBooking = {
-                    id: formattedBookingId, // 👈 ใช้รหัสที่รันเลขเรียงลำดับ
+                    id: formattedBookingId, // 👈 ใช้รหัสกลางที่รันต่อเนื่องไม่มีวันซ้ำ
                     userId: state.currentUser ? (state.currentUser.id || state.currentUser.firestoreId || 'u-user') : 'guest',
                     userEmail: state.currentUser ? (state.currentUser.email || '').trim().toLowerCase() : '',
                     userName: name,
@@ -2169,7 +2174,6 @@
                         newBooking
                     );
                 } else {
-                    // สำรองเผื่อกรณีเชื่อมต่อ Firebase ไม่สำเร็จ ให้เก็บลง LocalStorage ชั่วคราว
                     if (!Array.isArray(state.bookings)) state.bookings = [];
                     state.bookings.push(newBooking);
                     localStorage.setItem('barber_bookings', JSON.stringify(state.bookings));
@@ -2187,7 +2191,7 @@
                     navigateTo('my-bookings');
                 }
 
-                // อัปเดตตารางแสดงผลใหม่ทันที (ถ้ามีฟังก์ชันดึงข้อมูล)
+                // อัปเดตตารางแสดงผลใหม่ทันที
                 if (typeof fetchBookings === 'function') {
                     fetchBookings();
                 } else if (typeof renderUserBookingsTable === 'function') {
@@ -3663,7 +3667,7 @@
                 state.isShopOpen = nextShopStatus;
             }
 
-            // 🌟 3. ส่งข้อมูลสถานะร้านขึ้น Firebase Firestore
+            // 3. ส่งข้อมูลสถานะร้านขึ้น Firebase Firestore
             if (window.db && window.firebaseModules) {
                 const { doc, setDoc } = window.firebaseModules;
                 try {
@@ -3691,19 +3695,19 @@
                 barbersList = [];
             }
 
-            // ถ้าร้านเปิด ให้คืนค่าช่างทั้งหมดเป็น 'available' | ถ้าร้านปิด ให้ปรับเป็น 'closed'
+            // 🌟 กำหนดสถานะช่าง: ถ้าร้านเปิดให้เป็น 'available' ถ้าร้านปิดให้เป็น 'closed'
             barbersList.forEach(barber => {
                 barber.status = nextShopStatus ? 'available' : 'closed';
             });
 
-            // บันทึกลง LocalStorage และ window.barbers / state.barbers ทันที
+            // บันทึกลง LocalStorage และตัวแปรกลางทันที
             window.barbers = barbersList;
             localStorage.setItem('barber_shop_barbers', JSON.stringify(barbersList));
             if (typeof state !== 'undefined') {
                 state.barbers = barbersList;
             }
 
-            // 🌟 5. ส่งข้อมูลสถานะช่างทุกคนขึ้น Firebase Firestore แบบลูปอัปเดตทีละคน
+            // 5. ส่งข้อมูลสถานะช่างทุกคนขึ้น Firebase Firestore
             if (window.db && window.firebaseModules) {
                 const { doc, updateDoc } = window.firebaseModules;
                 for (const barber of barbersList) {
