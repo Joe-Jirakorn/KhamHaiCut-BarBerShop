@@ -3999,97 +3999,97 @@
         `;
             }).join('');
         }
-        function renderBarbersPage() {
-            const container = document.getElementById('full-barbers-grid');
-            if (!container) return;
+        // function renderBarbersPage() {
+        //     const container = document.getElementById('full-barbers-grid');
+        //     if (!container) return;
 
-            // 1. ดึงข้อมูลช่างล่าสุดจาก LocalStorage หรือตัวแปรกลาง
-            let currentBarbers = [];
-            try {
-                const savedBarbers = localStorage.getItem('barber_shop_barbers');
-                if (savedBarbers) {
-                    currentBarbers = JSON.parse(savedBarbers);
-                } else if (window.barbers) {
-                    currentBarbers = window.barbers;
-                } else if (typeof state !== 'undefined' && state.barbers) {
-                    currentBarbers = state.barbers;
-                }
-            } catch (e) {
-                currentBarbers = [];
-            }
+        //     // 1. ดึงข้อมูลช่างล่าสุดจาก LocalStorage หรือตัวแปรกลาง
+        //     let currentBarbers = [];
+        //     try {
+        //         const savedBarbers = localStorage.getItem('barber_shop_barbers');
+        //         if (savedBarbers) {
+        //             currentBarbers = JSON.parse(savedBarbers);
+        //         } else if (window.barbers) {
+        //             currentBarbers = window.barbers;
+        //         } else if (typeof state !== 'undefined' && state.barbers) {
+        //             currentBarbers = state.barbers;
+        //         }
+        //     } catch (e) {
+        //         currentBarbers = [];
+        //     }
 
-            // 🌟 2. กำหนดลิงก์รูปภาพสำรองประจำตัวช่าง (ยึดตาม id ของช่าง b1 และ b2 เสมอ)
-            const defaultAvatars = {
-                'b1': 'https://i.postimg.cc/8FR1mMtP/858525001-1129326712975883-8607776798710260414-n.jpg',
-                'b2': 'https://i.postimg.cc/qMrLWY3v/863844196-1134350642473490-5849783856972700037-n.jpg'
-            };
+        //     // 🌟 2. กำหนดลิงก์รูปภาพสำรองประจำตัวช่าง (ยึดตาม id ของช่าง b1 และ b2 เสมอ)
+        //     const defaultAvatars = {
+        //         'b1': 'https://i.postimg.cc/8FR1mMtP/858525001-1129326712975883-8607776798710260414-n.jpg',
+        //         'b2': 'https://i.postimg.cc/qMrLWY3v/863844196-1134350642473490-5849783856972700037-n.jpg'
+        //     };
 
-            // 3. ดึงสถานะเปิด/ปิดร้านจาก LocalStorage
-            const savedShopStatus = localStorage.getItem('barber_shop_open_status');
-            const isOpen = savedShopStatus !== null ? (savedShopStatus === 'true') : true;
+        //     // 3. ดึงสถานะเปิด/ปิดร้านจาก LocalStorage
+        //     const savedShopStatus = localStorage.getItem('barber_shop_open_status');
+        //     const isOpen = savedShopStatus !== null ? (savedShopStatus === 'true') : true;
 
-            container.innerHTML = currentBarbers.map(b => {
-                // 🌟 4. บังคับดึงรูปจาก defaultAvatars ตาม id ก่อนเสมอ เพื่อป้องกันรูปร่วง
-                const barberImage = defaultAvatars[b.id] || b.avatar || b.image || '';
+        //     container.innerHTML = currentBarbers.map(b => {
+        //         // 🌟 4. บังคับดึงรูปจาก defaultAvatars ตาม id ก่อนเสมอ เพื่อป้องกันรูปร่วง
+        //         const barberImage = defaultAvatars[b.id] || b.avatar || b.image || '';
 
-                const isClosed = !isOpen || b.status === 'closed';
+        //         const isClosed = !isOpen || b.status === 'closed';
 
-                // 5. ตรวจสอบสถานะว่างสำหรับแสดงป้าย Badge ที่รูปโปรไฟล์
-                const statusStr = String(b.status || '').trim().toLowerCase();
-                const isAvailable = !isClosed && (
-                    statusStr === 'available' ||
-                    statusStr === 'ว่าง' ||
-                    b.isAvailable === true ||
-                    statusStr === 'true'
-                );
+        //         // 5. ตรวจสอบสถานะว่างสำหรับแสดงป้าย Badge ที่รูปโปรไฟล์
+        //         const statusStr = String(b.status || '').trim().toLowerCase();
+        //         const isAvailable = !isClosed && (
+        //             statusStr === 'available' ||
+        //             statusStr === 'ว่าง' ||
+        //             b.isAvailable === true ||
+        //             statusStr === 'true'
+        //         );
 
-                let badgeClass = '';
-                let statusText = '';
+        //         let badgeClass = '';
+        //         let statusText = '';
 
-                if (isClosed) {
-                    badgeClass = 'bg-gray-700 text-gray-200 border border-gray-600 shadow-md';
-                    statusText = 'ปิดบริการ';
-                } else if (isAvailable) {
-                    badgeClass = 'bg-emerald-600 text-white border border-emerald-500 shadow-md';
-                    statusText = 'ว่าง';
-                } else {
-                    badgeClass = 'bg-red-600 text-white border border-red-500 shadow-md';
-                    statusText = 'ติดคิว';
-                }
+        //         if (isClosed) {
+        //             badgeClass = 'bg-gray-700 text-gray-200 border border-gray-600 shadow-md';
+        //             statusText = 'ปิดบริการ';
+        //         } else if (isAvailable) {
+        //             badgeClass = 'bg-emerald-600 text-white border border-emerald-500 shadow-md';
+        //             statusText = 'ว่าง';
+        //         } else {
+        //             badgeClass = 'bg-red-600 text-white border border-red-500 shadow-md';
+        //             statusText = 'ติดคิว';
+        //         }
 
-                return `
-            <div class="bg-dark-900 border border-dark-700 rounded-2xl p-6 shadow-xl flex flex-col justify-between relative overflow-hidden">
-                <div>
-                    <!-- รูปโปรไฟล์และ Badges สถานะแบบสีทึบ -->
-                    <div class="relative w-28 h-28 mx-auto mb-4">
-                        <img src="${barberImage}" class="w-full h-full rounded-full object-cover border-4 border-dark-700 shadow-md" alt="${b.name}">
-                        <span class="absolute -bottom-1 left-1/2 -translate-x-1/2 px-3.5 py-1 rounded-full text-xs font-bold ${badgeClass} whitespace-nowrap shadow-lg">
-                            ${statusText}
-                        </span>
-                    </div>
+        //         return `
+        //     <div class="bg-dark-900 border border-dark-700 rounded-2xl p-6 shadow-xl flex flex-col justify-between relative overflow-hidden">
+        //         <div>
+        //             <!-- รูปโปรไฟล์และ Badges สถานะแบบสีทึบ -->
+        //             <div class="relative w-28 h-28 mx-auto mb-4">
+        //                 <img src="${barberImage}" class="w-full h-full rounded-full object-cover border-4 border-dark-700 shadow-md" alt="${b.name}">
+        //                 <span class="absolute -bottom-1 left-1/2 -translate-x-1/2 px-3.5 py-1 rounded-full text-xs font-bold ${badgeClass} whitespace-nowrap shadow-lg">
+        //                     ${statusText}
+        //                 </span>
+        //             </div>
 
-                    <!-- ชื่อและรายละเอียดช่าง -->
-                    <div class="text-center mt-3">
-                        <h3 class="text-lg font-bold text-white">${b.name}</h3>
-                        <p class="text-xs text-amber-500 font-medium mt-0.5">${b.exp || 'ช่างประจำร้าน'}</p>
-                        <p class="text-xs text-gray-400 mt-3 line-clamp-2 leading-relaxed">
-                            ${b.bio || 'เชี่ยวชาญการตัดแต่งทรงผมชายสไตล์คลาสสิก ออกแบบทรงผมเข้ากับรูปหน้า'}
-                        </p>
-                    </div>
-                </div>
+        //             <!-- ชื่อและรายละเอียดช่าง -->
+        //             <div class="text-center mt-3">
+        //                 <h3 class="text-lg font-bold text-white">${b.name}</h3>
+        //                 <p class="text-xs text-amber-500 font-medium mt-0.5">${b.exp || 'ช่างประจำร้าน'}</p>
+        //                 <p class="text-xs text-gray-400 mt-3 line-clamp-2 leading-relaxed">
+        //                     ${b.bio || 'เชี่ยวชาญการตัดแต่งทรงผมชายสไตล์คลาสสิก ออกแบบทรงผมเข้ากับรูปหน้า'}
+        //                 </p>
+        //             </div>
+        //         </div>
 
-                <!-- ปุ่มจองคิว (ล็อกโทนสีเทา/มืดสม่ำเสมอ ไม่เปลี่ยนสีและไม่มีอาการแว๊บ) -->
-                <div class="mt-6">
-                    <button onclick="selectBarberForBooking('${b.id}')" 
-                        class="w-full py-2.5 px-4 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 bg-dark-800 hover:bg-dark-700 text-gray-300 border border-dark-700 shadow-md">
-                        <i class="fa-solid fa-calendar-plus text-amber-500"></i>
-                        <span>จองคิวกับช่างท่านนี้</span>
-                    </button>
-                </div>
-            </div>
-        `;
-            }).join('');
-        }
+        //         <!-- ปุ่มจองคิว (ล็อกโทนสีเทา/มืดสม่ำเสมอ ไม่เปลี่ยนสีและไม่มีอาการแว๊บ) -->
+        //         <div class="mt-6">
+        //             <button onclick="selectBarberForBooking('${b.id}')" 
+        //                 class="w-full py-2.5 px-4 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 bg-dark-800 hover:bg-dark-700 text-gray-300 border border-dark-700 shadow-md">
+        //                 <i class="fa-solid fa-calendar-plus text-amber-500"></i>
+        //                 <span>จองคิวกับช่างท่านนี้</span>
+        //             </button>
+        //         </div>
+        //     </div>
+        // `;
+        //     }).join('');
+        // }
 
         // 🌟 ฟังก์ชันฟังสถานะเปิด-ปิดร้านแบบเรียลไทม์
         function initRealtimeShopStatus() {
