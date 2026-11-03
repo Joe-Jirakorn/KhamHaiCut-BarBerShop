@@ -3286,49 +3286,65 @@
 
             const { collection, onSnapshot } = window.firebaseModules;
 
-            try {
-                onSnapshot(collection(window.db, "barbers"), (snapshot) => {
-                    if (snapshot.empty) {
-                        console.warn("⚠️ ไม่พบข้อมูลช่างใน Firestore ตรวจสอบชื่อ Collection อีกครั้ง");
-                        return;
-                    }
+            // ดึงและฟังข้อมูลจาก Collection "barbers" บน Firebase แบบเรียลไทม์
+            onSnapshot(collection(window.db, "barbers"), (snapshot) => {
+                // 🛑 ป้องกันกรณี state ยังไม่ถูกสร้าง ให้สร้างโครงสร้างสำรองเตรียมไว้
+                if (typeof state === 'undefined') {
+                    window.state = {};
+                }
+                if (!state.barbers) {
+                    state.barbers = [];
+                }
 
-                    if (typeof state === 'undefined') window.state = {};
-                    if (!state.barbers) state.barbers = [];
-
-                    const firebaseBarbers = [];
-                    snapshot.forEach((docSnap) => {
-                        firebaseBarbers.push({ id: docSnap.id, ...docSnap.data() });
-                    });
-
-                    if (state.barbers.length === 0) {
-                        state.barbers = firebaseBarbers;
-                    } else {
-                        firebaseBarbers.forEach(fbBarber => {
-                            const targetBarber = state.barbers.find(b => b.id === fbBarber.id);
-                            if (targetBarber) {
-                                targetBarber.status = fbBarber.status || targetBarber.status || 'available';
-                                if (fbBarber.name) targetBarber.name = fbBarber.name;
-                                if (fbBarber.avatar) targetBarber.avatar = fbBarber.avatar;
-                            } else {
-                                state.barbers.push(fbBarber);
-                            }
-                        });
-                    }
-
-                    // เรนเดอร์อัปเดตหน้าจอทั้งหมดทันที
-                    if (typeof renderBarbersHomeStatus === 'function') renderBarbersHomeStatus();
-                    if (typeof renderBarberSelectGrid === 'function') renderBarberSelectGrid();
-                    if (typeof renderAdminBarberControls === 'function') renderAdminBarberControls();
-                    if (typeof renderFullBarbersList === 'function') renderFullBarbersList();
-
-                }, (error) => {
-                    console.error("Firestore Connection Error (404/400):", error);
+                // แปลงข้อมูลจาก Snapshot ของ Firebase ให้อยู่ในรูป Array
+                const firebaseBarbers = [];
+                snapshot.forEach((docSnap) => {
+                    firebaseBarbers.push({ id: docSnap.id, ...docSnap.data() });
                 });
-            } catch (e) {
-                console.error("Failed to initialize realtime barbers:", e);
-            }
+
+                // ถ้า state.barbers เดิมยังว่างอยู่ ให้ยัดข้อมูลจาก Firebase ใส่ทันที
+                if (state.barbers.length === 0) {
+                    state.barbers = firebaseBarbers;
+                } else {
+                    // 🌟 ผสานข้อมูล (Merge) เพื่ออัปเดตสถานะและชื่อสดๆ แต่ยังคงรูปภาพ avatar และข้อมูลเดิมไว้
+                    firebaseBarbers.forEach(fbBarber => {
+                        const targetBarber = state.barbers.find(b => b.id === fbBarber.id);
+                        if (targetBarber) {
+                            targetBarber.status = fbBarber.status || targetBarber.status || 'available';
+                            if (fbBarber.name) targetBarber.name = fbBarber.name;
+                            if (fbBarber.avatar) targetBarber.avatar = fbBarber.avatar;
+                            if (fbBarber.exp) targetBarber.exp = fbBarber.exp;
+                            if (fbBarber.bio) targetBarber.bio = fbBarber.bio;
+                        } else {
+                            state.barbers.push(fbBarber);
+                        }
+                    });
+                }
+
+                // บันทึกสำรองลง LocalStorage เพื่อความเสถียร
+                try {
+                    localStorage.setItem('barber_shop_barbers', JSON.stringify(state.barbers));
+                } catch (e) { }
+
+                console.log("ซิงค์สถานะช่างเรียลไทม์สำเร็จ:", state.barbers);
+
+                // 🛑 สั่งเรนเดอร์หน้าจอทุกส่วนที่แสดงผลข้อมูลช่างให้อัปเดตตามทันที (รวมหน้าแรก, หน้าจองคิว, หน้าช่าง และแอดมิน)
+                if (typeof renderBarbersHomeStatus === 'function') renderBarbersHomeStatus();
+                if (typeof renderBarberSelectGrid === 'function') renderBarberSelectGrid();
+                if (typeof renderAdminBarberControls === 'function') renderAdminBarberControls();
+                if (typeof renderFullBarbersList === 'function') renderFullBarbersList();
+
+            }, (error) => {
+                console.error("เกิดข้อผิดพลาดในการซิงค์ข้อมูลช่างแบบเรียลไทม์:", error);
+            });
         }
+
+        // สั่งให้ทำงานเมื่อเปิดหน้าเว็บ
+        window.addEventListener('DOMContentLoaded', () => {
+            setTimeout(() => {
+                initRealtimeBarbers();
+            }, 1200);
+        });
 
         async function loadBarbersFromFirebase() {
             if (!window.db || !window.firebaseModules) return;
