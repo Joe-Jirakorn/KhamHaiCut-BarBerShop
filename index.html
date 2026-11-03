@@ -2318,7 +2318,14 @@
                 const isClosed = !isOpen || b.status === 'closed';
 
                 const statusStr = String(b.status || '').trim().toLowerCase();
-                const isAvailable = !isClosed && (statusStr === 'available' || statusStr === 'ว่าง');
+
+                // 🌟 ปรับปรุงการเช็กสถานะให้ยืดหยุ่นรองรับทุกรูปแบบเหมือนฟังก์ชันอื่น
+                const isAvailable = !isClosed && (
+                    statusStr === 'available' ||
+                    statusStr === 'ว่าง' ||
+                    statusStr === 'true' ||
+                    statusStr === ''
+                );
 
                 let buttonHtml = '';
                 if (isClosed) {
@@ -3887,6 +3894,8 @@
                 const isClosed = !isOpen || b.status === 'closed';
 
                 const statusStr = String(b.status || '').trim().toLowerCase();
+
+                // 🌟 ปรับปรุงการเช็กสถานะให้แม่นยำ รองรับทั้ง available, busy และภาษาไทย
                 const isAvailable = !isClosed && (
                     statusStr === 'available' ||
                     statusStr === 'ว่าง' ||
