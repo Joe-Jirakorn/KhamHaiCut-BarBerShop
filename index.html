@@ -4280,13 +4280,16 @@
                     localStorage.setItem('barber_shop_barbers', JSON.stringify(updatedBarbers));
                 } catch (e) { }
 
-                // สั่งวาดหน้าจอใหม่ทันทีทุกจุดที่แสดงผลช่าง
-                if (typeof renderBarbers === 'function') renderBarbers();
-                if (typeof renderBarberSelectGrid === 'function') renderBarberSelectGrid();
+                // 🌟 สั่งวาดหน้าจอใหม่ทันทีทุกจุด ครอบคลุมทั้งฝั่งลูกค้าและฝั่งแอดมิน!
+                if (typeof renderBarbersGrid === 'function') renderBarbersGrid();             // หน้าจัดการช่าง (แอดมิน)
+                if (typeof renderBarberSelectGrid === 'function') renderBarberSelectGrid();   // หน้าเลือกช่างจองคิว (ลูกค้า)
+                if (typeof renderBarbers === 'function') renderBarbers();                       // หน้ารายชื่อช่างทั่วไป
+                if (typeof renderBarbersPage === 'function') renderBarbersPage();
+                if (typeof renderBarberHomeStatus === 'function') renderBarberHomeStatus();
 
-                console.log("🔄 ซิงค์สถานะช่างแบบ Real-time สำเร็จ!");
+                console.log("🔄 ซิงค์สถานะช่างแบบ Real-time สำเร็จทุกจอแล้ว!");
             }, (error) => {
-                console.error("เกิดข้อผิดพลาดในการฟัง Real-time ช่าง:", error);
+                console.error("❌ เกิดข้อผิดพลาดในการฟัง Real-time ช่าง:", error);
             });
         }
 
