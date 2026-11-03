@@ -1745,8 +1745,10 @@
                 const isSelected = String(state.bookingForm.selectedBarberId) === String(b.id);
                 const isClosed = !isOpen || b.status === 'closed';
 
-                // 3. ตรวจสอบสถานะว่างแบบยืดหยุ่น (รองรับทั้ง available, ว่าง และ busy)
+                // 3. ตรวจสอบสถานะอย่างแม่นยำ (เช็กทั้ง available และ busy ชัดเจน)
                 const statusStr = String(b.status || '').trim().toLowerCase();
+
+                // เช็กว่าเป็นสถานะว่างจริงไหม
                 const isAvailable = !isClosed && (
                     statusStr === 'available' ||
                     statusStr === 'ว่าง' ||
@@ -1754,9 +1756,22 @@
                     statusStr === 'true'
                 );
 
-                let statusText = isClosed ? 'ปิดบริการ' : (isAvailable ? 'คิวว่าง' : 'ติดคิวอยู่');
-                let badgeClass = isClosed ? 'text-gray-400 bg-gray-500/10' : (isAvailable ? 'text-emerald-400 bg-emerald-500/10' : 'text-red-400 bg-red-500/10');
-                let dotColor = isClosed ? 'bg-gray-500' : (isAvailable ? 'bg-emerald-500' : 'bg-red-500');
+                // เช็กว่าเป็นสถานะติดคิวจริงไหม (ถ้าไม่ใช่ว่าง และไม่ใช่ปิดร้าน แปลว่าติดคิว)
+                const isBusy = !isClosed && !isAvailable;
+
+                let statusText = 'คิวว่าง';
+                let badgeClass = 'text-emerald-400 bg-emerald-500/10';
+                let dotColor = 'bg-emerald-500';
+
+                if (isClosed) {
+                    statusText = 'ปิดบริการ';
+                    badgeClass = 'text-gray-400 bg-gray-500/10';
+                    dotColor = 'bg-gray-500';
+                } else if (isBusy) {
+                    statusText = 'ติดคิวอยู่';
+                    badgeClass = 'text-red-400 bg-red-500/10';
+                    dotColor = 'bg-red-500';
+                }
 
                 return `
             <div onclick="selectBarberAndBook('${b.id}')"
@@ -2359,11 +2374,12 @@
                     console.warn("ไม่สามารถบันทึกลง localStorage ได้:", e);
                 }
 
-                // 4. เรนเดอร์หน้าจอส่วนต่างๆ ใหม่ทันทีแบบ Real-time
-                if (typeof renderAdminBarberControls === 'function') renderAdminBarberControls();
-                if (typeof renderBarbersHomeStatus === 'function') renderBarbersHomeStatus();
+                // 4. เรนเดอร์หน้าจอส่วนต่างๆ ใหม่ทันทีแบบ Real-time (ปรับชื่อฟังก์ชันให้ตรงกับที่มีจริง)
+                if (typeof renderBarbersGrid === 'function') renderBarbersGrid();          // 👈 หน้าจัดการช่าง (แอดมิน)
+                if (typeof renderBarberSelectGrid === 'function') renderBarberSelectGrid();  // 👈 หน้าเลือกช่างจองคิว
+                if (typeof renderBarbers === 'function') renderBarbers();                    // 👈 หน้าแสดงรายชื่อช่างทั่วไป
                 if (typeof renderBarbersPage === 'function') renderBarbersPage();
-                if (typeof renderBarberSelectGrid === 'function') renderBarberSelectGrid();
+                if (typeof renderBarberHomeStatus === 'function') renderBarberHomeStatus();
 
                 // แจ้งเตือนผู้ใช้งาน
                 if (typeof showToast === 'function') {
@@ -3104,6 +3120,15 @@
         });
 
         async function updateBarberStatus(barberDocId, newStatus) {
+            // 🛑 บรรทัดนี้สำคัญมาก! ถ้ากดแล้วข้อความนี้ไม่ขึ้นใน Console แปลว่า HTML ยังไม่ได้ผูกปุ่มนี้
+            console.log("🔥 กดปุ่มเปลี่ยนสถานะแล้ว! ID:", barberDocId, "สถานะใหม่:", newStatus);
+
+            if (!barberDocId) {
+                console.error("❌ ไม่พบรหัส Document ID ของช่าง (barberDocId เป็นค่าว่าง)");
+                alert("ไม่พบข้อมูลช่าง กรุณารีเฟรชหน้าจอแล้วลองใหม่ครับ");
+                return;
+            }
+
             if (!window.db || !window.firebaseModules) {
                 alert("ระบบฐานข้อมูลยังไม่พร้อมใช้งาน");
                 return;
@@ -3113,7 +3138,6 @@
                 const { doc, updateDoc } = window.firebaseModules;
 
                 // 🚀 1. อัปเดต State และเรนเดอร์หน้าจอทันที (Optimistic Update)
-                // เพื่อให้บนมือถือตอบสนองไวทันใจโดยไม่ต้องรอสัญญานเน็ตวิ่งกลับมาจาก Firebase
                 if (Array.isArray(state.barbers)) {
                     const targetBarber = state.barbers.find(b => b.id === barberDocId);
                     if (targetBarber) {
@@ -3121,7 +3145,6 @@
                     }
                 }
 
-                // สั่งวาดหน้าจอใหม่ทันทีทั้งในส่วนจัดการช่างและหน้าเลือกคิว
                 if (typeof renderBarbers === 'function') renderBarbers();
                 if (typeof renderBarberSelectGrid === 'function') renderBarberSelectGrid();
 
@@ -3132,17 +3155,16 @@
                     updatedAt: new Date().toISOString()
                 });
 
-                console.log(`อัปเดตสถานะช่าง ${barberDocId} เป็น ${newStatus} สำเร็จ`);
+                console.log(`✅ อัปเดตสถานะช่าง ${barberDocId} เป็น ${newStatus} สำเร็จ`);
 
                 if (typeof showToast === 'function') {
                     showToast(`เปลี่ยนสถานะช่างเป็น '${newStatus === 'available' ? 'คิวว่าง' : 'ติดคิว'}' สำเร็จ`, 'success');
                 }
 
             } catch (error) {
-                console.error("เกิดข้อผิดพลาดในการอัปเดตสถานะช่าง:", error);
+                console.error("❌ เกิดข้อผิดพลาดในการอัปเดตสถานะช่าง:", error);
                 alert("ไม่สามารถเปลี่ยนสถานะช่างได้: " + error.message);
 
-                // ถ้าเกิดข้อผิดพลาด ให้ดึงข้อมูลจริงจากเซิร์ฟเวอร์มาซิงค์ใหม่อีกรอบ
                 if (typeof fetchBarbers === 'function') {
                     fetchBarbers();
                 }
@@ -3884,67 +3906,67 @@
             }).join('');
         }
 
-        function toggleBarberStatus(barberId) {
-            // 1. เช็กสถานะเปิด/ปิดร้านจาก LocalStorage ก่อน
-            const savedShopStatus = localStorage.getItem('barber_shop_open_status');
-            const isOpen = savedShopStatus !== null ? (savedShopStatus === 'true') : true;
+        // function toggleBarberStatus(barberId) {
+        //     // 1. เช็กสถานะเปิด/ปิดร้านจาก LocalStorage ก่อน
+        //     const savedShopStatus = localStorage.getItem('barber_shop_open_status');
+        //     const isOpen = savedShopStatus !== null ? (savedShopStatus === 'true') : true;
 
-            if (!isOpen) {
-                if (typeof showToast === 'function') {
-                    showToast('กรุณาเปิดร้านก่อนเปลี่ยนสถานะช่างครับ', 'warning');
-                } else {
-                    alert('กรุณาเปิดร้านก่อนเปลี่ยนสถานะช่างครับ');
-                }
-                return;
-            }
+        //     if (!isOpen) {
+        //         if (typeof showToast === 'function') {
+        //             showToast('กรุณาเปิดร้านก่อนเปลี่ยนสถานะช่างครับ', 'warning');
+        //         } else {
+        //             alert('กรุณาเปิดร้านก่อนเปลี่ยนสถานะช่างครับ');
+        //         }
+        //         return;
+        //     }
 
-            // 2. ดึงข้อมูลช่างล่าสุดจาก LocalStorage หรือตัวแปรกลาง
-            let barbersList = [];
-            try {
-                const savedBarbers = localStorage.getItem('barber_shop_barbers');
-                if (savedBarbers) {
-                    barbersList = JSON.parse(savedBarbers);
-                } else if (window.barbers) {
-                    barbersList = window.barbers;
-                } else if (typeof state !== 'undefined' && state.barbers) {
-                    barbersList = state.barbers;
-                }
-            } catch (e) {
-                barbersList = [];
-            }
+        //     // 2. ดึงข้อมูลช่างล่าสุดจาก LocalStorage หรือตัวแปรกลาง
+        //     let barbersList = [];
+        //     try {
+        //         const savedBarbers = localStorage.getItem('barber_shop_barbers');
+        //         if (savedBarbers) {
+        //             barbersList = JSON.parse(savedBarbers);
+        //         } else if (window.barbers) {
+        //             barbersList = window.barbers;
+        //         } else if (typeof state !== 'undefined' && state.barbers) {
+        //             barbersList = state.barbers;
+        //         }
+        //     } catch (e) {
+        //         barbersList = [];
+        //     }
 
-            // 3. ค้นหาช่างตาม ID ที่ถูกคลิก
-            const targetBarber = barbersList.find(b => String(b.id) === String(barberId));
-            if (!targetBarber) {
-                console.error('ไม่พบข้อมูลช่าง ID:', barberId);
-                return;
-            }
+        //     // 3. ค้นหาช่างตาม ID ที่ถูกคลิก
+        //     const targetBarber = barbersList.find(b => String(b.id) === String(barberId));
+        //     if (!targetBarber) {
+        //         console.error('ไม่พบข้อมูลช่าง ID:', barberId);
+        //         return;
+        //     }
 
-            // 4. สลับสถานะ (ถ้าว่าง/available -> เปลี่ยนเป็น busy | ถ้าติดคิว -> กลับเป็น available)
-            const currentStatus = String(targetBarber.status || '').trim().toLowerCase();
-            if (currentStatus === 'available' || currentStatus === 'ว่าง') {
-                targetBarber.status = 'busy';
-            } else {
-                targetBarber.status = 'available';
-            }
+        //     // 4. สลับสถานะ (ถ้าว่าง/available -> เปลี่ยนเป็น busy | ถ้าติดคิว -> กลับเป็น available)
+        //     const currentStatus = String(targetBarber.status || '').trim().toLowerCase();
+        //     if (currentStatus === 'available' || currentStatus === 'ว่าง') {
+        //         targetBarber.status = 'busy';
+        //     } else {
+        //         targetBarber.status = 'available';
+        //     }
 
-            // 5. บันทึกลง LocalStorage และตัวแปรกลางทุกตัวทันที
-            window.barbers = barbersList;
-            localStorage.setItem('barber_shop_barbers', JSON.stringify(barbersList));
-            if (typeof state !== 'undefined') {
-                state.barbers = barbersList;
-            }
+        //     // 5. บันทึกลง LocalStorage และตัวแปรกลางทุกตัวทันที
+        //     window.barbers = barbersList;
+        //     localStorage.setItem('barber_shop_barbers', JSON.stringify(barbersList));
+        //     if (typeof state !== 'undefined') {
+        //         state.barbers = barbersList;
+        //     }
 
-            // 🌟 6. สั่งเรนเดอร์อัปเดตหน้าจอทุกส่วน รวมถึงหน้า "ช่างของเรา" ทันทีแบบเรียลไทม์
-            if (typeof renderBarbersGrid === 'function') renderBarbersGrid();
-            if (typeof renderAdminBarberControls === 'function') renderAdminBarberControls();
-            if (typeof renderBarbersHomeStatus === 'function') renderBarbersHomeStatus(); // ฟังก์ชันเรนเดอร์หน้า "ช่างของเรา"
-            if (typeof renderUI === 'function') renderUI();
+        //     // 🌟 6. สั่งเรนเดอร์อัปเดตหน้าจอทุกส่วน รวมถึงหน้า "ช่างของเรา" ทันทีแบบเรียลไทม์
+        //     if (typeof renderBarbersGrid === 'function') renderBarbersGrid();
+        //     if (typeof renderAdminBarberControls === 'function') renderAdminBarberControls();
+        //     if (typeof renderBarbersHomeStatus === 'function') renderBarbersHomeStatus(); // ฟังก์ชันเรนเดอร์หน้า "ช่างของเรา"
+        //     if (typeof renderUI === 'function') renderUI();
 
-            if (typeof showToast === 'function') {
-                showToast(`อัปเดตสถานะของ ${targetBarber.name} เรียบร้อยแล้ว`, 'success');
-            }
-        }
+        //     if (typeof showToast === 'function') {
+        //         showToast(`อัปเดตสถานะของ ${targetBarber.name} เรียบร้อยแล้ว`, 'success');
+        //     }
+        // }
 
         function renderBarbersPage() {
             const container = document.getElementById('full-barbers-grid');
@@ -4214,7 +4236,40 @@
             };
         }
 
+        // ฟังก์ชันฟังการเปลี่ยนแปลงสถานะช่างแบบ Real-time ตลอดเวลา
+        function initBarbersRealtimeListener() {
+            if (!window.db || !window.firebaseModules) return;
 
+            const { collection, onSnapshot } = window.firebaseModules;
+            const barbersRef = collection(window.db, "barbers");
+
+            // onSnapshot จะทำงานทันทีที่มีการเปลี่ยนแปลงข้อมูลช่างใน Firebase (ไม่ว่าจะกดจากเครื่องไหน)
+            onSnapshot(barbersRef, (snapshot) => {
+                let updatedBarbers = [];
+                snapshot.forEach((docSnap) => {
+                    updatedBarbers.push({
+                        id: docSnap.id,
+                        ...docSnap.data()
+                    });
+                });
+
+                // อัปเดตข้อมูลเข้า state กลางทันที
+                state.barbers = updatedBarbers;
+
+                // บันทึกลง localStorage สำรองไว้ด้วย
+                try {
+                    localStorage.setItem('barber_shop_barbers', JSON.stringify(updatedBarbers));
+                } catch (e) { }
+
+                // สั่งวาดหน้าจอใหม่ทันทีทุกจุดที่แสดงผลช่าง
+                if (typeof renderBarbers === 'function') renderBarbers();
+                if (typeof renderBarberSelectGrid === 'function') renderBarberSelectGrid();
+
+                console.log("🔄 ซิงค์สถานะช่างแบบ Real-time สำเร็จ!");
+            }, (error) => {
+                console.error("เกิดข้อผิดพลาดในการฟัง Real-time ช่าง:", error);
+            });
+        }
 
     </script>
     <!-- Modal ข้อมูลส่วนตัว -->
