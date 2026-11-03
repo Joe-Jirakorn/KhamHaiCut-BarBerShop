@@ -936,113 +936,113 @@
         /* ================= INITIALIZATION ================= */
         /* ================= INITIALIZATION ================= */
         window.addEventListener('DOMContentLoaded', async () => {
-            // 1. กู้คืนสถานะการเข้าสู่ระบบจาก LocalStorage
-            const savedUser = localStorage.getItem('barber_current_user');
-            if (savedUser) {
-                try {
-                    state.currentUser = JSON.parse(savedUser);
-                } catch (e) {
-                    console.error("Failed to parse saved user:", e);
-                    state.currentUser = null;
-                }
+    // 1. กู้คืนสถานะการเข้าสู่ระบบจาก LocalStorage
+    const savedUser = localStorage.getItem('barber_current_user');
+    if (savedUser) {
+        try {
+            state.currentUser = JSON.parse(savedUser);
+        } catch (e) {
+            console.error("Failed to parse saved user:", e);
+            state.currentUser = null;
+        }
+    }
+
+    const bookingDateInput = document.getElementById('booking-date');
+    if (bookingDateInput) {
+        bookingDateInput.value = state.bookingForm.date;
+        bookingDateInput.min = new Date().toISOString().split('T')[0];
+    }
+
+    if (state.currentUser) {
+        const nameInput = document.getElementById('cust-name');
+        const phoneInput = document.getElementById('cust-phone');
+        const ageInput = document.getElementById('cust-age');
+
+        if (nameInput) {
+            nameInput.value = state.currentUser.name || '';
+            nameInput.readOnly = true;
+        }
+        if (phoneInput) {
+            phoneInput.value = state.currentUser.phone || '';
+            phoneInput.readOnly = true;
+        }
+
+        if (ageInput && state.currentUser.age) {
+            ageInput.value = state.currentUser.age;
+            if (typeof handleAgeAutoSelect === 'function') {
+                handleAgeAutoSelect(state.currentUser.age);
             }
+        }
+    }
 
-            const bookingDateInput = document.getElementById('booking-date');
-            if (bookingDateInput) {
-                bookingDateInput.value = state.bookingForm.date;
-                bookingDateInput.min = new Date().toISOString().split('T')[0];
-            }
-
-            if (state.currentUser) {
-                const nameInput = document.getElementById('cust-name');
-                const phoneInput = document.getElementById('cust-phone');
-                const ageInput = document.getElementById('cust-age');
-
-                if (nameInput) {
-                    nameInput.value = state.currentUser.name || '';
-                    nameInput.readOnly = true;
-                }
-                if (phoneInput) {
-                    phoneInput.value = state.currentUser.phone || '';
-                    phoneInput.readOnly = true;
-                }
-
-                if (ageInput && state.currentUser.age) {
-                    ageInput.value = state.currentUser.age;
-                    if (typeof handleAgeAutoSelect === 'function') {
-                        handleAgeAutoSelect(state.currentUser.age);
-                    }
-                }
-            }
-
-            const ageInputEl = document.getElementById('cust-age');
-            if (ageInputEl) {
-                ageInputEl.addEventListener('input', (e) => {
-                    if (typeof handleAgeAutoSelect === 'function') {
-                        handleAgeAutoSelect(e.target.value);
-                    }
-                });
-            }
-
-            // โหลดและอัปเดตสถานะปุ่ม เปิด/ปิดร้าน และแบนเนอร์แจ้งเตือน จาก LocalStorage ตอนเปิดหน้าเว็บ
-            const savedShopStatus = localStorage.getItem('barber_shop_open_status');
-            if (savedShopStatus !== null) {
-                isShopOpen = savedShopStatus === 'true';
-                const btn = document.getElementById('shop-status-toggle-btn');
-                const dot = document.getElementById('shop-status-dot');
-                const text = document.getElementById('shop-status-text');
-
-                if (btn && dot && text) {
-                    if (isShopOpen) {
-                        btn.className = "px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition shadow-md bg-emerald-600 hover:bg-emerald-500 text-white";
-                        dot.className = "w-2 h-2 rounded-full bg-white animate-pulse";
-                        text.textContent = "เปิดร้านอยู่";
-                    } else {
-                        btn.className = "px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition shadow-md bg-gray-700 hover:bg-gray-600 text-gray-300";
-                        dot.className = "w-2 h-2 rounded-full bg-gray-400";
-                        text.textContent = "ปิดร้านแล้ว";
-                    }
-                }
-            }
-
-            // เช็กและแสดง/ซ่อน แบนเนอร์แจ้งเตือนร้านปิดในหน้าแรก
-            const closedBanner = document.getElementById('shop-closed-banner');
-            if (closedBanner) {
-                if (!isShopOpen) {
-                    closedBanner.classList.remove('hidden');
-                } else {
-                    closedBanner.classList.add('hidden');
-                }
-            }
-
-            // 2. เรนเดอร์หน้าจอทั่วไป
-            if (typeof updateUserUI === 'function') updateUserUI();
-            if (typeof renderUI === 'function') renderUI();
-            if (typeof renderHairstylesGrid === 'function') renderHairstylesGrid();
-            if (typeof renderAddonsGrid === 'function') renderAddonsGrid();
-            if (typeof renderAgeGroupsGrid === 'function') renderAgeGroupsGrid();
-            if (typeof renderUserBookingsTable === 'function') renderUserBookingsTable();
-            if (typeof renderAdminBookingsTable === 'function') renderAdminBookingsTable();
-            if (typeof initChart === 'function') initChart();
-            if (typeof updateRevenueStats === 'function') updateRevenueStats();
-
-            // 3. เรนเดอร์ส่วนของช่าง (ใช้ renderFullBarbersList เป็นตัวหลักตัวเดียวเพื่อป้องกันการ์ดซ้อน)
-            if (typeof renderAdminBarberControls === 'function') renderAdminBarberControls();
-            if (typeof renderFullBarbersList === 'function') renderFullBarbersList();
-            if (typeof renderBarberSelectGrid === 'function') renderBarberSelectGrid();
-            if (typeof renderBarbersHomeStatus === 'function') renderBarbersHomeStatus();
-
-            // 4. เปิดใช้งาน Real-time Listener ครบถ้วนทั้งช่าง สถานะร้าน และคิวจอง
-            if (typeof initRealtimeBarbers === 'function') {
-                initRealtimeBarbers();
-            }
-            if (typeof initRealtimeShopStatus === 'function') {
-                initRealtimeShopStatus();
-            }
-            if (typeof initRealtimeBookings === 'function') {
-                initRealtimeBookings();
+    const ageInputEl = document.getElementById('cust-age');
+    if (ageInputEl) {
+        ageInputEl.addEventListener('input', (e) => {
+            if (typeof handleAgeAutoSelect === 'function') {
+                handleAgeAutoSelect(e.target.value);
             }
         });
+    }
+
+    // โหลดและอัปเดตสถานะปุ่ม เปิด/ปิดร้าน และแบนเนอร์แจ้งเตือน จาก LocalStorage ตอนเปิดหน้าเว็บ
+    const savedShopStatus = localStorage.getItem('barber_shop_open_status');
+    if (savedShopStatus !== null) {
+        isShopOpen = savedShopStatus === 'true';
+        const btn = document.getElementById('shop-status-toggle-btn');
+        const dot = document.getElementById('shop-status-dot');
+        const text = document.getElementById('shop-status-text');
+
+        if (btn && dot && text) {
+            if (isShopOpen) {
+                btn.className = "px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition shadow-md bg-emerald-600 hover:bg-emerald-500 text-white";
+                dot.className = "w-2 h-2 rounded-full bg-white animate-pulse";
+                text.textContent = "เปิดร้านอยู่";
+            } else {
+                btn.className = "px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition shadow-md bg-gray-700 hover:bg-gray-600 text-gray-300";
+                dot.className = "w-2 h-2 rounded-full bg-gray-400";
+                text.textContent = "ปิดร้านแล้ว";
+            }
+        }
+    }
+
+    // เช็กและแสดง/ซ่อน แบนเนอร์แจ้งเตือนร้านปิดในหน้าแรก
+    const closedBanner = document.getElementById('shop-closed-banner');
+    if (closedBanner) {
+        if (!isShopOpen) {
+            closedBanner.classList.remove('hidden');
+        } else {
+            closedBanner.classList.add('hidden');
+        }
+    }
+
+    // 2. เรนเดอร์หน้าจอทั่วไป
+    if (typeof updateUserUI === 'function') updateUserUI();
+    if (typeof renderUI === 'function') renderUI();
+    if (typeof renderHairstylesGrid === 'function') renderHairstylesGrid();
+    if (typeof renderAddonsGrid === 'function') renderAddonsGrid();
+    if (typeof renderAgeGroupsGrid === 'function') renderAgeGroupsGrid();
+    if (typeof renderUserBookingsTable === 'function') renderUserBookingsTable();
+    if (typeof renderAdminBookingsTable === 'function') renderAdminBookingsTable();
+    if (typeof initChart === 'function') initChart();
+    if (typeof updateRevenueStats === 'function') updateRevenueStats();
+
+    // 3. เรนเดอร์ส่วนของช่าง (ใช้ renderFullBarbersList เป็นตัวหลักตัวเดียวเพื่อป้องกันการ์ดซ้อน)
+    if (typeof renderAdminBarberControls === 'function') renderAdminBarberControls();
+    if (typeof renderFullBarbersList === 'function') renderFullBarbersList(); 
+    if (typeof renderBarberSelectGrid === 'function') renderBarberSelectGrid();
+    if (typeof renderBarbersHomeStatus === 'function') renderBarbersHomeStatus();
+
+    // 4. เปิดใช้งาน Real-time Listener ครบถ้วนทั้งช่าง สถานะร้าน และคิวจอง
+    if (typeof initRealtimeBarbers === 'function') {
+        initRealtimeBarbers();
+    }
+    if (typeof initRealtimeShopStatus === 'function') {
+        initRealtimeShopStatus();
+    }
+    if (typeof initRealtimeBookings === 'function') {
+        initRealtimeBookings();
+    }
+});
 
         /* ================= NAVIGATION & ROUTING ================= */
         // ฟังก์ชันกลางสำหรับจัดการการคลิกเมนูด้านบน
