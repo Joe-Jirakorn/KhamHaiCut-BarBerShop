@@ -3958,7 +3958,7 @@
                 currentBarbers = [];
             }
 
-            // 🌟 2. กำหนดลิงก์รูปภาพสำรองประจำตัวช่าง (ป้องกันรูปร่วง)
+            // 🌟 2. กำหนดลิงก์รูปภาพสำรองประจำตัวช่าง (ยึดตาม id ของช่าง b1 และ b2 เสมอ)
             const defaultAvatars = {
                 'b1': 'https://i.postimg.cc/8FR1mMtP/858525001-1129326712975883-8607776798710260414-n.jpg',
                 'b2': 'https://i.postimg.cc/qMrLWY3v/863844196-1134350642473490-5849783856972700037-n.jpg'
@@ -3969,12 +3969,12 @@
             const isOpen = savedShopStatus !== null ? (savedShopStatus === 'true') : true;
 
             container.innerHTML = currentBarbers.map(b => {
-                // 🌟 ดึงรูปจาก b.avatar หรือถ้าไม่มีให้ใช้ลิงก์สำรองตาม id ของช่างทันที
-                const barberImage = b.avatar || defaultAvatars[b.id] || '';
+                // 🌟 4. บังคับดึงรูปจาก defaultAvatars ตาม id ก่อนเสมอ เพื่อป้องกันรูปร่วง
+                const barberImage = defaultAvatars[b.id] || b.avatar || b.image || '';
 
                 const isClosed = !isOpen || b.status === 'closed';
 
-                // 4. ตรวจสอบสถานะว่างแบบยืดหยุ่น (เอาไว้โชว์ป้ายสถานะที่รูปเหมือนเดิม)
+                // 5. ตรวจสอบสถานะว่างสำหรับแสดงป้าย Badge ที่รูปโปรไฟล์
                 const statusStr = String(b.status || '').trim().toLowerCase();
                 const isAvailable = !isClosed && (
                     statusStr === 'available' ||
@@ -4018,11 +4018,11 @@
                     </div>
                 </div>
 
-                <!-- ปุ่มจองคิว (ล็อคสีเหลืองถาวร กดได้ตลอด) -->
+                <!-- ปุ่มจองคิว (ล็อกโทนสีเทา/มืดสม่ำเสมอ ไม่เปลี่ยนสีและไม่มีอาการแว๊บ) -->
                 <div class="mt-6">
                     <button onclick="selectBarberForBooking('${b.id}')" 
-                        class="w-full py-2.5 px-4 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 bg-amber-500 hover:bg-amber-400 text-dark-900 shadow-lg shadow-amber-500/10">
-                        <i class="fa-solid fa-calendar-plus"></i>
+                        class="w-full py-2.5 px-4 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 bg-dark-800 hover:bg-dark-700 text-gray-300 border border-dark-700 shadow-md">
+                        <i class="fa-solid fa-calendar-plus text-amber-500"></i>
                         <span>จองคิวกับช่างท่านนี้</span>
                     </button>
                 </div>
