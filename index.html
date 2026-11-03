@@ -4,9 +4,9 @@
 <head>
     <!-- นำเข้า Firebase SDK -->
     <script type="module">
-        // นำเข้า Firebase App และ Firestore จาก CDN ที่ถูกต้อง
+        // นำเข้า Firebase App และ Firestore จาก CDN ที่ถูกต้อง (🌟 เพิ่ม setDoc ตรงนี้)
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore, collection, addDoc, onSnapshot, getDocs, query, where, updateDoc, doc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, onSnapshot, getDocs, query, where, updateDoc, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
         import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-analytics.js";
 
         // 1. 🔑 ค่า config ของคุณ
@@ -25,9 +25,9 @@
         const analytics = getAnalytics(app);
         const db = getFirestore(app);
 
-        // เก็บไว้ให้ฟังก์ชันต่างๆ ในเว็บเรียกใช้งาน
+        // เก็บไว้ให้ฟังก์ชันต่างๆ ในเว็บเรียกใช้งาน (🌟 เพิ่ม setDoc เข้าไปใน object ด้วย)
         window.db = db;
-        window.firebaseModules = { collection, addDoc, onSnapshot, getDocs, query, where, updateDoc, doc };
+        window.firebaseModules = { collection, addDoc, onSnapshot, getDocs, query, where, updateDoc, doc, setDoc };
 
         console.log("Firebase Connected Successfully!");
     </script>
@@ -3625,7 +3625,7 @@
 
         let isShopOpen = true; // ตัวแปรสถานะร้านหลัก
 
-        function toggleShopStatus() {
+        async function toggleShopStatus() {
             // 1. อ่านสถานะร้านปัจจุบันจาก LocalStorage
             const currentStatus = localStorage.getItem('barber_shop_open_status');
             let nextShopStatus = currentStatus !== null ? (currentStatus === 'true') : true;
@@ -3649,13 +3649,27 @@
                 if (typeof showToast === 'function') showToast('ปิดร้านแล้ว ช่างทั้งหมดถูกปรับเป็นสถานะปิดบริการ', 'info');
             }
 
-            // 2. บันทึกสถานะร้านใหม่ลง LocalStorage
+            // 2. บันทึกสถานะร้านใหม่ลง LocalStorage และตัวแปรกลาง
             localStorage.setItem('barber_shop_open_status', nextShopStatus);
-            if (typeof isShopOpen !== 'undefined') {
-                isShopOpen = nextShopStatus;
+            window.isShopOpen = nextShopStatus;
+            if (typeof state !== 'undefined') {
+                state.isShopOpen = nextShopStatus;
             }
 
-            // 🌟 3. จัดการอัปเดตสถานะช่างตามสถานะร้านแบบอัตโนมัติ
+            // 🌟 3. ส่งข้อมูลสถานะร้านขึ้น Firebase Firestore
+            if (window.db && window.firebaseModules) {
+                const { doc, setDoc } = window.firebaseModules;
+                try {
+                    await setDoc(doc(window.db, "settings", "shop"), {
+                        isOpen: nextShopStatus
+                    }, { merge: true });
+                    console.log("☁️ [Firebase] อัปเดตสถานะร้านค้าสำเร็จ:", nextShopStatus);
+                } catch (error) {
+                    console.error("เกิดข้อผิดพลาดในการอัปเดตสถานะร้านบน Firebase:", error);
+                }
+            }
+
+            // 4. จัดการอัปเดตสถานะช่างตามสถานะร้านแบบอัตโนมัติ
             let barbersList = [];
             try {
                 const savedBarbers = localStorage.getItem('barber_shop_barbers');
@@ -3670,7 +3684,7 @@
                 barbersList = [];
             }
 
-            // ถ้าร้านเปิด ให้คืนค่าช่างทั้งหมดเป็น 'available' (คิวว่าง) | ถ้าร้านปิด ให้ปรับเป็น 'closed'
+            // ถ้าร้านเปิด ให้คืนค่าช่างทั้งหมดเป็น 'available' | ถ้าร้านปิด ให้ปรับเป็น 'closed'
             barbersList.forEach(barber => {
                 barber.status = nextShopStatus ? 'available' : 'closed';
             });
@@ -3682,17 +3696,35 @@
                 state.barbers = barbersList;
             }
 
-            // 4. ควบคุมแบนเนอร์หน้าแรก
+            // 🌟 5. ส่งข้อมูลสถานะช่างทุกคนขึ้น Firebase Firestore แบบลูปอัปเดตทีละคน
+            if (window.db && window.firebaseModules) {
+                const { doc, updateDoc } = window.firebaseModules;
+                for (const barber of barbersList) {
+                    try {
+                        const barberRef = doc(window.db, "barbers", barber.id);
+                        await updateDoc(barberRef, {
+                            status: barber.status
+                        });
+                    } catch (err) {
+                        console.error(`ไม่สามารถอัปเดตสถานะช่าง ${barber.id} บน Firebase ได้:`, err);
+                    }
+                }
+                console.log("☁️ [Firebase] อัปเดตสถานะช่างทุกคนเรียบร้อยแล้ว!");
+            }
+
+            // 6. ควบคุมแบนเนอร์หน้าแรก
             const closedBanner = document.getElementById('shop-closed-banner');
             if (closedBanner) {
                 if (!nextShopStatus) closedBanner.classList.remove('hidden');
                 else closedBanner.classList.add('hidden');
             }
 
-            // 5. สั่งเรนเดอร์อัปเดตหน้าจอทุกส่วนทันที
+            // 7. สั่งเรนเดอร์อัปเดตหน้าจอทุกส่วนทันที
             if (typeof renderUI === 'function') renderUI();
             if (typeof renderAdminBarberControls === 'function') renderAdminBarberControls();
             if (typeof renderBarbersHomeStatus === 'function') renderBarbersHomeStatus();
+            if (typeof renderFullBarbersList === 'function') renderFullBarbersList();
+            if (typeof renderBarberSelectGrid === 'function') renderBarberSelectGrid();
         }
 
         function renderBarbersGrid() {
