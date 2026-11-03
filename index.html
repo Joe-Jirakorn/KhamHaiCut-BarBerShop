@@ -2475,7 +2475,7 @@
             const weeklyRev = completed.reduce((sum, b) => sum + b.price, 0);
 
             // Monthly
-            const monthlyRev = weeklyRev + 12500; // Adding mock historical total
+            const monthlyRev = weeklyRev; // Adding mock historical total
 
             document.getElementById('stat-daily-revenue').textContent = `฿${dailyRev.toLocaleString()}`;
             document.getElementById('stat-daily-count').textContent = `${dailyList.length} คิวที่เสร็จสิ้นวันนี้`;
@@ -2484,7 +2484,7 @@
             document.getElementById('stat-weekly-count').textContent = `${completed.length} คิวในสัปดาห์นี้`;
 
             document.getElementById('stat-monthly-revenue').textContent = `฿${monthlyRev.toLocaleString()}`;
-            document.getElementById('stat-monthly-count').textContent = `${completed.length + 35} คิวในเดือนนี้`;
+            document.getElementById('stat-monthly-count').textContent = `${completed.length} คิวในเดือนนี้`;
 
             // Update Chart Data
             if (state.revenueChartInstance) {
