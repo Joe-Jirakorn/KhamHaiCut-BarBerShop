@@ -1775,23 +1775,34 @@
         }
 
         function selectBarberAndBook(barberId) {
-            // 1. บันทึก ID ช่างที่ถูกเลือก
+            // 🛑 1. บันทึกตำแหน่ง Scroll ของหน้าจอปัจจุบันไว้ก่อน
+            const currentScrollY = window.pageYOffset || document.documentElement.scrollTop;
+
+            // 2. บันทึก ID ช่างที่ถูกเลือก
             state.bookingForm.selectedBarberId = barberId;
 
-            // 2. สั่งเรนเดอร์กริดเลือกช่างในหน้าจองคิวทันที (เพื่อให้ไฮไลต์ช่างที่เลือก)
+            // 3. สั่งเรนเดอร์กริดเลือกช่างในหน้าจองคิวทันที (เพื่อให้ไฮไลต์ช่างที่เลือก)
             if (typeof renderBarberSelectGrid === 'function') {
                 renderBarberSelectGrid();
             }
 
-            // 3. อัปเดตข้อมูลสรุปและสถานะ (ที่เราเพิ่งรวมฟังก์ชันอัปเดตสถานะช่างไว้ข้างใน)
+            // 4. อัปเดตข้อมูลสรุปและสถานะ
             if (typeof updateBookingSummary === 'function') {
                 updateBookingSummary();
             }
 
-            // 4. พาผู้ใช้กระโดดไปที่หน้าจองคิวอย่างราบรื่น
+            // 5. พาผู้ใช้กระโดดไปที่หน้าจองคิว (หรือจัดการหน้าจอ)
             if (typeof navigateTo === 'function') {
                 navigateTo('booking');
             }
+
+            // 🛑 6. คืนค่าตำแหน่ง Scroll กลับมาที่เดิมทันที (ใช้ requestAnimationFrame เพื่อให้ทำงานหลังเรนเดอร์เสร็จ)
+            requestAnimationFrame(() => {
+                window.scrollTo({
+                    top: currentScrollY,
+                    behavior: 'instant' // ป้องกันการเลื่อนแบบอนิเมชัน ให้คงที่ทันที
+                });
+            });
         }
 
         // Update Summary Calculations
