@@ -1936,18 +1936,22 @@
             if (!container) return;
 
             let currentBarbers = [];
-            try {
-                const savedBarbers = localStorage.getItem('barber_shop_barbers');
-                if (savedBarbers) {
-                    currentBarbers = JSON.parse(savedBarbers);
-                } else if (typeof state !== 'undefined' && state.barbers) {
-                    currentBarbers = state.barbers;
+
+            // 🌟 สลับลำดับ: ให้เช็ก state.barbers ก่อนเป็นอันดับแรก เพื่อให้ได้ข้อมูล Real-time สดๆ จาก Firebase เสมอ
+            if (typeof state !== 'undefined' && state.barbers && state.barbers.length > 0) {
+                currentBarbers = state.barbers;
+            } else {
+                try {
+                    const savedBarbers = localStorage.getItem('barber_shop_barbers');
+                    if (savedBarbers) {
+                        currentBarbers = JSON.parse(savedBarbers);
+                    }
+                } catch (e) {
+                    currentBarbers = [];
                 }
-            } catch (e) {
-                currentBarbers = state.barbers || [];
             }
 
-            // Fallback เผื่อข้อมูลใน LocalStorage ไม่มีรูป ให้ดึงจากชุดตั้งต้นตรงๆ ทันที
+            // Fallback เผื่อข้อมูลไม่มีรูป ให้ดึงจากชุดตั้งต้นตรงๆ ทันที
             const defaultAvatars = {
                 'b1': 'https://i.postimg.cc/8FR1mMtP/858525001-1129326712975883-8607776798710260414-n.jpg',
                 'b2': 'https://i.postimg.cc/qMrLWY3v/863844196-1134350642473490-5849783856972700037-n.jpg'
@@ -1985,7 +1989,7 @@
                     statusText = 'ติดคิว (Busy)';
                 }
 
-                // 🌟 ดึงรูปจาก b.avatar หรือถ้าไม่มีให้ดึงจากลิงก์สำรองประจำตัวช่างทันที
+                // ดึงรูปจาก b.avatar หรือถ้าไม่มีให้ดึงจากลิงก์สำรองประจำตัวช่างทันที
                 const barberImage = b.avatar || defaultAvatars[b.id] || '';
 
                 return `
