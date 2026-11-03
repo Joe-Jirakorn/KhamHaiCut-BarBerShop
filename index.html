@@ -1109,14 +1109,10 @@
             const revenueCardsContainer = document.getElementById('revenue-cards-container') || document.querySelector('.grid.grid-cols-1.md\\:grid-cols-3');
             const revenueSectionWrapper = document.getElementById('revenue-section-wrapper') || revenueSection?.closest('.bg-dark-800.p-6');
 
-            // 🌟 เพิ่มตัวแปรดึงหัวข้อ "ADMIN CONTROL ระบบหลังบ้านร้านตัดผม" ด้านบนสุด
-            const adminHeaderTitle = pageAdmin ? pageAdmin.querySelector('.bg-amber-500')?.closest('div')?.parentElement || pageAdmin.querySelector('h1, h2, .flex.items-center.gap-2') : null;
-            // หรือดึงจากข้อความหัวข้อโดยตรง (ถ้ามี id หรือคลาสเฉพาะ สามารถเปลี่ยนมาใช้ getElementById ได้ครับ)
             const adminControlHeaderBox = pageAdmin ? pageAdmin.firstElementChild : null;
 
             // 2. ควบคุมการแสดงผลแบบ "สลับหน้า" อย่างเด็ดขาด
             if (role === 'admin') {
-                // 👑 โหมด Admin: เปิดครบทุกส่วนรวมถึงหัวข้อหลังบ้าน
                 if (pageHome) { pageHome.classList.add('hidden'); pageHome.style.display = 'none'; }
                 if (bookingSection) { bookingSection.classList.add('hidden'); bookingSection.style.display = 'none'; }
                 if (barbersSection) { barbersSection.classList.add('hidden'); barbersSection.style.display = 'none'; }
@@ -1135,25 +1131,19 @@
                 showToast('สลับเป็นโหมด Admin สำเร็จ', 'success');
 
             } else if (role === 'barber') {
-                // ✂️ โหมด Barber: เปิดหลังบ้าน แต่สั่งซ่อน "ADMIN CONTROL", "การ์ดรายได้", "กราฟ" และขยับเนื้อหาขึ้น
                 if (pageHome) { pageHome.classList.add('hidden'); pageHome.style.display = 'none'; }
                 if (bookingSection) { bookingSection.classList.add('hidden'); bookingSection.style.display = 'none'; }
                 if (barbersSection) { barbersSection.classList.add('hidden'); barbersSection.style.display = 'none'; }
                 if (historySection) { historySection.classList.add('hidden'); historySection.style.display = 'none'; }
 
                 if (pageAdmin) { pageAdmin.classList.remove('hidden'); pageAdmin.style.display = 'block'; }
-
-                // 🛑 ซ่อนหัวข้อ ADMIN CONTROL ระบบหลังบ้านร้านตัดผม ในโหมด Barber
                 if (adminControlHeaderBox) { adminControlHeaderBox.classList.add('hidden'); adminControlHeaderBox.style.display = 'none'; }
-
-                // 🛑 สั่งซ่อนการ์ดรายได้และกราฟ
                 if (revenueCardsContainer) { revenueCardsContainer.classList.add('hidden'); revenueCardsContainer.style.display = 'none'; }
                 if (revenueSectionWrapper) { revenueSectionWrapper.classList.add('hidden'); revenueSectionWrapper.style.display = 'none'; }
                 if (revenueSection) { revenueSection.classList.add('hidden'); revenueSection.style.display = 'none'; }
                 if (revenueFilters) { revenueFilters.classList.add('hidden'); revenueFilters.style.display = 'none'; }
                 if (revenueCanvas) { revenueCanvas.classList.add('hidden'); revenueCanvas.style.display = 'none'; }
 
-                // ให้แสดงส่วนจัดการสถานะช่างและตารางคิวตามปกติ
                 if (barberStatusControl) { barberStatusControl.classList.remove('hidden'); barberStatusControl.style.display = 'block'; }
                 if (allBookingsTable) { allBookingsTable.classList.remove('hidden'); allBookingsTable.style.display = 'block'; }
 
@@ -1171,13 +1161,20 @@
                 if (revenueCardsContainer) { revenueCardsContainer.classList.add('hidden'); revenueCardsContainer.style.display = 'none'; }
                 if (revenueSectionWrapper) { revenueSectionWrapper.classList.add('hidden'); revenueSectionWrapper.style.display = 'none'; }
                 if (revenueSection) { revenueSection.classList.add('hidden'); revenueSection.style.display = 'none'; }
-                if (revenueFilters) { revenueFilters.classList.add('hidden'); revenueFilters.style.display, 'none'; }
+
+                // 🌟 แก้ไขจุดที่พิมพ์คอมมาผิดเป็นเครื่องหมายเท่ากับ
+                if (revenueFilters) { revenueFilters.classList.add('hidden'); revenueFilters.style.display = 'none'; }
+
                 if (revenueCanvas) { revenueCanvas.classList.add('hidden'); revenueCanvas.style.display = 'none'; }
                 if (barberStatusControl) { barberStatusControl.classList.add('hidden'); barberStatusControl.style.display = 'none'; }
                 if (allBookingsTable) { allBookingsTable.classList.add('hidden'); allBookingsTable.style.display = 'none'; }
 
                 showToast('สลับเป็นโหมด User สำเร็จ', 'success');
             }
+
+            // 🌟 บังคับให้อัปเดตสถานะร้านและสถานะช่างซ้ำทันทีทุกครั้งที่มีการสลับโหมด
+            if (typeof initRealtimeShopStatus === 'function') initRealtimeShopStatus();
+            if (typeof initRealtimeBarbers === 'function') initRealtimeBarbers();
 
             // อัปเดตไฮไลท์ปุ่มสถานะด้านบน
             if (typeof updateRoleButtonStyles === 'function') {
