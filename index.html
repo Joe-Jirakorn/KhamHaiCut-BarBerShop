@@ -955,13 +955,17 @@
                 updateAdminRevenueDashboard('daily');
             }
 
-            // 3. 🌟 เรียกใช้งาน Real-time Listeners ทั้งส่วนของช่างและคิวการจอง พร้อมกันทันที
+            // 3. 🌟 เรียกใช้งาน Real-time Listeners ทั้งส่วนของช่าง, คิวการจอง และสถานะร้าน พร้อมกันทันที
             if (typeof initRealtimeBarbers === 'function') {
                 initRealtimeBarbers();
             }
 
             if (typeof initRealtimeBookings === 'function') {
                 initRealtimeBookings();
+            }
+
+            if (typeof initRealtimeShopStatus === 'function') {
+                initRealtimeShopStatus();
             }
         });
 
