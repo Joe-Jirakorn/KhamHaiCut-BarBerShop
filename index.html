@@ -1796,13 +1796,13 @@
                 navigateTo('booking');
             }
 
-            // 🛑 6. คืนค่าตำแหน่ง Scroll กลับมาที่เดิมทันที (ใช้ requestAnimationFrame เพื่อให้ทำงานหลังเรนเดอร์เสร็จ)
-            requestAnimationFrame(() => {
+            // 🛑 6. ใช้ setTimeout เพื่อหน่วงเวลารอให้ระบบเปลี่ยนหน้าและเรนเดอร์เสร็จสมบูรณ์ก่อน ค่อยดึงจอว์กลับมาที่เดิม
+            setTimeout(() => {
                 window.scrollTo({
                     top: currentScrollY,
-                    behavior: 'instant' // ป้องกันการเลื่อนแบบอนิเมชัน ให้คงที่ทันที
+                    behavior: 'instant' // คงตำแหน่งทันทีโดยไม่มีอนิเมชันเลื่อน
                 });
-            });
+            }, 50); // หน่วงเวลา 50ms กำลังดีครับ (ถ้ายังเด้งลองปรับเพิ่มเป็น 100ms ได้ครับ)
         }
 
         // Update Summary Calculations
