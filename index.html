@@ -4239,11 +4239,23 @@
 
         // ฟังก์ชันฟังสถานะร้านแบบ Real-time สำหรับหน้า User และทุกๆ เครื่อง
         function listenToShopStatus() {
-            db.collection('shop_settings').doc('status').onSnapshot((doc) => {
-                if (doc.exists) {
-                    const data = doc.data();
+            // 🌟 1. เช็กความพร้อมของ Firebase โมดูล
+            if (!window.db || !window.firebaseModules) {
+                setTimeout(listenToShopStatus, 500);
+                return;
+            }
+
+            const { doc, onSnapshot } = window.firebaseModules;
+
+            // 🌟 2. ใช้ฟังก์ชัน doc() และ onSnapshot() แบบถูกต้องตามหลัก Firebase Modular SDK
+            onSnapshot(doc(window.db, "shop_settings", "status"), (docSnap) => {
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
                     const isShopOpen = data.isOpen;
                     const statusText = data.statusText;
+
+                    // เก็บใส่ตัวแปรกลางไว้ใช้ร่วมกัน
+                    window.isShopOpen = isShopOpen;
 
                     // อัปเดต UI ของปุ่ม / แบนเนอร์แจ้งเตือนหน้าร้านของ User ทันที
                     const closedBanner = document.getElementById('shop-closed-banner');
@@ -4258,7 +4270,6 @@
                     } else {
                         if (closedBanner) {
                             closedBanner.classList.remove('hidden');
-                            // ถ้ามีข้อความสถานะพิเศษ เช่น "ติดคิวอยู่ / พักเที่ยง" ให้แสดงตรงนี้ได้
                             if (statusText) closedBanner.textContent = statusText;
                         }
                         if (bookingBtn) {
@@ -4266,7 +4277,16 @@
                             bookingBtn.textContent = "ร้านปิด / ปิดรับคิวชั่วคราว";
                         }
                     }
+
+                    // เรียกฟังก์ชันอัปเดตหน้าตาปุ่มแอดมิน (ถ้ามี) ร่วมด้วย
+                    if (typeof updateShopStatusUI === 'function') {
+                        updateShopStatusUI(isShopOpen);
+                    }
+
+                    console.log("ซิงค์สถานะร้านเรียลไทม์สำเร็จ: ", isShopOpen ? "เปิดร้านอยู่" : "ปิดร้านแล้ว");
                 }
+            }, (error) => {
+                console.error("เกิดข้อผิดพลาดในการซิงค์สถานะร้าน:", error);
             });
         }
 
