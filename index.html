@@ -131,9 +131,9 @@
                         </div>
                         <div>
                             <span
-                                class="text-base sm:text-xl font-bold tracking-wider text-white block leading-tight">KhamHai</span>
+                                class="text-base sm:text-xl font-bold tracking-wider text-white block leading-tight">KhamHaiCut</span>
                             <span
-                                class="text-[10px] sm:text-xs text-amber-500 font-medium tracking-widest uppercase">BARBER</span>
+                                class="text-[10px] sm:text-xs text-amber-500 font-medium tracking-widest uppercase">BARBERSHOP</span>
                         </div>
                     </div>
 
@@ -1772,39 +1772,54 @@
             if (!container) return;
 
             // 1. ใช้ state.barbers เป็นหลัก เพื่อให้ซิงค์กับ Real-time จาก Firebase เสมอ
-            let currentBarbers = state.barbers || [];
+            let rawBarbers = state.barbers || [];
 
             // ถ้า state ว่างเปล่า ค่อยลองดึงจาก localStorage มาใช้สำรองชั่วคราว
-            if (currentBarbers.length === 0) {
+            if (rawBarbers.length === 0) {
                 try {
                     const savedBarbers = localStorage.getItem('barber_shop_barbers');
                     if (savedBarbers) {
-                        currentBarbers = JSON.parse(savedBarbers);
-                        state.barbers = currentBarbers;
+                        rawBarbers = JSON.parse(savedBarbers);
+                        state.barbers = rawBarbers;
                     }
                 } catch (e) {
-                    currentBarbers = [];
+                    rawBarbers = [];
                 }
             }
 
-            // 🌟 2. กำหนดลิงก์รูปภาพสำรองประจำตัวช่าง (ป้องกันรูปร่วงในหน้าจองคิว)
+            // 🌟 2. กรองเอาเฉพาะช่างก้อง (id === 'b1') เท่านั้น
+            let currentBarbers = rawBarbers.filter(b => b.id === 'b1');
+            if (currentBarbers.length === 0) {
+                currentBarbers = [{
+                    id: 'b1',
+                    name: 'ช่างก้อง',
+                    status: 'available'
+                }];
+            }
+
+            // 3. กำหนดลิงก์รูปภาพสำรองประจำตัวช่างตาม id
             const defaultAvatars = {
                 'b1': 'https://i.postimg.cc/8FR1mMtP/858525001-1129326712975883-8607776798710260414-n.jpg',
                 'b2': 'https://i.postimg.cc/qMrLWY3v/863844196-1134350642473490-5849783856972700037-n.jpg'
             };
 
-            // 3. ดึงสถานะเปิด/ปิดร้าน
+            // 4. ดึงสถานะเปิด/ปิดร้าน
             const savedShopStatus = localStorage.getItem('barber_shop_open_status');
             const isOpen = savedShopStatus !== null ? (savedShopStatus === 'true') : true;
 
             container.innerHTML = currentBarbers.map(b => {
-                // 🌟 ดึงรูปจาก b.avatar หรือถ้าไม่มีให้ใช้ลิงก์สำรองตาม id ของช่างทันที
-                const barberImage = b.avatar || defaultAvatars[b.id] || '';
+                // 🌟 5. ลำดับการดึงรูปภาพ: เน้นดึงจากบัญชีแอดมิน/ผู้ใช้ที่ล็อกอินอยู่ (state.currentUser) ก่อนเป็นอันดับแรก
+                let barberImage = '';
+                if (typeof state !== 'undefined' && state.currentUser && (state.currentUser.avatar || state.currentUser.photoURL)) {
+                    barberImage = state.currentUser.avatar || state.currentUser.photoURL;
+                } else {
+                    barberImage = b.avatar || defaultAvatars[b.id] || '';
+                }
 
                 const isSelected = String(state.bookingForm.selectedBarberId) === String(b.id);
                 const isClosed = !isOpen || b.status === 'closed';
 
-                // 4. ตรวจสอบสถานะอย่างแม่นยำ (เช็กทั้ง available และ busy ชัดเจน)
+                // 6. ตรวจสอบสถานะอย่างแม่นยำ (เช็กทั้ง available และ busy ชัดเจน)
                 const statusStr = String(b.status || '').trim().toLowerCase();
 
                 // เช็กว่าเป็นสถานะว่างจริงไหม
@@ -1968,16 +1983,26 @@
             const container = document.getElementById('home-barbers-grid');
             if (!container) return;
 
-            let currentBarbers = [];
+            let rawBarbers = [];
             try {
                 const savedBarbers = localStorage.getItem('barber_shop_barbers');
                 if (savedBarbers) {
-                    currentBarbers = JSON.parse(savedBarbers);
+                    rawBarbers = JSON.parse(savedBarbers);
                 } else if (typeof state !== 'undefined' && state.barbers) {
-                    currentBarbers = state.barbers;
+                    rawBarbers = state.barbers;
                 }
             } catch (e) {
-                currentBarbers = state.barbers || [];
+                rawBarbers = state.barbers || [];
+            }
+
+            // 🌟 กรองเอาเฉพาะช่างก้อง (id === 'b1') เท่านั้น
+            let currentBarbers = rawBarbers.filter(b => b.id === 'b1');
+            if (currentBarbers.length === 0) {
+                currentBarbers = [{
+                    id: 'b1',
+                    name: 'ช่างก้อง',
+                    status: 'available'
+                }];
             }
 
             // Fallback เผื่อข้อมูลใน LocalStorage ไม่มีรูป ให้ดึงจากชุดตั้งต้นตรงๆ ทันที
@@ -2018,24 +2043,30 @@
                     statusText = 'ติดคิว (Busy)';
                 }
 
-                // 🌟 ดึงรูปจาก b.avatar หรือถ้าไม่มีให้ดึงจากลิงก์สำรองประจำตัวช่างทันที
-                const barberImage = b.avatar || defaultAvatars[b.id] || '';
+                // 🌟 ปรับปรุงใหม่: รองรับบัญชีแอดมิน / เจ้าของร้าน
+                // ถ้าระบบมีการล็อกอินอยู่ และบัญชีนั้นมีรูปภาพ ให้ดึงมาแสดงเป็นรูปช่างก้องทันทีโดยไม่ต้องเช็กไอดีให้ยุ่งยาก
+                let barberImage = '';
+                if (typeof state !== 'undefined' && state.currentUser && (state.currentUser.avatar || state.currentUser.photoURL)) {
+                    barberImage = state.currentUser.avatar || state.currentUser.photoURL;
+                } else {
+                    barberImage = b.avatar || defaultAvatars[b.id] || '';
+                }
 
                 return `
-            <div class="bg-dark-800 rounded-2xl border border-dark-700 p-5 shadow-lg flex items-center gap-4 relative overflow-hidden">
-                <div class="relative flex-shrink-0">
-                    <img src="${barberImage}" class="w-16 h-16 rounded-full object-cover border-2 border-amber-500/50" alt="${b.name}">
-                    <span class="absolute bottom-0 right-0 w-4 h-4 rounded-full border-2 border-dark-800 ${isClosed ? 'bg-gray-500' : (isAvailable ? 'bg-emerald-500 animate-pulse' : 'bg-red-500')}"></span>
-                </div>
-                <div class="flex-grow">
-                    <h3 class="font-bold text-white text-base">${b.name}</h3>
-                    <div class="mt-2 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${badgeClass}">
-                        <span class="w-1.5 h-1.5 rounded-full ${dotColor}"></span>
-                        <span>${statusText}</span>
-                    </div>
+        <div class="bg-dark-800 rounded-2xl border border-dark-700 p-5 shadow-lg flex items-center gap-4 relative overflow-hidden">
+            <div class="relative flex-shrink-0">
+                <img src="${barberImage}" class="w-16 h-16 rounded-full object-cover border-2 border-amber-500/50" alt="${b.name}">
+                <span class="absolute bottom-0 right-0 w-4 h-4 rounded-full border-2 border-dark-800 ${isClosed ? 'bg-gray-500' : (isAvailable ? 'bg-emerald-500 animate-pulse' : 'bg-red-500')}"></span>
+            </div>
+            <div class="flex-grow">
+                <h3 class="font-bold text-white text-base">${b.name}</h3>
+                <div class="mt-2 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${badgeClass}">
+                    <span class="w-1.5 h-1.5 rounded-full ${dotColor}"></span>
+                    <span>${statusText}</span>
                 </div>
             </div>
-        `;
+        </div>
+    `;
             }).join('');
         }
         // 5. Full Barbers Page List
@@ -2043,39 +2074,62 @@
             const container = document.getElementById('full-barbers-grid');
             if (!container) return;
 
-            // 1. ดึงข้อมูลช่างล่าสุดจาก state.barbers เป็นหลัก (เพื่อให้รับค่า Real-time จาก Firebase ทันที)
-            let currentBarbers = [];
+            // 1. ดึงข้อมูลช่างล่าสุดจาก state.barbers เป็นหลัก
+            let rawBarbers = [];
             if (typeof state !== 'undefined' && state.barbers && state.barbers.length > 0) {
-                currentBarbers = state.barbers;
+                rawBarbers = state.barbers;
             } else {
                 try {
                     const savedBarbers = localStorage.getItem('barber_shop_barbers');
                     if (savedBarbers) {
-                        currentBarbers = JSON.parse(savedBarbers);
-                        if (typeof state !== 'undefined') state.barbers = currentBarbers;
+                        rawBarbers = JSON.parse(savedBarbers);
+                        if (typeof state !== 'undefined') state.barbers = rawBarbers;
                     }
                 } catch (e) {
-                    currentBarbers = [];
+                    rawBarbers = [];
                 }
             }
 
-            // 2. กำหนดลิงก์รูปภาพสำรองประจำตัวช่างตาม id
+            // 🌟 2. กรองเอาเฉพาะช่างก้อง (id === 'b1') เท่านั้น
+            let currentBarbers = rawBarbers.filter(b => b.id === 'b1');
+            if (currentBarbers.length === 0) {
+                currentBarbers = [{
+                    id: 'b1',
+                    name: 'ช่างก้อง',
+                    exp: 'ช่างก้อง (เจ้าของร้าน)',
+                    bio: 'ตัดแต่งทรงผมชายสไตล์คลาสสิก ออกแบบทรงผมเข้ากับรูปหน้า และบริการกันโกนหนวด',
+                    status: 'available'
+                }];
+            }
+
+            // 3. กำหนดลิงก์รูปภาพสำรองประจำตัวช่างตาม id
             const defaultAvatars = {
                 'b1': 'https://i.postimg.cc/8FR1mMtP/858525001-1129326712975883-8607776798710260414-n.jpg',
                 'b2': 'https://i.postimg.cc/qMrLWY3v/863844196-1134350642473490-5849783856972700037-n.jpg'
             };
 
-            // 3. ดึงสถานะเปิด/ปิดร้านจาก LocalStorage
+            // 4. ดึงสถานะเปิด/ปิดร้านจาก LocalStorage
             const savedShopStatus = localStorage.getItem('barber_shop_open_status');
             const isOpen = savedShopStatus !== null ? (savedShopStatus === 'true') : true;
 
             container.innerHTML = currentBarbers.map(b => {
-                // 🌟 ดึงรูปภาพโดยเช็กจาก id ก่อนเป็นหลัก ป้องกันรูปร่วง
-                const barberImage = defaultAvatars[b.id] || b.avatar || 'https://i.postimg.cc/8FR1mMtP/858525001-1129326712975883-8607776798710260414-n.jpg';
+                // 🌟 5. ซิงค์และดึงรูปภาพโดยให้สิทธิ์รูปจาก state.currentUser (แอดมินที่ล็อกอิน) เป็นหลักทันที
+                let barberImage = '';
+                if (typeof state !== 'undefined' && state.currentUser) {
+                    barberImage = state.currentUser.avatar || state.currentUser.photoURL || '';
+                }
+
+                // ถ้าใน state.currentUser ไม่มี ให้ดึงจากข้อมูลช่าง (b.avatar) หรือรูปสำรองตามค่าเริ่มต้น
+                if (!barberImage) {
+                    barberImage = b.avatar || defaultAvatars[b.id] || 'https://i.postimg.cc/8FR1mMtP/858525001-1129326712975883-8607776798710260414-n.jpg';
+                } else {
+                    // อัปเดตกลับเข้าไปในข้อมูลช่างตัวจริง เพื่อให้ทุกส่วนดึงรูปใหม่ไปใช้ทันที
+                    b.avatar = barberImage;
+                }
 
                 const isClosed = !isOpen || b.status === 'closed';
 
-                // 🌟 4. เช็กสถานะว่างแบบยืดหยุ่นรองรับทุกค่า เพื่อให้ Real-time ทำงานถูกต้อง
+                // 🌟 6. เช็กสถานะว่างแบบยืดหยุ่นรองรับทุกค่า เพื่อให้ Real-time ทำงานถูกต้อง
                 const statusStr = String(b.status || '').trim().toLowerCase();
                 const isAvailable = !isClosed && (
                     statusStr === 'available' ||
@@ -2099,7 +2153,6 @@
                 }
 
                 // ป้องกันคำว่า undefined
-                const barberExp = b.exp || (b.id === 'b1' ? 'ช่างก้อง (เจ้าของร้าน)' : 'ช่างประจำร้าน');
                 const barberBio = b.bio || 'ตัดแต่งทรงผมชายสไตล์คลาสสิก ออกแบบทรงผมเข้ากับรูปหน้า และบริการกันโกนหนวด';
 
                 return `
@@ -4380,44 +4433,85 @@
 
             // ดึงค่าจากฟอร์ม Input
             const phoneInput = document.getElementById('profile-phone');
-            const birthdateInput = document.getElementById('profile-birthdate'); // ฟิลด์วันเกิดที่เราจะเพิ่มใน HTML
+            const birthdateInput = document.getElementById('profile-birthdate');
             const nameInput = document.getElementById('profile-name');
 
             const newPhone = phoneInput ? phoneInput.value.trim() : '';
             const newBirthdate = birthdateInput ? birthdateInput.value : '';
             const newName = nameInput ? nameInput.value.trim() : state.currentUser.name;
 
-            // 🌟 คำนวณอายุอัตโนมัติจากวันเกิดที่เลือก
+            // คำนวณอายุอัตโนมัติจากวันเกิดที่เลือก
             const calculatedAge = calculateAge(newBirthdate);
 
             // อัปเดตข้อมูลลงใน state.currentUser
             state.currentUser.name = newName;
             state.currentUser.phone = newPhone;
             state.currentUser.birthdate = newBirthdate;
-            state.currentUser.age = calculatedAge; // บันทึกอายุใหม่
+            state.currentUser.age = calculatedAge;
+
+            // 🌟 ป้องกันกรณี state.barbers ยังไม่ถูกสร้าง ให้สร้างอาเรย์เตรียมไว้
+            if (!state.barbers) {
+                state.barbers = [];
+            }
+
+            // อัปเดตข้อมูลชื่อและรูปภาพของช่างก้อง (b1) ใน state.barbers ให้ซิงค์ตรงกันทันที
+            let targetBarber = state.barbers.find(b => b.id === 'b1');
+            const currentAvatar = state.currentUser.avatar || state.currentUser.photoURL || '';
+
+            if (targetBarber) {
+                targetBarber.name = newName;
+                if (currentAvatar) {
+                    targetBarber.avatar = currentAvatar;
+                }
+            } else {
+                state.barbers.push({
+                    id: 'b1',
+                    name: newName,
+                    avatar: currentAvatar,
+                    status: 'available',
+                    exp: 'ช่างก้อง (เจ้าของร้าน)',
+                    bio: 'ตัดแต่งทรงผมชายสไตล์คลาสสิก ออกแบบทรงผมเข้ากับรูปหน้า และบริการกันโกนหนวด'
+                });
+            }
 
             // บันทึกลง LocalStorage
             localStorage.setItem('barber_current_user', JSON.stringify(state.currentUser));
+            localStorage.setItem('barber_shop_barbers', JSON.stringify(state.barbers));
 
-            // บันทึกลง Firebase Firestore (ถ้าเชื่อมต่อระบบ Firebase ไว้)
+            // บันทึกลง Firebase Firestore (อัปเดตทั้งผู้ใช้ และซิงค์ข้อมูลไปที่ collection "barbers" ของช่าง b1 ด้วย)
             try {
-                if (window.firebaseModules && window.db && state.currentUser.firestoreId) {
-                    const { doc, updateDoc } = window.firebaseModules;
-                    const userRef = doc(window.db, "users", state.currentUser.firestoreId);
+                if (window.firebaseModules && window.db) {
+                    const { doc, updateDoc, setDoc } = window.firebaseModules;
 
-                    await updateDoc(userRef, {
+                    // 1. อัปเดตข้อมูลใน collection "users"
+                    if (state.currentUser.firestoreId) {
+                        const userRef = doc(window.db, "users", state.currentUser.firestoreId);
+                        await updateDoc(userRef, {
+                            name: newName,
+                            phone: newPhone,
+                            birthdate: newBirthdate,
+                            age: calculatedAge,
+                            updatedAt: new Date().toISOString()
+                        });
+                    }
+
+                    // 🌟 2. อัปเดตข้อมูลและรูปภาพใน collection "barbers" (id: 'b1') บน Firebase ทันที เพื่อให้ Real-time ซิงค์ทั่วถึง
+                    const barberRef = doc(window.db, "barbers", "b1");
+                    await setDoc(barberRef, {
+                        id: 'b1',
                         name: newName,
-                        phone: newPhone,
-                        birthdate: newBirthdate,
-                        age: calculatedAge,
+                        avatar: currentAvatar,
                         updatedAt: new Date().toISOString()
-                    });
+                    }, { merge: true });
                 }
 
-                alert('บันทึกข้อมูลส่วนตัวและอัปเดตอายุเรียบร้อยแล้ว!');
+                alert('บันทึกข้อมูลส่วนตัวและอัปเดตเรียบร้อยแล้ว!');
 
-                // อัปเดตหน้าจอ UI ทั้งหมดทันที
+                // อัปเดตหน้าจอ UI ทั้งหมดทันทีแบบเรียลไทม์โดยไม่ต้องรีเฟรช
                 if (typeof updateUserUI === 'function') updateUserUI();
+                if (typeof renderFullBarbersList === 'function') renderFullBarbersList();
+                if (typeof renderBarbersHomeStatus === 'function') renderBarbersHomeStatus();
+                if (typeof renderBarberSelectGrid === 'function') renderBarberSelectGrid();
 
             } catch (error) {
                 console.error("Error saving user profile: ", error);
