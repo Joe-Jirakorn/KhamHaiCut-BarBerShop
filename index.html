@@ -4531,21 +4531,22 @@
         }
 
         // 🌟 2. ปรับเสียงใหม่ให้เป็นเสียงกระดิ่งนุ่มๆ สไตล์แอปพลิเคชัน (Soft Chime)
+        // 🌟 1. ปรับปรุงเสียงกระดิ่งใหม่: เสียงดังขึ้น + เล่นยาว 4 จังหวะ (กังวานและนุ่มนวล)
         function playMessengerSound() {
             try {
                 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
-                // ฟังก์ชันช่วยสร้างโทนเสียงทีละตัวโน้ต
-                const playTone = (freq, startTime, duration) => {
+                // ฟังก์ชันช่วยสร้างโน้ตเพลง (ปรับความดัง/Gain ให้เพิ่มขึ้นเป็น 0.3 เพื่อความชัดเจน)
+                const playTone = (freq, startTime, duration, volume = 0.3) => {
                     const osc = audioCtx.createOscillator();
                     const gain = audioCtx.createGain();
 
                     osc.type = 'sine';
                     osc.frequency.setValueAtTime(freq, audioCtx.currentTime + startTime);
 
-                    // ปรับความดังให้ค่อยๆ นุ่มนวล ไม่บาดหู
+                    // ปรับระดับเสียงเริ่มต้นและจังหวะเฟดออก
                     gain.gain.setValueAtTime(0, audioCtx.currentTime + startTime);
-                    gain.gain.linearRampToValueAtTime(0.15, audioCtx.currentTime + startTime + 0.03);
+                    gain.gain.linearRampToValueAtTime(volume, audioCtx.currentTime + startTime + 0.04);
                     gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + startTime + duration);
 
                     osc.connect(gain);
@@ -4555,64 +4556,66 @@
                     osc.stop(audioCtx.currentTime + startTime + duration);
                 };
 
-                // เล่นเสียง 2 จังหวะต่อกัน (โน้ต E5 และ A5) ให้เสียงกังวานและนุ่มหูขึ้น
-                playTone(659.25, 0, 0.2);   // โน้ตแรก
-                playTone(880.00, 0.12, 0.3); // โน้ตที่สอง (ประสานเสียง)
+                // บรรเลง 4 จังหวะต่อเนื่อง (โน้ตไต่ระดับให้เป็นเสียงกระดิ่งแจ้งเตือนที่ไพเราะและยาวขึ้น)
+                playTone(523.25, 0, 0.25, 0.35);     // จังหวะที่ 1 (C5)
+                playTone(659.25, 0.15, 0.25, 0.35);   // จังหวะที่ 2 (E5)
+                playTone(783.99, 0.30, 0.30, 0.40);   // จังหวะที่ 3 (G5)
+                playTone(1046.50, 0.45, 0.45, 0.40);  // จังหวะที่ 4 (C6 - เสียงสูงกังวาน)
+
             } catch (e) {
                 console.log("Audio Context error:", e);
             }
         }
 
-        // 🌟 3. ฟังก์ชันสร้างกล่องข้อความแจ้งเตือนเด้งที่หน้าจอทันที (In-App Toast Banner)
+        // 🌟 2. กล่องข้อความแจ้งเตือนลอยบนหน้าจอ (In-App Banner สวยงาม ชัดเจน รองรับทั้งมือถือและคอมพิวเตอร์)
         function showCustomNotificationBanner(title, body) {
-            // สร้าง Element กล่องแจ้งเตือน
+            // ลบกล่องเก่า (ถ้ามีค้างอยู่) เพื่อไม่ให้บังกัน
+            const oldBanner = document.getElementById('custom-notif-banner');
+            if (oldBanner) oldBanner.remove();
+
             const banner = document.createElement('div');
-            banner.className = 'fixed top-5 right-5 z-50 bg-dark-800 border border-amber-500/50 text-white px-5 py-4 rounded-2xl shadow-2xl flex items-center gap-3 max-w-sm backdrop-blur-md bg-opacity-95 transition-all duration-300 translate-y-[-20px] opacity-0';
+            banner.id = 'custom-notif-banner';
+            // ปรับดีไซน์ให้แสดงผลเด่นชัดด้านบนสุดของหน้าจอมือถือ/คอมพิวเตอร์
+            banner.className = 'fixed top-4 left-1/2 transform -translate-x-1/2 z-[99999] bg-dark-800 border-2 border-amber-500 text-white px-5 py-3.5 rounded-2xl shadow-2xl flex items-center gap-3.5 w-[92%] max-w-md backdrop-blur-md bg-opacity-95 transition-all duration-300 translate-y-[-50px] opacity-0';
+
             banner.innerHTML = `
-                <div class="bg-amber-500 text-dark-900 p-2.5 rounded-xl font-bold text-lg flex items-center justify-center shrink-0 shadow-md">
+                <div class="bg-amber-500 text-dark-900 p-3 rounded-xl font-bold text-xl flex items-center justify-center shrink-0 shadow-lg">
                     🔔
                 </div>
-                <div class="overflow-hidden">
+                <div class="overflow-hidden flex-1">
                     <h4 class="font-bold text-amber-400 text-sm truncate">${title}</h4>
-                    <p class="text-xs text-gray-300 mt-0.5 line-clamp-2">${body}</p>
+                    <p class="text-xs text-gray-200 mt-0.5 line-clamp-2">${body}</p>
                 </div>
             `;
             document.body.appendChild(banner);
 
-            // เอฟเฟกต์เลื่อนลงมาแสดงผล
+            // เอฟเฟกต์เลื่อนลงมาโชว์
             setTimeout(() => {
-                banner.classList.remove('translate-y-[-20px]', 'opacity-0');
+                banner.classList.remove('translate-y-[-50px]', 'opacity-0');
             }, 10);
 
-            // ให้กล่องข้อความหายไปเองอัตโนมัติหลัง 5 วินาที
+            // ซ่อนอัตโนมัติหลัง 6 วินาที
             setTimeout(() => {
-                banner.classList.add('translate-y-[-20px]', 'opacity-0');
+                banner.classList.add('translate-y-[-50px]', 'opacity-0');
                 setTimeout(() => banner.remove(), 300);
-            }, 5000);
+            }, 6000);
         }
 
-        // 🌟 4. ฟังก์ชันหลักสำหรับสั่งงานแจ้งเตือน (ทั้งเสียง + กล่องข้อความหน้าเว็บ + ระบบมือถือ)
+        // 🌟 3. ฟังก์ชันหลักสำหรับเรียกใช้งานแจ้งเตือน
         function triggerAppNotification(title, bodyText) {
-            // 1. เล่นเสียงกระดิ่งนุ่มๆ
+            // 1. เล่นเสียงกระดิ่ง 4 จังหวะ เสียงดังขึ้นและนุ่มนวล
             playMessengerSound();
 
-            // 2. เด้งกล่องข้อความแจ้งเตือนบนหน้าจอทันที (เห็นข้อความแน่นอน 100%)
+            // 2. แสดงกล่องแจ้งเตือนสวยๆ บนหน้าจอทันที (การันตีว่าเห็นแน่นอน 100% ทั้งในมือถือและคอมพิวเตอร์)
             showCustomNotificationBanner(title, bodyText);
 
-            // 3. ส่ง Notification เข้าแถบบนมือถือ/คอมพิวเตอร์ (ถ้าเบราว์เซอร์อนุญาต)
-            if ("Notification" in window && Notification.permission === "granted") {
+            // 3. สั่นโทรศัพท์ (ถ้าอุปกรณ์รองรับและอนุญาต)
+            if ("vibrate" in navigator) {
                 try {
-                    new Notification(title, {
-                        body: bodyText,
-                        icon: 'https://cdn-icons-png.flaticon.com/512/3233/3233483.png',
-                        vibrate: [200, 100, 200]
-                    });
-                } catch (err) {
-                    console.log("Browser notification error:", err);
-                }
+                    navigator.vibrate([200, 100, 200, 100, 300]);
+                } catch (e) { }
             }
         }
-
     </script>
     <!-- Modal ข้อมูลส่วนตัว -->
     <div id="profile-modal"
@@ -4691,8 +4694,8 @@
     </div>
 
     <!-- เครื่องมือดูคอนโซลบนมือถือ (Eruda) -->
-    <!-- <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
-    <script>eruda.init();</script> -->
+    <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
+    <script>eruda.init();</script>
 </body>
 
 </html>
