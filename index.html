@@ -3250,6 +3250,9 @@
                 return;
             }
 
+            // 🌟 ตัวแปรเช็กเพื่อป้องกันไม่ให้แจ้งเตือนรัวตอนเปิดหน้าเว็บครั้งแรก
+            let isInitialLoad = true;
+
             // ดึงข้อมูลจาก Collection "bookings" แบบเรียลไทม์
             window.firebaseModules.onSnapshot(
                 window.firebaseModules.collection(window.db, "bookings"),
@@ -3258,6 +3261,24 @@
                     snapshot.forEach((doc) => {
                         state.bookings.push({ firestoreId: doc.id, ...doc.data() });
                     });
+
+                    // 🌟 ตรวจสอบการเปลี่ยนแปลงแบบเจาะลึกเฉพาะรายการที่เพิ่มเข้ามาใหม่
+                    if (!isInitialLoad) {
+                        snapshot.docChanges().forEach((change) => {
+                            if (change.type === "added") {
+                                const newBooking = change.doc.data();
+
+                                // เช็กว่าเป็นคิวใหม่ที่มีสถานะ 'pending' (รอรับบริการ) จริงๆ
+                                if (newBooking.status === 'pending') {
+                                    // 🔔 สั่งเล่นเสียงและเด้งแจ้งเตือนที่แถบด้านบนมือถือ/คอมพิวเตอร์
+                                    triggerAppNotification(
+                                        "🔔 มีคิวจองตัดผมใหม่!",
+                                        `คุณ ${newBooking.userName || 'ลูกค้า'} จองคิวทรง ${newBooking.styleName || 'ตัดผม'} (${newBooking.date || ''} ${newBooking.time || ''})`
+                                    );
+                                }
+                            }
+                        });
+                    }
 
                     // สั่งอัปเดตตารางและสถิติในหน้าจอทันที
                     if (typeof renderAdminBookingsTable === 'function') {
@@ -3276,7 +3297,13 @@
                     console.error("เกิดข้อผิดพลาดในการดึงข้อมูลเรียลไทม์:", error);
                 }
             );
+
+            // หลังจากโหลดรอบแรกเสร็จผ่านไป 1.5 วินาที ให้ปลดล็อกสถานะเริ่มต้น เพื่อเปิดใช้งานการแจ้งเตือน
+            setTimeout(() => {
+                isInitialLoad = false;
+            }, 1500);
         }
+
         window.addEventListener('DOMContentLoaded', () => {
             setTimeout(() => {
                 initRealtimeBookings();
@@ -4490,6 +4517,71 @@
         `;
                 tableContainer.appendChild(row);
             });
+        }
+
+        // 🌟 ฟังก์ชันขอสิทธิ์การแจ้งเตือน (ควรเรียกใช้ตอนผู้ใช้คลิกปุ่มเข้าสู่ระบบหรือกดเปิดใช้งาน)
+        function requestNotificationPermission() {
+            if ("Notification" in window && Notification.permission !== "granted") {
+                Notification.requestPermission().then(permission => {
+                    if (permission === "granted") {
+                        console.log("อนุญาตการแจ้งเตือนสำเร็จ");
+                    }
+                });
+            }
+        }
+
+        // 🌟 ฟังก์ชันเล่นเสียงแจ้งเตือนสไตล์ Messenger (Pop Sound)
+        function playMessengerSound() {
+            try {
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const oscillator = audioCtx.createOscillator();
+                const gainNode = audioCtx.createGain();
+
+                oscillator.type = 'sine';
+                // จำลองคลื่นเสียงแจ้งเตือนสั้นๆ แบบ Pop
+                oscillator.frequency.setValueAtTime(500, audioCtx.currentTime);
+                oscillator.frequency.exponentialRampToValueAtTime(900, audioCtx.currentTime + 0.08);
+
+                gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.08);
+
+                oscillator.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+
+                oscillator.start();
+                oscillator.stop(audioCtx.currentTime + 0.08);
+            } catch (e) {
+                console.log("Audio context blocked or not supported", e);
+            }
+        }
+
+        // 🌟 ฟังก์ชันหลักสำหรับสั่งแจ้งเตือน (ทั้งเสียงและเด้งขึ้นแถบด้านบนมือถือ/คอมพิวเตอร์)
+        function triggerAppNotification(title, bodyText) {
+            // 1. เล่นเสียงแจ้งเตือน
+            playMessengerSound();
+
+            // 2. แสดง Notification เด้งขึ้นแถบด้านบนมือถือ/คอมพิวเตอร์ (ถ้าเบราว์เซอร์อนุญาต)
+            if ("Notification" in window && Notification.permission === "granted") {
+                const options = {
+                    body: bodyText,
+                    icon: 'https://cdn-icons-png.flaticon.com/512/3233/3233483.png', // เปลี่ยนเป็นไอคอนร้านได้
+                    badge: 'https://cdn-icons-png.flaticon.com/512/3233/3233483.png',
+                    vibrate: [200, 100, 200] // สั่นบนมือถือ (ถ้าอุปกรณ์รองรับ)
+                };
+
+                // ถ้าเปิดหน้าเว็บอยู่หรือรัน Background สามารถแสดง Notification นี้ได้
+                try {
+                    if (navigator.serviceWorker && navigator.serviceWorker.controller) {
+                        navigator.serviceWorker.ready.then(registration => {
+                            registration.showNotification(title, options);
+                        });
+                    } else {
+                        new Notification(title, options);
+                    }
+                } catch (err) {
+                    new Notification(title, options);
+                }
+            }
         }
 
     </script>
