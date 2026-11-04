@@ -4460,6 +4460,7 @@
             const newPhone = phoneInput ? phoneInput.value.trim() : '';
             const newBirthdate = birthdateInput ? birthdateInput.value : '';
             const newName = nameInput ? nameInput.value.trim() : state.currentUser.name;
+            const currentAvatar = state.currentUser.avatar || state.currentUser.photoURL || '';
 
             // คำนวณอายุอัตโนมัติจากวันเกิดที่เลือก
             const calculatedAge = calculateAge(newBirthdate);
@@ -4470,41 +4471,15 @@
             state.currentUser.birthdate = newBirthdate;
             state.currentUser.age = calculatedAge;
 
-            // 🌟 ป้องกันกรณี state.barbers ยังไม่ถูกสร้าง ให้สร้างอาเรย์เตรียมไว้
-            if (!state.barbers) {
-                state.barbers = [];
-            }
-
-            // อัปเดตข้อมูลชื่อและรูปภาพของช่างก้อง (b1) ใน state.barbers ให้ซิงค์ตรงกันทันที
-            let targetBarber = state.barbers.find(b => b.id === 'b1');
-            const currentAvatar = state.currentUser.avatar || state.currentUser.photoURL || '';
-
-            if (targetBarber) {
-                targetBarber.name = newName;
-                if (currentAvatar) {
-                    targetBarber.avatar = currentAvatar;
-                }
-            } else {
-                state.barbers.push({
-                    id: 'b1',
-                    name: newName,
-                    avatar: currentAvatar,
-                    status: 'available',
-                    exp: 'ช่างก้อง (เจ้าของร้าน)',
-                    bio: 'ตัดแต่งทรงผมชายสไตล์คลาสสิก ออกแบบทรงผมเข้ากับรูปหน้า และบริการกันโกนหนวด'
-                });
-            }
-
             // บันทึกลง LocalStorage
             localStorage.setItem('barber_current_user', JSON.stringify(state.currentUser));
-            localStorage.setItem('barber_shop_barbers', JSON.stringify(state.barbers));
 
-            // บันทึกลง Firebase Firestore (อัปเดตทั้งผู้ใช้ และซิงค์ข้อมูลไปที่ collection "barbers" ของช่าง b1 ด้วย)
+            // 🌟 บันทึกลง Firebase Firestore (บังคับระบุ Document ID เป็น "b1" ชัดเจน เพื่อให้ Real-time ทำงานตรงกันทุกอุปกรณ์)
             try {
                 if (window.firebaseModules && window.db) {
                     const { doc, updateDoc, setDoc } = window.firebaseModules;
 
-                    // 1. อัปเดตข้อมูลใน collection "users"
+                    // 1. อัปเดตข้อมูลผู้ใช้ใน collection "users"
                     if (state.currentUser.firestoreId) {
                         const userRef = doc(window.db, "users", state.currentUser.firestoreId);
                         await updateDoc(userRef, {
@@ -4512,23 +4487,25 @@
                             phone: newPhone,
                             birthdate: newBirthdate,
                             age: calculatedAge,
+                            avatar: currentAvatar,
                             updatedAt: new Date().toISOString()
                         });
                     }
 
-                    // 🌟 2. อัปเดตข้อมูลและรูปภาพใน collection "barbers" (id: 'b1') บน Firebase ทันที เพื่อให้ Real-time ซิงค์ทั่วถึง
+                    // 🌟 2. อัปเดตข้อมูลช่างลงใน collection "barbers" โดยบังคับใช้ Document ID เป็น "b1"
                     const barberRef = doc(window.db, "barbers", "b1");
                     await setDoc(barberRef, {
                         id: 'b1',
                         name: newName,
                         avatar: currentAvatar,
+                        status: (state.barbers.find(b => b.id === 'b1') || {}).status || 'available',
                         updatedAt: new Date().toISOString()
                     }, { merge: true });
                 }
 
-                alert('บันทึกข้อมูลส่วนตัวและอัปเดตเรียบร้อยแล้ว!');
+                alert('บันทึกข้อมูลส่วนตัวและซิงค์เรียบร้อยแล้ว!');
 
-                // อัปเดตหน้าจอ UI ทั้งหมดทันทีแบบเรียลไทม์โดยไม่ต้องรีเฟรช
+                // อัปเดตหน้าจอ UI ทั้งหมดทันที
                 if (typeof updateUserUI === 'function') updateUserUI();
                 if (typeof renderFullBarbersList === 'function') renderFullBarbersList();
                 if (typeof renderBarbersHomeStatus === 'function') renderBarbersHomeStatus();
