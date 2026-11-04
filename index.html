@@ -2332,7 +2332,7 @@
                     const { collection, getDocs, query, where } = window.firebaseModules;
                     const bookingsRef = collection(window.db, "bookings");
 
-                    // ค้นหาคิวในวัน เวลา และช่างคนเดียวกันจากฐานข้อมูลจริง
+                    // 🌟 เช็กเฉพาะ วัน, เวลา และช่างคนเดียวกัน (ไม่จำกัดว่าจะมาจากบัญชีไหนของใครก็ตาม)
                     const q = query(
                         bookingsRef,
                         where("date", "==", date),
@@ -2346,20 +2346,19 @@
                     querySnapshot.forEach((docSnap) => {
                         const existing = docSnap.data();
 
-                        // 🌟 แก้ไขจุดสำคัญตรงนี้ครับ: 
-                        // ถ้ารายการเก่าสถานะเป็น 'completed' (เสร็จสิ้น) หรือ 'cancelled' (ยกเลิก) ให้ข้ามทันที ถือว่าช่องเวลานี้ว่าง!
+                        // ถ้ารายการเดิมสถานะเป็น 'completed' (เสร็จสิ้น) หรือ 'cancelled' (ยกเลิก) ให้ข้าม ถือว่าช่องว่างจองได้
                         if (existing.status === 'completed' || existing.status === 'cancelled') {
                             return;
                         }
 
-                        // จะบล็อกก็ต่อเมื่อไม่มีสถานะ หรือสถานะยังเป็น 'pending' (รอดำเนินการ) เท่านั้น
+                        // 🛑 ถ้ามีคิวค้างสถานะ 'pending' (ไม่ว่าจะบัญชีไหนจองไว้ก่อน) ให้ถือว่าชนทันที!
                         if (!existing.status || existing.status === 'pending') {
                             hasConflict = true;
                         }
                     });
 
                     if (hasConflict) {
-                        alert(`ติดจอง! ช่วงเวลา ${time} ในวันที่ ${date} กับช่าง ${selectedBarberObj.name} มีผู้จองไปแล้ว กรุณาเลือกช่วงเวลาอื่นครับ`);
+                        alert(`ติดจอง! ช่วงเวลา ${time} ในวันที่ ${date} กับช่าง ${selectedBarberObj.name} มีผู้จองคิวรอดำเนินการอยู่แล้ว กรุณาเลือกช่วงเวลาอื่นครับ`);
 
                         // คืนค่าปุ่มให้กลับมากดได้ปกติ
                         if (btn) {
@@ -4740,8 +4739,8 @@
     </div>
 
     <!-- เครื่องมือดูคอนโซลบนมือถือ (Eruda) -->
-    <!-- <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
-    <script>eruda.init();</script> -->
+    <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
+    <script>eruda.init();</script>
 </body>
 
 </html>
