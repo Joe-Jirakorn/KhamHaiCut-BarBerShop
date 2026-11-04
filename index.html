@@ -4524,62 +4524,91 @@
             if ("Notification" in window && Notification.permission !== "granted") {
                 Notification.requestPermission().then(permission => {
                     if (permission === "granted") {
-                        console.log("อนุญาตการแจ้งเตือนสำเร็จ");
+                        showToast('เปิดใช้งานการแจ้งเตือนสำเร็จ!', 'success');
                     }
                 });
             }
         }
 
-        // 🌟 ฟังก์ชันเล่นเสียงแจ้งเตือนสไตล์ Messenger (Pop Sound)
+        // 🌟 2. ปรับเสียงใหม่ให้เป็นเสียงกระดิ่งนุ่มๆ สไตล์แอปพลิเคชัน (Soft Chime)
         function playMessengerSound() {
             try {
                 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                const oscillator = audioCtx.createOscillator();
-                const gainNode = audioCtx.createGain();
 
-                oscillator.type = 'sine';
-                // จำลองคลื่นเสียงแจ้งเตือนสั้นๆ แบบ Pop
-                oscillator.frequency.setValueAtTime(500, audioCtx.currentTime);
-                oscillator.frequency.exponentialRampToValueAtTime(900, audioCtx.currentTime + 0.08);
+                // ฟังก์ชันช่วยสร้างโทนเสียงทีละตัวโน้ต
+                const playTone = (freq, startTime, duration) => {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
 
-                gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
-                gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.08);
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(freq, audioCtx.currentTime + startTime);
 
-                oscillator.connect(gainNode);
-                gainNode.connect(audioCtx.destination);
+                    // ปรับความดังให้ค่อยๆ นุ่มนวล ไม่บาดหู
+                    gain.gain.setValueAtTime(0, audioCtx.currentTime + startTime);
+                    gain.gain.linearRampToValueAtTime(0.15, audioCtx.currentTime + startTime + 0.03);
+                    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + startTime + duration);
 
-                oscillator.start();
-                oscillator.stop(audioCtx.currentTime + 0.08);
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+
+                    osc.start(audioCtx.currentTime + startTime);
+                    osc.stop(audioCtx.currentTime + startTime + duration);
+                };
+
+                // เล่นเสียง 2 จังหวะต่อกัน (โน้ต E5 และ A5) ให้เสียงกังวานและนุ่มหูขึ้น
+                playTone(659.25, 0, 0.2);   // โน้ตแรก
+                playTone(880.00, 0.12, 0.3); // โน้ตที่สอง (ประสานเสียง)
             } catch (e) {
-                console.log("Audio context blocked or not supported", e);
+                console.log("Audio Context error:", e);
             }
         }
 
-        // 🌟 ฟังก์ชันหลักสำหรับสั่งแจ้งเตือน (ทั้งเสียงและเด้งขึ้นแถบด้านบนมือถือ/คอมพิวเตอร์)
+        // 🌟 3. ฟังก์ชันสร้างกล่องข้อความแจ้งเตือนเด้งที่หน้าจอทันที (In-App Toast Banner)
+        function showCustomNotificationBanner(title, body) {
+            // สร้าง Element กล่องแจ้งเตือน
+            const banner = document.createElement('div');
+            banner.className = 'fixed top-5 right-5 z-50 bg-dark-800 border border-amber-500/50 text-white px-5 py-4 rounded-2xl shadow-2xl flex items-center gap-3 max-w-sm backdrop-blur-md bg-opacity-95 transition-all duration-300 translate-y-[-20px] opacity-0';
+            banner.innerHTML = `
+                <div class="bg-amber-500 text-dark-900 p-2.5 rounded-xl font-bold text-lg flex items-center justify-center shrink-0 shadow-md">
+                    🔔
+                </div>
+                <div class="overflow-hidden">
+                    <h4 class="font-bold text-amber-400 text-sm truncate">${title}</h4>
+                    <p class="text-xs text-gray-300 mt-0.5 line-clamp-2">${body}</p>
+                </div>
+            `;
+            document.body.appendChild(banner);
+
+            // เอฟเฟกต์เลื่อนลงมาแสดงผล
+            setTimeout(() => {
+                banner.classList.remove('translate-y-[-20px]', 'opacity-0');
+            }, 10);
+
+            // ให้กล่องข้อความหายไปเองอัตโนมัติหลัง 5 วินาที
+            setTimeout(() => {
+                banner.classList.add('translate-y-[-20px]', 'opacity-0');
+                setTimeout(() => banner.remove(), 300);
+            }, 5000);
+        }
+
+        // 🌟 4. ฟังก์ชันหลักสำหรับสั่งงานแจ้งเตือน (ทั้งเสียง + กล่องข้อความหน้าเว็บ + ระบบมือถือ)
         function triggerAppNotification(title, bodyText) {
-            // 1. เล่นเสียงแจ้งเตือน
+            // 1. เล่นเสียงกระดิ่งนุ่มๆ
             playMessengerSound();
 
-            // 2. แสดง Notification เด้งขึ้นแถบด้านบนมือถือ/คอมพิวเตอร์ (ถ้าเบราว์เซอร์อนุญาต)
-            if ("Notification" in window && Notification.permission === "granted") {
-                const options = {
-                    body: bodyText,
-                    icon: 'https://cdn-icons-png.flaticon.com/512/3233/3233483.png', // เปลี่ยนเป็นไอคอนร้านได้
-                    badge: 'https://cdn-icons-png.flaticon.com/512/3233/3233483.png',
-                    vibrate: [200, 100, 200] // สั่นบนมือถือ (ถ้าอุปกรณ์รองรับ)
-                };
+            // 2. เด้งกล่องข้อความแจ้งเตือนบนหน้าจอทันที (เห็นข้อความแน่นอน 100%)
+            showCustomNotificationBanner(title, bodyText);
 
-                // ถ้าเปิดหน้าเว็บอยู่หรือรัน Background สามารถแสดง Notification นี้ได้
+            // 3. ส่ง Notification เข้าแถบบนมือถือ/คอมพิวเตอร์ (ถ้าเบราว์เซอร์อนุญาต)
+            if ("Notification" in window && Notification.permission === "granted") {
                 try {
-                    if (navigator.serviceWorker && navigator.serviceWorker.controller) {
-                        navigator.serviceWorker.ready.then(registration => {
-                            registration.showNotification(title, options);
-                        });
-                    } else {
-                        new Notification(title, options);
-                    }
+                    new Notification(title, {
+                        body: bodyText,
+                        icon: 'https://cdn-icons-png.flaticon.com/512/3233/3233483.png',
+                        vibrate: [200, 100, 200]
+                    });
                 } catch (err) {
-                    new Notification(title, options);
+                    console.log("Browser notification error:", err);
                 }
             }
         }
