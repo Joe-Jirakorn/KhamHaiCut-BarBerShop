@@ -2134,13 +2134,19 @@
             const tbody = document.getElementById('user-bookings-table-body');
             if (!tbody) return;
 
-            // กรองเฉพาะการจองของผู้ใช้ปัจจุบัน (หรือแสดงทั้งหมดถ้าไม่ได้ล็อกอิน)
-            const userBookings = state.currentUser
-                ? state.bookings.filter(b => b.userId === state.currentUser.id || b.userName === state.currentUser.name)
-                : state.bookings;
+            // 🌟 1. กรองเฉพาะการจองของผู้ใช้ปัจจุบัน และต้องมีสถานะเป็น 'pending' เท่านั้น
+            const userBookings = state.bookings.filter(b => {
+                const isUserMatch = state.currentUser
+                    ? (b.userId === state.currentUser.id || b.userName === state.currentUser.name)
+                    : true; // ถ้าไม่ได้ล็อกอิน ให้แสดงทั้งหมด (หรือปรับตามต้องการ)
+
+                const isPending = b.status === 'pending'; // กรองเอาเฉพาะสถานะรอรับบริการ/รอดำเนินการ
+
+                return isUserMatch && isPending;
+            });
 
             if (userBookings.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="7" class="px-6 py-8 text-center text-gray-500">ยังไม่มีประวัติการจองคิว</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="7" class="px-6 py-8 text-center text-gray-500">ไม่มีประวัติการจองคิวที่รอดำเนินการ</td></tr>`;
                 return;
             }
 
@@ -2152,15 +2158,12 @@
             <td class="px-6 py-4">${b.date} (${b.time})</td>
             <td class="px-6 py-4 font-semibold text-amber-500">฿${b.price}</td>
             <td class="px-6 py-4">
-                <span class="px-2.5 py-1 rounded-full text-xs font-medium ${b.status === 'pending' ? 'bg-blue-500/10 text-blue-400 border border-blue-500/30' :
-                    b.status === 'completed' ? 'bg-green-500/10 text-green-400 border border-green-500/30' :
-                        'bg-red-500/10 text-red-400 border border-red-500/30'
-                }">
-                    ${b.status === 'pending' ? 'รอรับบริการ' : b.status === 'completed' ? 'เสร็จสิ้น' : 'ยกเลิก'}
+                <span class="px-2.5 py-1 rounded-full text-xs font-medium bg-blue-500/10 text-blue-400 border border-blue-500/30">
+                    รอรับบริการ
                 </span>
             </td>
             <td class="px-6 py-4 text-center">
-                ${b.status === 'pending' ? `<button onclick="cancelBooking('${b.id}')" class="text-xs text-red-400 hover:underline">ยกเลิก</button>` : '-'}
+                <button onclick="cancelBooking('${b.id}')" class="text-xs text-red-400 hover:underline">ยกเลิก</button>
             </td>
         </tr>
     `).join('');
@@ -3046,103 +3049,43 @@
             initBookingForm();
         });
 
-        function renderUserBookingsTable() {
-            // 🛑 1. ตรวจสอบความถูกต้องของ state.bookings ที่ซิงค์มาจาก Firebase Real-time
-            if (!Array.isArray(state.bookings)) {
-                state.bookings = [];
-            }
+        function renderUserBookings() {
+            const tbody = document.getElementById('user-bookings-table-body');
+            if (!tbody) return;
 
-            // 2. ค้นหาตารางโดยอ้างอิงจาก id="user-bookings-table-body" ใน HTML
-            const tableContainer = document.getElementById('user-bookings-table-body');
+            // 🌟 1. กรองเฉพาะการจองของผู้ใช้ปัจจุบัน และต้องมีสถานะเป็น 'pending' (รอดำเนินการ) เท่านั้น
+            const userBookings = state.bookings.filter(b => {
+                const isUserMatch = state.currentUser
+                    ? (b.userId === state.currentUser.id || b.userName === state.currentUser.name)
+                    : true;
 
-            if (!tableContainer) {
-                console.warn("ไม่พบ Element ที่มี id='user-bookings-table-body'");
-                return;
-            }
+                const isPending = b.status === 'pending'; // กรองเอาเฉพาะที่รอดำเนินการ
 
-            // เคลียร์ข้อมูลเก่าทิ้งก่อนเรนเดอร์ใหม่
-            tableContainer.innerHTML = '';
-
-            // 🌟 3. ให้แสดงรายการจองทั้งหมดในระบบ เพื่อให้ทุกคนเห็นภาพรวมตารางคิวและบริหารเวลาได้
-            const userBookings = state.bookings;
-
-            // ถ้าไม่มีประวัติการจองในระบบเลย
-            if (userBookings.length === 0) {
-                tableContainer.innerHTML = `
-            <tr>
-                <td colspan="7" class="text-center py-8 text-gray-400">
-                    ยังไม่มีประวัติการจองคิวในระบบ
-                </td>
-            </tr>
-        `;
-                return;
-            }
-
-            // 4. วนลูปสร้างแถวข้อมูลลงในตาราง
-            userBookings.forEach(booking => {
-                const row = document.createElement('tr');
-                row.className = 'border-b border-dark-700 hover:bg-dark-900/50 transition-colors';
-
-                let statusBadge = '';
-                if (booking.status === 'pending') {
-                    statusBadge = '<span class="px-2 py-1 bg-yellow-500/20 text-yellow-400 rounded-full text-xs">รอดำเนินการ</span>';
-                } else if (booking.status === 'completed') {
-                    statusBadge = '<span class="px-2 py-1 bg-green-500/20 text-green-400 rounded-full text-xs">เสร็จสิ้น</span>';
-                } else {
-                    statusBadge = '<span class="px-2 py-1 bg-red-500/20 text-red-400 rounded-full text-xs">ยกเลิกแล้ว</span>';
-                }
-
-                // 🛑 ตรวจสอบสิทธิ์ความเป็นเจ้าของคิว เพื่อจำกัดสิทธิ์ปุ่มยกเลิกเฉพาะเจ้าของคิวหรือแอดมิน/ช่าง
-                const currentUser = state.currentUser;
-                const currentUserId = currentUser ? (currentUser.id || currentUser.firestoreId || '') : '';
-                const currentUserEmail = currentUser && currentUser.email ? currentUser.email.trim().toLowerCase() : '';
-                const currentUserRole = currentUser && currentUser.role ? currentUser.role.toLowerCase() : 'customer';
-
-                const isOwnerById = currentUserId && (booking.userId === currentUserId || booking.firestoreId === currentUserId);
-                const isOwnerByEmail = currentUserEmail && (booking.userEmail === currentUserEmail || booking.email === currentUserEmail);
-
-                const savedGuestBookingIds = JSON.parse(localStorage.getItem('my_guest_booking_ids') || '[]');
-                const isGuestOwner = savedGuestBookingIds.includes(booking.id);
-
-                const isOwner = isOwnerById || isOwnerByEmail || isGuestOwner;
-                const isAdminOrBarber = currentUserRole === 'admin' || currentUserRole === 'barber';
-
-                let actionButtonHTML = '';
-                if (booking.status === 'pending') {
-                    // แสดงปุ่มยกเลิกเฉพาะคิวของตัวเอง หรือแอดมิน/ช่างเท่านั้น เพื่อความปลอดภัย
-                    if (isOwner || isAdminOrBarber) {
-                        actionButtonHTML = `
-                    <button onclick="cancelBooking('${booking.id || booking.firestoreId}')" class="px-3 py-1 bg-red-600/30 hover:bg-red-600 text-red-300 hover:text-white rounded text-xs transition-colors">
-                        ยกเลิก
-                    </button>
-                `;
-                    } else {
-                        // คิวของคนอื่น จะแสดงเป็นขีด '-' ป้องกันไม่ให้คนอื่นมากดcancleเล่น
-                        actionButtonHTML = `<span class="text-gray-500 text-xs">-</span>`;
-                    }
-                } else if (booking.status === 'completed') {
-                    actionButtonHTML = `
-                <span class="text-emerald-400 text-xs font-semibold">เสร็จสิ้นแล้ว</span>
-            `;
-                } else {
-                    actionButtonHTML = `
-                <span class="text-gray-500 text-xs">-</span>
-            `;
-                }
-
-                row.innerHTML = `
-            <td class="px-6 py-4 font-mono text-sm text-amber-400">${booking.id}</td>
-            <td class="px-6 py-4 text-gray-200">${booking.styleName || '-'} <span class="text-xs text-gray-400">(${booking.ageGroupLabel || '-'})</span></td>
-            <td class="px-6 py-4 text-gray-200">${booking.barberName || '-'}</td>
-            <td class="px-6 py-4 text-gray-300">${booking.date || ''} ${booking.time || ''}</td>
-            <td class="px-6 py-4 text-green-400 font-semibold">฿${booking.price || 0}</td>
-            <td class="px-6 py-4">${statusBadge}</td>
-            <td class="px-6 py-4 text-center">
-                ${actionButtonHTML}
-            </td>
-        `;
-                tableContainer.appendChild(row);
+                return isUserMatch && isPending;
             });
+
+            if (userBookings.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" class="px-6 py-8 text-center text-gray-500">ไม่มีประวัติการจองคิวที่รอดำเนินการ</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = userBookings.map(b => `
+        <tr class="hover:bg-dark-700/50 transition">
+            <td class="px-6 py-4 font-mono text-amber-400 font-semibold">${b.id}</td>
+            <td class="px-6 py-4 text-white">${b.styleName}</td>
+            <td class="px-6 py-4">${b.barberName}</td>
+            <td class="px-6 py-4">${b.date} (${b.time})</td>
+            <td class="px-6 py-4 font-semibold text-amber-500">฿${b.price}</td>
+            <td class="px-6 py-4">
+                <span class="px-2.5 py-1 rounded-full text-xs font-medium bg-blue-500/10 text-blue-400 border border-blue-500/30">
+                    รอรับบริการ
+                </span>
+            </td>
+            <td class="px-6 py-4 text-center">
+                <button onclick="cancelBooking('${b.id}')" class="text-xs text-red-400 hover:underline">ยกเลิก</button>
+            </td>
+        </tr>
+    `).join('');
         }
 
         async function updateBookingStatus(bookingId, newStatus) {
@@ -3791,6 +3734,12 @@
             document.getElementById('profile-phone').value = state.currentUser.phone || '';
             document.getElementById('profile-age').value = state.currentUser.age || '';
 
+            // 🌟 เพิ่มบรรทัดนี้ เพื่อดึงวันเกิดเดิมมาแสดงในช่อง Input เมื่อเปิด Modal
+            const birthdateInput = document.getElementById('profile-birthdate');
+            if (birthdateInput) {
+                birthdateInput.value = state.currentUser.birthdate || '';
+            }
+
             // ตั้งค่ารูปโปรไฟล์
             const previewImg = document.getElementById('profile-preview-img');
             previewImg.src = state.currentUser.avatar || 'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=100&auto=format&fit=crop&q=80';
@@ -3840,11 +3789,9 @@
             const newName = state.currentUser.name;
             const newPhone = document.getElementById('profile-phone').value.trim(); // เบอร์โทรศัพท์
 
-            // 🌟 ดึงค่าวันเกิดจาก Input และคำนวณอายุใหม่สดๆ ตรงนี้เลย
+            // 🌟 ดึงค่าวันเกิดจาก Input และคำนวณอายุใหม่
             const birthdateInput = document.getElementById('profile-birthdate');
             const newBirthdate = birthdateInput ? birthdateInput.value : (state.currentUser.birthdate || '');
-
-            // เรียกใช้ฟังก์ชันคำนวณอายุ (ถ้ามี) หรือคำนวณเผื่อไว้
             const newAge = typeof calculateAge === 'function' ? calculateAge(newBirthdate) : (state.currentUser.age || 0);
 
             // อัปเดตค่าลงใน Object state.currentUser ปัจจุบัน
@@ -3856,8 +3803,11 @@
                 state.currentUser.avatar = tempProfileAvatarBase64;
             }
 
+            // 🌟 1. บันทึกลง LocalStorage ของ User ก่อนทันที (ป้องกันข้อมูลหายเวลาเปิดดูรอบหน้าหรือรีเฟรช)
+            localStorage.setItem('barber_current_user', JSON.stringify(state.currentUser));
+
             try {
-                // 1. ซิงก์ข้อมูลลงใน Local state.barbers (รองรับทั้งจับคู่ด้วย Email หรือ ID)
+                // 2. ซิงก์ข้อมูลลงใน Local state.barbers
                 state.barbers = JSON.parse(localStorage.getItem('barber_shop_barbers')) || state.barbers;
 
                 if (state.barbers && Array.isArray(state.barbers)) {
@@ -3880,7 +3830,7 @@
                     localStorage.setItem('barber_shop_barbers', JSON.stringify(state.barbers));
                 }
 
-                // 2. อัปเดตข้อมูล User ลง Firebase Firestore (รวมถึงวันเกิดและอายุใหม่)
+                // 3. อัปเดตข้อมูล User ลง Firebase Firestore (เพื่อให้เครื่องอื่นๆ ซิงก์แบบเรียลไทม์)
                 if (window.db && window.firebaseModules && state.currentUser.firestoreId) {
                     const { doc, updateDoc } = window.firebaseModules;
                     const userDocRef = doc(window.db, "users", state.currentUser.firestoreId);
@@ -3893,9 +3843,6 @@
                         updatedAt: new Date().toISOString()
                     });
                 }
-
-                // บันทึกลง LocalStorage ของ User
-                localStorage.setItem('barber_current_user', JSON.stringify(state.currentUser));
 
                 // อัปเดตหน้าจอ UI ทั้งหมดทันทีแบบ Real-time
                 updateUserUI();
@@ -3910,7 +3857,8 @@
 
             } catch (error) {
                 console.error("Error updating profile:", error);
-                showToast('เกิดข้อผิดพลาดในการบันทึกข้อมูล', 'error');
+                showToast('เกิดข้อผิดพลาดในการซิงก์ข้อมูลออนไลน์ แต่บันทึกในเครื่องแล้ว', 'warning');
+                closeModal('profile-modal');
             }
         }
 
@@ -4441,7 +4389,87 @@
             }
         }
 
+        function renderUserBookingsTable() {
+            // 🛑 1. ตรวจสอบความถูกต้องของ state.bookings ที่ซิงค์มาจาก Firebase Real-time
+            if (!Array.isArray(state.bookings)) {
+                state.bookings = [];
+            }
 
+            // 2. ค้นหาตารางโดยอ้างอิงจาก id="user-bookings-table-body" ใน HTML
+            const tableContainer = document.getElementById('user-bookings-table-body');
+
+            if (!tableContainer) {
+                console.warn("ไม่พบ Element ที่มี id='user-bookings-table-body'");
+                return;
+            }
+
+            // เคลียร์ข้อมูลเก่าทิ้งก่อนเรนเดอร์ใหม่
+            tableContainer.innerHTML = '';
+
+            // 🌟 3. กรองเลือกเฉพาะรายการจองที่มีสถานะเป็น 'pending' (รอดำเนินการ) เท่านั้น
+            const userBookings = state.bookings.filter(booking => booking.status === 'pending');
+
+            // ถ้าไม่มีรายการจองที่รอดำเนินการในระบบ
+            if (userBookings.length === 0) {
+                tableContainer.innerHTML = `
+            <tr>
+                <td colspan="7" class="text-center py-8 text-gray-400">
+                    ไม่มีรายการจองคิวที่รอดำเนินการ
+                </td>
+            </tr>
+        `;
+                return;
+            }
+
+            // 4. วนลูปสร้างแถวข้อมูลเฉพาะรายการที่รอดำเนินการ
+            userBookings.forEach(booking => {
+                const row = document.createElement('tr');
+                row.className = 'border-b border-dark-700 hover:bg-dark-900/50 transition-colors';
+
+                // สถานะจะเป็นรอดำเนินการเสมอเพราะเรากรองมาแล้ว
+                const statusBadge = '<span class="px-2 py-1 bg-yellow-500/20 text-yellow-400 rounded-full text-xs">รอดำเนินการ</span>';
+
+                // 🛑 ตรวจสอบสิทธิ์ความเป็นเจ้าของคิว เพื่อจำกัดสิทธิ์ปุ่มยกเลิกเฉพาะเจ้าของคิวหรือแอดมิน/ช่าง
+                const currentUser = state.currentUser;
+                const currentUserId = currentUser ? (currentUser.id || currentUser.firestoreId || '') : '';
+                const currentUserEmail = currentUser && currentUser.email ? currentUser.email.trim().toLowerCase() : '';
+                const currentUserRole = currentUser && currentUser.role ? currentUser.role.toLowerCase() : 'customer';
+
+                const isOwnerById = currentUserId && (booking.userId === currentUserId || booking.firestoreId === currentUserId);
+                const isOwnerByEmail = currentUserEmail && (booking.userEmail === currentUserEmail || booking.email === currentUserEmail);
+
+                const savedGuestBookingIds = JSON.parse(localStorage.getItem('my_guest_booking_ids') || '[]');
+                const isGuestOwner = savedGuestBookingIds.includes(booking.id);
+
+                const isOwner = isOwnerById || isOwnerByEmail || isGuestOwner;
+                const isAdminOrBarber = currentUserRole === 'admin' || currentUserRole === 'barber';
+
+                let actionButtonHTML = '';
+                // แสดงปุ่มยกเลิกเฉพาะคิวของตัวเอง หรือแอดมิน/ช่างเท่านั้น เพื่อความปลอดภัย
+                if (isOwner || isAdminOrBarber) {
+                    actionButtonHTML = `
+                    <button onclick="cancelBooking('${booking.id || booking.firestoreId}')" class="px-3 py-1 bg-red-600/30 hover:bg-red-600 text-red-300 hover:text-white rounded text-xs transition-colors">
+                        ยกเลิก
+                    </button>
+                `;
+                } else {
+                    actionButtonHTML = `<span class="text-gray-500 text-xs">-</span>`;
+                }
+
+                row.innerHTML = `
+            <td class="px-6 py-4 font-mono text-sm text-amber-400">${booking.id}</td>
+            <td class="px-6 py-4 text-gray-200">${booking.styleName || '-'} <span class="text-xs text-gray-400">(${booking.ageGroupLabel || '-'})</span></td>
+            <td class="px-6 py-4 text-gray-200">${booking.barberName || '-'}</td>
+            <td class="px-6 py-4 text-gray-300">${booking.date || ''} ${booking.time || ''}</td>
+            <td class="px-6 py-4 text-green-400 font-semibold">฿${booking.price || 0}</td>
+            <td class="px-6 py-4">${statusBadge}</td>
+            <td class="px-6 py-4 text-center">
+                ${actionButtonHTML}
+            </td>
+        `;
+                tableContainer.appendChild(row);
+            });
+        }
 
     </script>
     <!-- Modal ข้อมูลส่วนตัว -->
@@ -4521,8 +4549,8 @@
     </div>
 
     <!-- เครื่องมือดูคอนโซลบนมือถือ (Eruda) -->
-    <!-- <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
-    <script>eruda.init();</script> -->
+    <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
+    <script>eruda.init();</script>
 </body>
 
 </html>
