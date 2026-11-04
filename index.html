@@ -2285,6 +2285,10 @@
                 // ตรวจสอบว่าเลือกทรงผม กลุ่มอายุ และช่างครบถ้วนหรือไม่
                 if (!selectedStyleObj || !selectedAgeObj || !selectedBarberObj) {
                     alert("กรุณาเลือกทรงผม กลุ่มอายุ และช่างตัดผมให้ครบถ้วนครับ");
+                    if (btn) {
+                        btn.disabled = false;
+                        btn.innerHTML = originalHTML;
+                    }
                     return;
                 }
 
@@ -2305,6 +2309,10 @@
 
                 if (!date || !time || !name || !phone) {
                     alert("กรุณากรอกข้อมูลวันที่ เวลา และข้อมูลติดต่อให้ครบถ้วน");
+                    if (btn) {
+                        btn.disabled = false;
+                        btn.innerHTML = originalHTML;
+                    }
                     return;
                 }
 
@@ -2337,13 +2345,27 @@
 
                     querySnapshot.forEach((docSnap) => {
                         const existing = docSnap.data();
-                        if (existing.status !== 'cancelled') {
+
+                        // 🌟 แก้ไขจุดสำคัญตรงนี้ครับ: 
+                        // ถ้ารายการเก่าสถานะเป็น 'completed' (เสร็จสิ้น) หรือ 'cancelled' (ยกเลิก) ให้ข้ามทันที ถือว่าช่องเวลานี้ว่าง!
+                        if (existing.status === 'completed' || existing.status === 'cancelled') {
+                            return;
+                        }
+
+                        // จะบล็อกก็ต่อเมื่อไม่มีสถานะ หรือสถานะยังเป็น 'pending' (รอดำเนินการ) เท่านั้น
+                        if (!existing.status || existing.status === 'pending') {
                             hasConflict = true;
                         }
                     });
 
                     if (hasConflict) {
                         alert(`ติดจอง! ช่วงเวลา ${time} ในวันที่ ${date} กับช่าง ${selectedBarberObj.name} มีผู้จองไปแล้ว กรุณาเลือกช่วงเวลาอื่นครับ`);
+
+                        // คืนค่าปุ่มให้กลับมากดได้ปกติ
+                        if (btn) {
+                            btn.disabled = false;
+                            btn.innerHTML = originalHTML;
+                        }
                         return;
                     }
                 }
@@ -3690,55 +3712,66 @@
         async function validateAndSubmitBooking(bookingData) {
             if (!window.db || !window.firebaseModules) {
                 showToast('ระบบฐานข้อมูลยังไม่พร้อมใช้งาน', 'error');
-                return;
+                return false;
             }
 
             const { collection, getDocs, query, where } = window.firebaseModules;
             const bookingsRef = collection(window.db, "bookings");
 
             try {
-                // 1. ดึงข้อมูลการจองทั้งหมดในวันที่ลูกค้าเลือก และช่างคนเดียวกัน (ถ้ามีการเลือกช่าง)
-                // เพื่อนำมาเช็กช่วงเวลาว่าชนกันหรือไม่
+                // 🌟 ปรับ Query ให้ค้นหาเฉพาะวันที่เลือกก่อน เพื่อป้องกันปัญหาฟิลด์ชื่อช่างไม่ตรงกัน
                 const q = query(
                     bookingsRef,
-                    where("date", "==", bookingData.date),
-                    where("barberId", "==", bookingData.barberId) // ตัดบรรทัดนี้ออกถ้าไม่ได้แยกช่าง
+                    where("date", "==", bookingData.date)
                 );
 
                 const querySnapshot = await getDocs(q);
                 let isConflict = false;
 
-                // แปลงช่วงเวลาที่ลูกค้าเลือกใหม่เป็นนาทีตั้งแต่เที่ยงคืน เพื่อให้เทียบช่วงเวลาง่ายขึ้น
-                // สมมติ bookingData เก็บเวลาเริ่ม เช่น "16:00" และเวลาสิ้นสุด "17:00"
-                const newStartMin = timeToMinutes(bookingData.startTime); // เช่น 16:00 -> 960 นาที
-                const newEndMin = timeToMinutes(bookingData.endTime);     // เช่น 17:00 -> 1020 นาที
+                const newStartMin = timeToMinutes(bookingData.startTime);
+                const newEndMin = timeToMinutes(bookingData.endTime);
 
-                querySnapshot.forEach((docSnap) => {
+                console.log("--- กำลังตรวจสอบการจองสำหรับช่าง:", bookingData.barberName || bookingData.barberId, "เวลา:", bookingData.startTime, "---");
+
+                // 🌟 เปลี่ยนมาใช้ for...of เพื่อความแม่นยำในการคัดกรองข้อมูล
+                for (const docSnap of querySnapshot.docs) {
                     const existingBooking = docSnap.data();
 
-                    // ข้ามรายการที่ถูกยกเลิกไปแล้ว (ถ้ามีสถานะ cancelled)
-                    if (existingBooking.status === 'cancelled') return;
+                    // 🔍 ตรวจสอบว่าตรงกับช่างคนเดียวกันหรือไม่ (รองรับทั้งการเช็กด้วย ID หรือ Name)
+                    const isSameBarber =
+                        (bookingData.barberId && existingBooking.barberId === bookingData.barberId) ||
+                        (bookingData.barberName && existingBooking.barberName === bookingData.barberName);
 
-                    const existStartMin = timeToMinutes(existingBooking.startTime);
-                    const existEndMin = timeToMinutes(existingBooking.endTime);
+                    if (!isSameBarber) continue; // ถ้าคนละช่าง ข้ามไปเลย
 
-                    // 🛑 เช็กเงื่อนไขเวลาทับซ้อน (Overlap Logic)
-                    // สูตร: (เวลาเริ่มใหม่ < เวลาสิ้นสุดเดิม) และ (เวลาสิ้นสุดใหม่ > เวลาเริ่มเดิม)
-                    if (newStartMin < existEndMin && newEndMin > existStartMin) {
-                        isConflict = true;
+                    console.log(`พบบันทึกคิว ID: ${docSnap.id}, ช่าง: ${existingBooking.barberName}, เวลา: ${existingBooking.startTime}-${existingBooking.endTime}, สถานะ: ${existingBooking.status}`);
+
+                    // 1. ถ้ารายการเก่าสถานะเป็น 'completed' หรือ 'cancelled' ให้ข้ามทันที (เปิดทางให้จองทับได้)
+                    if (existingBooking.status === 'completed' || existingBooking.status === 'cancelled') {
+                        console.log(" -> ข้ามคิวนี้เพราะเสร็จสิ้นหรือยกเลิกแล้ว");
+                        continue;
                     }
-                });
 
-                if (isConflict) {
-                    // แจ้งเตือนผู้ใช้ว่าเวลานี้ถูกจองไปแล้ว
-                    showToast('ช่วงเวลานี้ถูกจองไปแล้ว กรุณาเลือกช่วงเวลาอื่นครับ', 'error');
-                    alert('ติดจอง! ช่วงเวลาตั้งแต่ ' + bookingData.startTime + ' ถึง ' + bookingData.endTime + ' มีผู้จองไปแล้ว กรุณาเลือกเวลาอื่น');
-                    return false; // ยกเลิกการจอง
+                    // 2. ถ้าไม่มีสถานะ หรือสถานะเป็น 'pending' ถึงจะนำมาเช็กเวลาทับซ้อน
+                    if (!existingBooking.status || existingBooking.status === 'pending') {
+                        const existStartMin = timeToMinutes(existingBooking.startTime);
+                        const existEndMin = timeToMinutes(existingBooking.endTime);
+
+                        if (newStartMin < existEndMin && newEndMin > existStartMin) {
+                            console.log(" ❌ เจอเวลาชนกันกับคิวสถานะ pending!");
+                            isConflict = true;
+                            break; // เจอชนแล้ว หยุดลูปทันทีไม่ต้องเช็กต่อ
+                        }
+                    }
                 }
 
-                // 2. ถ้าไม่ชน สามารถบันทึกการจองลง Firebase ต่อได้ตามปกติ
-                // await addDoc(bookingsRef, bookingData);
-                // showToast('จองคิวสำเร็จ!', 'success');
+                if (isConflict) {
+                    showToast('ช่วงเวลานี้มีคิวรอดำเนินการอยู่ กรุณาเลือกเวลาอื่นครับ', 'error');
+                    alert('ติดจอง! ช่วงเวลาตั้งแต่ ' + bookingData.startTime + ' ถึง ' + bookingData.endTime + ' มีคิวที่กำลังรอดำเนินการอยู่ กรุณาเลือกเวลาอื่นครับ');
+                    return false;
+                }
+
+                console.log(" ✅ ผ่านการตรวจสอบ เวลาว่างสามารถจองได้!");
                 return true;
 
             } catch (error) {
