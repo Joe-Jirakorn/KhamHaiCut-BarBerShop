@@ -131,10 +131,9 @@
                         </div>
                         <div>
                             <span
-                                class="text-base sm:text-xl font-bold tracking-wider text-white block leading-tight">KhamHaiCut</span>
+                                class="text-base sm:text-xl font-bold tracking-wider text-white block leading-tight">KhamHai</span>
                             <span
-                                class="text-[10px] sm:text-xs text-amber-500 font-medium tracking-widest uppercase">BARBER
-                                SHOP</span>
+                                class="text-[10px] sm:text-xs text-amber-500 font-medium tracking-widest uppercase">BARBER</span>
                         </div>
                     </div>
 
@@ -256,7 +255,7 @@
                 <div class="relative z-10 p-8 sm:p-12 lg:p-16 max-w-2xl space-y-6">
                     <div
                         class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-sm font-medium">
-                        <span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span> เปิดบริการทุกวัน 08:00 -
+                        <span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span> เปิดบริการทุกวัน 09:00 -
                         20:00 น.
                     </div>
                     <h1 class="text-4xl sm:text-5xl font-extrabold text-white tracking-tight leading-none">
@@ -264,7 +263,7 @@
                             class="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-amber-600">ที่เป็นตัวคุณ</span>
                     </h1>
                     <p class="text-gray-300 text-base sm:text-lg">
-                        บริการตัดผม เซ็ตทรง บรรยากาศร่มรื่น
+                        บริการตัดผม เซ็ตทรง ชโลมหนวดเครา โดยช่างผู้เชี่ยวชาญระดับมืออาชีพ บรรยากาศพรีเมียม
                         จองคิวออนไลน์ง่ายๆ ไม่ต้องรอนาน
                     </p>
                     <div class="flex flex-wrap gap-4 pt-2">
@@ -290,10 +289,10 @@
                         </h2>
                         <p class="text-gray-400 text-sm">ตรวจสอบสถานะคิวของช่างแต่ละท่านก่อนทำการจอง</p>
                     </div>
-                    <!-- <button onclick="renderBarbersHomeStatus()"
+                    <button onclick="renderBarbersHomeStatus()"
                         class="text-sm text-amber-500 hover:underline flex items-center gap-1">
                         <i class="fa-solid fa-rotate-right"></i> อัปเดตข้อมูล
-                    </button> -->
+                    </button>
                 </div>
 
                 <div id="home-barbers-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -310,7 +309,7 @@
                         <i class="fa-solid fa-scissors"></i>
                     </div>
                     <h3 class="text-lg font-bold text-white">ช่างฝีมือประณีต</h3>
-                    <p class="text-gray-400 text-sm">ช่างทุกคนผ่านการฝึกอบรมระดับพื้นฐาน
+                    <p class="text-gray-400 text-sm">ช่างทุกคนผ่านการฝึกอบรมระดับสากล
                         เชี่ยวชาญทุกสไตล์ทั้งคลาสสิกและโมเดิร์น</p>
                 </div>
                 <div
@@ -329,8 +328,9 @@
                         class="w-14 h-14 rounded-full bg-amber-500/10 text-amber-500 flex items-center justify-center text-2xl">
                         <i class="fa-solid fa-wine-glass-stripe"></i>
                     </div>
-                    <h3 class="text-lg font-bold text-white">บรรยากาศร่มรื่นผ่อนคลาย</h3>
-                    <p class="text-gray-400 text-sm">ดนตรีฟังสบาย </p>
+                    <h3 class="text-lg font-bold text-white">บรรยากาศพรีเมียมผ่อนคลาย</h3>
+                    <p class="text-gray-400 text-sm">พร้อมเครื่องดื่มต้อนรับฟรี ดนตรีฟังสบาย
+                        และเก้าอี้ตัดผมปรับนอนระดับเฟิร์สคลาส</p>
                 </div>
             </div>
         </section>
@@ -542,7 +542,7 @@
                 <h1 class="text-3xl font-extrabold text-white flex items-center gap-3">
                     <i class="fa-solid fa-id-card-clip text-amber-500"></i> ช่างของเรา
                 </h1>
-                <p class="text-gray-400 mt-1">ตารางช่างพร้อมสถานะการรับคิว</p>
+                <p class="text-gray-400 mt-1">ตารางช่างพร้อมสถานะการรับคิวแบบ Real-time</p>
             </div>
 
             <div id="full-barbers-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -872,16 +872,18 @@
 
             // Hairstyle Catalog
             hairstyles: [
-                { id: 'h1', name: 'Comma (คอมม่า)', basePrice: 80, desc: 'เหมาะสำหรับคนที่มีผมแสกกลาง', img: 'https://i.postimg.cc/cCYKFkFv/images.jpg' },
-                { id: 'h2', name: 'Two-Block (ทูบล็อค)', basePrice: 80, desc: 'เหมาะสำหรับคนมีผมหน้าม้า', img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQCp6Tuel1CAr2mPE6arIbV4voCHP47vS-fc37_5uz8qg&s=10' },
-                { id: 'h3', name: 'Mullet (มัลเล็ต)', basePrice: 80, desc: 'เปิดข้างด้านบนอิสระ', img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQSuJIHAi7jO-IZbgsrCb5B0xRfa0Ap0TXW5vPkF7zIyw&s=10' },
-                { id: 'h4', name: 'Crop (คร็อป)', basePrice: 80, desc: 'เหมาะสำหรับคนมีหน้าม้าสั้นคล้ายทูบล็อค', img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ6Guw3ZWQGQcL7HrNuqMFnuG1fZEzwrMCtryCaWMCWGw&s' },
-                { id: 'h5', name: 'Taper Fade (เทเปอร์เฟด)', basePrice: 80, desc: 'ไล่ขาวด้านข้างและด้านหลังหลังใบหูแค่เก็บให้เรียบร้อย', img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSlDNvXNEFYNoi7XJihOgu_bMONxbaI8wwiZFak-NYQpA&s=10' },
-                { id: 'h6', name: 'Slicked Back (สลิคแบล็ค)', basePrice: 80, desc: 'เหมาะสำหรับคนที่มีแนวผมเสยไปข้างหลัง', img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSDcc_xa4XfLvmCBgsDekU5QLkkdAwybZj_CXcOzmbR2g&s=10' },
-                { id: 'h7', name: 'Undercut (อันเดอร์คัต)', basePrice: 80, desc: 'เปิดข้างหลังสูงด้านบนอิสระ', img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQcFjL5ges-lJ42L_yUxjp_3ihUmsh4I9OiCZKxzpYw1w&s=10' },
-                { id: 'h8', name: 'Skinhead Fade (สกินเฟด)', basePrice: 80, desc: 'สกินเฮดเลือกเบอร์ได้ แล้วไล่ขาวรอบหัว สูงกลางต่ำอิสระ', img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTpSrZp93j6-r3OYOnZA_GpYD08F2EpeifVG8Jnu9I0YA&s=10' },
-                { id: 'h9', name: 'Skinhead (สกินเฮด)', basePrice: 80, desc: 'เลือกเบอร์ได้อิสระ ไม่ได้ไล่ขาว', img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQhhwsGbfYZsEmf8yjyYKL9eNALIaisgnzOdaiibNmg4g&s=10' },
-                { id: 'h10', name: 'Side Part (ไซด์พาท,ปัดเป๋)', basePrice: 80, desc: 'เหมาะสำหรับคนที่ปัดผมไปด้านข้าง', img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRUbANz7vI2Vc6uL4O8XiCoXufd_easMpSHZAFJFgHGPw&s=10' },
+                { id: 'h1', name: 'Comma (คอมม่า)', basePrice: 80, desc: 'ตัดด้านข้างแบบอันเดอร์คัทหรือเฟด ให้ลุคที่ดูทันสมัย ละมุน และช่วยปรับรูปหน้าให้ดูโดดเด่น', img: 'https://i.postimg.cc/cCYKFkFv/images.jpg' },
+                { id: 'h2', name: 'Two-Block (ทูบล็อค)', basePrice: 80, desc: 'ทรงผมชายสไตล์เกาหลีที่แบ่งผมออกเป็น 2 ส่วนชัดเจน โดยตัดผมด้านข้างและด้านหลังให้สั้น', img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQCp6Tuel1CAr2mPE6arIbV4voCHP47vS-fc37_5uz8qg&s=10' },
+                { id: 'h3', name: 'Mullet (มัลเล็ต)', basePrice: 80, desc: 'ทรงเสยเนี๊ยบ ลุคสมาร์ท หล่อสุขุม', img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQSuJIHAi7jO-IZbgsrCb5B0xRfa0Ap0TXW5vPkF7zIyw&s=10' },
+                { id: 'h4', name: 'Buzz Cut (บัสคัต)', basePrice: 80, desc: 'สกินเฮดแกะลาย ลุคสปอร์ต ดูแลรักษาง่าย', img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSYy8eNpUcaf4IDAYYgT430c87UzmHEHf6pv2WrdNVqCw&s=10' },
+                { id: 'h5', name: 'Crop (คร็อป)', basePrice: 80, desc: 'ตัดสั้นมีเท็กซ์เจอร์ เหมาะกับรูปหน้าทุกแบบ', img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ6Guw3ZWQGQcL7HrNuqMFnuG1fZEzwrMCtryCaWMCWGw&s' },
+                { id: 'h6', name: 'Taper Fade (เทเปอร์เฟด)', basePrice: 80, desc: 'แพ็กเกจตัดผม + กันโกนแต่งหนวดเคราครบสูตร', img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSlDNvXNEFYNoi7XJihOgu_bMONxbaI8wwiZFak-NYQpA&s=10' },
+                { id: 'h7', name: 'Slicked Back (สลิคแบล็ค)', basePrice: 80, desc: 'การเซ็ตผมแบบเสยปาดเรียบไปด้านหลัง ผมด้านหน้าค่อนข้างยาว ไถด้านข้างให้สั้นแบบอันเดอร์คัต', img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSDcc_xa4XfLvmCBgsDekU5QLkkdAwybZj_CXcOzmbR2g&s=10' },
+                { id: 'h8', name: 'Undercut (อันเดอร์คัต)', basePrice: 80, desc: 'ตัดด้านข้างให้สั้นกว่าตรงกลาง เป็นทรงที่ดูแลง่าย ไม่ร้อนเหมาะกับอากาศบ้านเรามาก ๆ เซ็ตง่ายทำได้หลายลุค', img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQcFjL5ges-lJ42L_yUxjp_3ihUmsh4I9OiCZKxzpYw1w&s=10' },
+                { id: 'h9', name: 'Skinhead Fade (สกินเฟด)', basePrice: 80, desc: 'ไล่ลำดับความเข้มลงไปจากด้านข้างถึงท้ายทอย เป็นทรงที่ทำแล้วได้ลุคเท่ๆ กวนๆ ดูเป็นหนุ่มอารมณ์ดี ที่มีความเอาจริง เอาจัง', img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTpSrZp93j6-r3OYOnZA_GpYD08F2EpeifVG8Jnu9I0YA&s=10' },
+                { id: 'h10', name: 'Skinhead (สกินเฮด)', basePrice: 80, desc: 'คลาสสิค และเป็นที่นิยมของหนุ่ม ๆ มาอย่างยาวนาน พักหลัง ๆ มานี้ก็จะได้เห็นไอดอลหนุ่มชาวจีนทำผมทรงนี้', img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQhhwsGbfYZsEmf8yjyYKL9eNALIaisgnzOdaiibNmg4g&s=10' },
+                { id: 'h11', name: 'Side Part (ไซด์พาท,ปัดเป๋)', basePrice: 80, desc: 'ทรงผมผู้ชายที่เรียบง่าย ดูดี ไม่เคยตกยุค ทรงนี้มีความนิยมมาตั้งแต่ศตวรรษที่ 19 แล้ว ดังนั้นจึงเป็นอีกทรงผมชายที่คลาสสิก', img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRUbANz7vI2Vc6uL4O8XiCoXufd_easMpSHZAFJFgHGPw&s=10' },
+                { id: 'h12', name: 'Pompadour (ปอมปาดัว)', basePrice: 80, desc: 'ตัดผมด้านข้างและด้านหลังสั้น ด้านบนยาว เสยผมด้านหน้าขึ้นสูง  ปาดโหนก', img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTNYrsQ07w4lEOV5i21sWknnaOzCbvihURfMTkBMrOoKw&s=10' }
             ],
 
             // Age Categories & Rate Multipliers
@@ -901,14 +903,14 @@
                     exp: 'ประสบการณ์ 1 ปี ชื่นชอบด้านการเฟด',
                     avatar: 'https://i.postimg.cc/8FR1mMtP/858525001-1129326712975883-8607776798710260414-n.jpg'
                 },
-                // {
-                //     id: 'b2',
-                //     name: 'ช่างโจ (ช่างประจำร้าน)',
-                //     email: 'phongsakorn7420@gmail.com',
-                //     status: 'available',
-                //     exp: 'ประสบการณ์ 5 ปี เชี่ยวชาญเฟดสายอเมริกัน',
-                //     avatar: 'https://i.postimg.cc/qMrLWY3v/863844196-1134350642473490-5849783856972700037-n.jpg'
-                // }
+                {
+                    id: 'b2',
+                    name: 'ช่างโจ (ช่างประจำร้าน)',
+                    email: 'phongsakorn7420@gmail.com',
+                    status: 'available',
+                    exp: 'ประสบการณ์ 5 ปี เชี่ยวชาญเฟดสายอเมริกัน',
+                    avatar: 'https://i.postimg.cc/qMrLWY3v/863844196-1134350642473490-5849783856972700037-n.jpg'
+                }
             ],
 
             isShopOpen: true,
@@ -1773,31 +1775,19 @@
             if (!container) return;
 
             // 1. ใช้ state.barbers เป็นหลัก เพื่อให้ซิงค์กับ Real-time จาก Firebase เสมอ
-            let rawBarbers = [];
-            if (typeof state !== 'undefined' && state.barbers && state.barbers.length > 0) {
-                rawBarbers = state.barbers;
-            } else {
+            let currentBarbers = state.barbers || [];
+
+            // ถ้า state ว่างเปล่า ค่อยลองดึงจาก localStorage มาใช้สำรองชั่วคราว
+            if (currentBarbers.length === 0) {
                 try {
                     const savedBarbers = localStorage.getItem('barber_shop_barbers');
                     if (savedBarbers) {
-                        rawBarbers = JSON.parse(savedBarbers);
-                        if (typeof state !== 'undefined') state.barbers = rawBarbers;
+                        currentBarbers = JSON.parse(savedBarbers);
+                        state.barbers = currentBarbers;
                     }
                 } catch (e) {
-                    rawBarbers = [];
+                    currentBarbers = [];
                 }
-            }
-
-            // กรองเอาเฉพาะช่างก้อง (id === 'b1') เท่านั้น
-            let currentBarbers = rawBarbers.filter(b => b.id === 'b1');
-
-            // เผื่อกรณีข้อมูลยังไม่มา ให้เซ็ตค่าเริ่มต้นของช่างก้องทันที
-            if (currentBarbers.length === 0) {
-                currentBarbers = [{
-                    id: 'b1',
-                    name: 'ช่างก้อง',
-                    status: 'available'
-                }];
             }
 
             // 🌟 2. กำหนดลิงก์รูปภาพสำรองประจำตัวช่าง (ป้องกันรูปร่วงในหน้าจองคิว)
@@ -1814,7 +1804,7 @@
                 // 🌟 ดึงรูปจาก b.avatar หรือถ้าไม่มีให้ใช้ลิงก์สำรองตาม id ของช่างทันที
                 const barberImage = b.avatar || defaultAvatars[b.id] || '';
 
-                const isSelected = typeof state !== 'undefined' && state.bookingForm && String(state.bookingForm.selectedBarberId) === String(b.id);
+                const isSelected = String(state.bookingForm.selectedBarberId) === String(b.id);
                 const isClosed = !isOpen || b.status === 'closed';
 
                 // 4. ตรวจสอบสถานะอย่างแม่นยำ (เช็กทั้ง available และ busy ชัดเจน)
@@ -1845,16 +1835,15 @@
                     dotColor = 'bg-red-500';
                 }
 
-                const barberName = b.name || 'ช่างก้อง';
-
                 return `
             <div onclick="selectBarberAndBook('${b.id}')"
-                class="cursor-pointer p-3 rounded-xl border-2 transition text-center flex flex-col items-center gap-2 ${isSelected ? 'border-amber-500 bg-amber-500/10 shadow-lg' : 'border-dark-700 bg-dark-900/50 hover:border-dark-600'}">
+                class="cursor-pointer p-3 rounded-xl border-2 transition text-center flex flex-col items-center gap-2 ${isSelected ? 'border-amber-500 bg-amber-500/10 shadow-lg' : 'border-dark-700 bg-dark-900/50 hover:border-dark-600'
+                    }">
                 <div class="relative">
-                    <img src="${barberImage}" class="w-12 h-12 rounded-full object-cover border border-dark-600" alt="${barberName}">
+                    <img src="${barberImage}" class="w-12 h-12 rounded-full object-cover border border-dark-600" alt="${b.name}">
                     <span class="absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full border-2 border-dark-800 ${dotColor}"></span>
                 </div>
-                <span class="text-xs font-bold text-white max-w-full truncate">${barberName.split(' ')[0]}</span>
+                <span class="text-xs font-bold text-white max-w-full truncate">${b.name.split(' ')[0]}</span>
                 <span class="text-[10px] px-2 py-0.5 rounded-full font-semibold ${badgeClass}">
                     ${statusText}
                 </span>
@@ -1972,6 +1961,7 @@
                 renderBookingBarbers();
             }
         }
+
         // Attach Event Listeners to date/time inputs
         document.getElementById('booking-date')?.addEventListener('change', updateBookingSummary);
         document.getElementById('booking-time')?.addEventListener('change', updateBookingSummary);
@@ -1981,34 +1971,16 @@
             const container = document.getElementById('home-barbers-grid');
             if (!container) return;
 
-            let rawBarbers = [];
-
-            // 🌟 1. ยึด state.barbers เป็นอันดับแรกเพื่อให้รับค่า Real-time ทันที
-            if (typeof state !== 'undefined' && state.barbers && state.barbers.length > 0) {
-                rawBarbers = state.barbers;
-            } else {
-                try {
-                    const savedBarbers = localStorage.getItem('barber_shop_barbers');
-                    if (savedBarbers) {
-                        rawBarbers = JSON.parse(savedBarbers);
-                        if (typeof state !== 'undefined') state.barbers = rawBarbers;
-                    }
-                } catch (e) {
-                    rawBarbers = [];
+            let currentBarbers = [];
+            try {
+                const savedBarbers = localStorage.getItem('barber_shop_barbers');
+                if (savedBarbers) {
+                    currentBarbers = JSON.parse(savedBarbers);
+                } else if (typeof state !== 'undefined' && state.barbers) {
+                    currentBarbers = state.barbers;
                 }
-            }
-
-            // กรองเอาเฉพาะช่างก้อง (id === 'b1') เท่านั้น
-            let currentBarbers = rawBarbers.filter(b => b.id === 'b1');
-
-            // เผื่อกรณีข้อมูลยังไม่มา ให้เซ็ตค่าเริ่มต้นของช่างก้องทันที
-            if (currentBarbers.length === 0) {
-                currentBarbers = [{
-                    id: 'b1',
-                    name: 'ช่างก้อง',
-                    exp: 'ช่างก้อง (เจ้าของร้าน)',
-                    status: 'available'
-                }];
+            } catch (e) {
+                currentBarbers = state.barbers || [];
             }
 
             // Fallback เผื่อข้อมูลใน LocalStorage ไม่มีรูป ให้ดึงจากชุดตั้งต้นตรงๆ ทันที
@@ -2075,34 +2047,20 @@
             const container = document.getElementById('full-barbers-grid');
             if (!container) return;
 
-            // 1. ดึงข้อมูลจาก state.barbers เป็นหลัก
-            let rawBarbers = [];
+            // 1. ดึงข้อมูลช่างล่าสุดจาก state.barbers เป็นหลัก (เพื่อให้รับค่า Real-time จาก Firebase ทันที)
+            let currentBarbers = [];
             if (typeof state !== 'undefined' && state.barbers && state.barbers.length > 0) {
-                rawBarbers = state.barbers;
+                currentBarbers = state.barbers;
             } else {
                 try {
                     const savedBarbers = localStorage.getItem('barber_shop_barbers');
                     if (savedBarbers) {
-                        rawBarbers = JSON.parse(savedBarbers);
-                        if (typeof state !== 'undefined') state.barbers = rawBarbers;
+                        currentBarbers = JSON.parse(savedBarbers);
+                        if (typeof state !== 'undefined') state.barbers = currentBarbers;
                     }
                 } catch (e) {
-                    rawBarbers = [];
+                    currentBarbers = [];
                 }
-            }
-
-            // กรองเอาเฉพาะช่างก้อง (id === 'b1') เท่านั้น
-            let currentBarbers = rawBarbers.filter(b => b.id === 'b1');
-
-            // เผื่อกรณีข้อมูลยังไม่มา ให้แสดงโครงสร้างช่างก้อง
-            if (currentBarbers.length === 0) {
-                currentBarbers = [{
-                    id: 'b1',
-                    name: 'ช่างก้อง',
-                    exp: 'ช่างก้อง (เจ้าของร้าน)',
-                    bio: 'กำลังโหลดข้อมูล...',
-                    status: 'available'
-                }];
             }
 
             // 2. กำหนดลิงก์รูปภาพสำรองประจำตัวช่างตาม id
@@ -2116,9 +2074,12 @@
             const isOpen = savedShopStatus !== null ? (savedShopStatus === 'true') : true;
 
             container.innerHTML = currentBarbers.map(b => {
-                const barberImage = b.avatar || defaultAvatars[b.id] || 'https://i.postimg.cc/8FR1mMtP/858525001-1129326712975883-8607776798710260414-n.jpg';
+                // 🌟 ดึงรูปภาพโดยเช็กจาก id ก่อนเป็นหลัก ป้องกันรูปร่วง
+                const barberImage = defaultAvatars[b.id] || b.avatar || 'https://i.postimg.cc/8FR1mMtP/858525001-1129326712975883-8607776798710260414-n.jpg';
+
                 const isClosed = !isOpen || b.status === 'closed';
 
+                // 🌟 4. เช็กสถานะว่างแบบยืดหยุ่นรองรับทุกค่า เพื่อให้ Real-time ทำงานถูกต้อง
                 const statusStr = String(b.status || '').trim().toLowerCase();
                 const isAvailable = !isClosed && (
                     statusStr === 'available' ||
@@ -2141,9 +2102,9 @@
                     statusText = 'ติดคิว';
                 }
 
-                // 🌟 ดึงข้อมูลตรงจาก Firebase (b.exp และ b.bio) ถ้าไม่มีค่อยใส่ค่ากลาง
-                const barberExp = b.exp || 'ช่างก้อง (เจ้าของร้าน)';
-                const barberBio = b.bio || 'ช่างตัดผมมืออาชีพ บริการเป็นกันเอง';
+                // ป้องกันคำว่า undefined
+                const barberExp = b.exp || (b.id === 'b1' ? 'ช่างก้อง (เจ้าของร้าน)' : 'ช่างประจำร้าน');
+                const barberBio = b.bio || 'เชี่ยวชาญการตัดแต่งทรงผมชายสไตล์คลาสสิก ออกแบบทรงผมเข้ากับรูปหน้า และบริการกันโกนหนวดระดับพรีเมียม';
 
                 return `
             <div class="bg-dark-800 rounded-2xl border border-dark-700 p-6 shadow-xl flex flex-col items-center text-center space-y-4">
@@ -2159,6 +2120,7 @@
                 </div>
                 <p class="text-xs text-gray-400">${barberBio}</p>
                 
+                <!-- ปุ่มจองคิวสีเทานิ่งๆ ไม่เปลี่ยนสี -->
                 <button onclick="selectBarberAndBook('${b.id}')" class="w-full bg-dark-700 hover:bg-dark-600 text-gray-300 font-semibold py-2.5 rounded-xl border border-dark-600 transition text-sm flex items-center justify-center gap-2 shadow-md">
                     <i class="fa-solid fa-calendar-plus text-amber-500"></i> จองคิวกับช่างท่านนี้
                 </button>
@@ -2323,10 +2285,6 @@
                 // ตรวจสอบว่าเลือกทรงผม กลุ่มอายุ และช่างครบถ้วนหรือไม่
                 if (!selectedStyleObj || !selectedAgeObj || !selectedBarberObj) {
                     alert("กรุณาเลือกทรงผม กลุ่มอายุ และช่างตัดผมให้ครบถ้วนครับ");
-                    if (btn) {
-                        btn.disabled = false;
-                        btn.innerHTML = originalHTML;
-                    }
                     return;
                 }
 
@@ -2347,10 +2305,6 @@
 
                 if (!date || !time || !name || !phone) {
                     alert("กรุณากรอกข้อมูลวันที่ เวลา และข้อมูลติดต่อให้ครบถ้วน");
-                    if (btn) {
-                        btn.disabled = false;
-                        btn.innerHTML = originalHTML;
-                    }
                     return;
                 }
 
@@ -2370,7 +2324,7 @@
                     const { collection, getDocs, query, where } = window.firebaseModules;
                     const bookingsRef = collection(window.db, "bookings");
 
-                    // 🌟 เช็กเฉพาะ วัน, เวลา และช่างคนเดียวกัน (ไม่จำกัดว่าจะมาจากบัญชีไหนของใครก็ตาม)
+                    // ค้นหาคิวในวัน เวลา และช่างคนเดียวกันจากฐานข้อมูลจริง
                     const q = query(
                         bookingsRef,
                         where("date", "==", date),
@@ -2383,26 +2337,13 @@
 
                     querySnapshot.forEach((docSnap) => {
                         const existing = docSnap.data();
-
-                        // ถ้ารายการเดิมสถานะเป็น 'completed' (เสร็จสิ้น) หรือ 'cancelled' (ยกเลิก) ให้ข้าม ถือว่าช่องว่างจองได้
-                        if (existing.status === 'completed' || existing.status === 'cancelled') {
-                            return;
-                        }
-
-                        // 🛑 ถ้ามีคิวค้างสถานะ 'pending' (ไม่ว่าจะบัญชีไหนจองไว้ก่อน) ให้ถือว่าชนทันที!
-                        if (!existing.status || existing.status === 'pending') {
+                        if (existing.status !== 'cancelled') {
                             hasConflict = true;
                         }
                     });
 
                     if (hasConflict) {
-                        alert(`ติดจอง! ช่วงเวลา ${time} ในวันที่ ${date} กับช่าง ${selectedBarberObj.name} มีผู้จองคิวรอดำเนินการอยู่แล้ว กรุณาเลือกช่วงเวลาอื่นครับ`);
-
-                        // คืนค่าปุ่มให้กลับมากดได้ปกติ
-                        if (btn) {
-                            btn.disabled = false;
-                            btn.innerHTML = originalHTML;
-                        }
+                        alert(`ติดจอง! ช่วงเวลา ${time} ในวันที่ ${date} กับช่าง ${selectedBarberObj.name} มีผู้จองไปแล้ว กรุณาเลือกช่วงเวลาอื่นครับ`);
                         return;
                     }
                 }
@@ -2516,32 +2457,19 @@
             if (!container) return;
 
             // 🌟 1. ยึด state.barbers เป็นอันดับแรกเพื่อให้รับค่า Real-time จาก Firebase ทันที
-            let rawBarbers = [];
+            let currentBarbers = [];
             if (typeof state !== 'undefined' && state.barbers && state.barbers.length > 0) {
-                rawBarbers = state.barbers;
+                currentBarbers = state.barbers;
             } else {
                 try {
                     const savedBarbers = localStorage.getItem('barber_shop_barbers');
                     if (savedBarbers) {
-                        rawBarbers = JSON.parse(savedBarbers);
-                        if (typeof state !== 'undefined') state.barbers = rawBarbers;
+                        currentBarbers = JSON.parse(savedBarbers);
+                        if (typeof state !== 'undefined') state.barbers = currentBarbers;
                     }
                 } catch (e) {
-                    rawBarbers = [];
+                    currentBarbers = [];
                 }
-            }
-
-            // กรองเอาเฉพาะช่างก้อง (id === 'b1') เท่านั้น
-            let currentBarbers = rawBarbers.filter(b => b.id === 'b1');
-
-            // เผื่อกรณีข้อมูลยังไม่มา ให้เซ็ตค่าเริ่มต้นของช่างก้องทันที
-            if (currentBarbers.length === 0) {
-                currentBarbers = [{
-                    id: 'b1',
-                    name: 'ช่างก้อง',
-                    exp: 'ช่างก้อง (เจ้าของร้าน)',
-                    status: 'available'
-                }];
             }
 
             // 2. กำหนดลิงก์รูปภาพสำรองประจำตัวช่าง
@@ -3322,9 +3250,6 @@
                 return;
             }
 
-            // 🌟 ตัวแปรเช็กเพื่อป้องกันไม่ให้แจ้งเตือนรัวตอนเปิดหน้าเว็บครั้งแรก
-            let isInitialLoad = true;
-
             // ดึงข้อมูลจาก Collection "bookings" แบบเรียลไทม์
             window.firebaseModules.onSnapshot(
                 window.firebaseModules.collection(window.db, "bookings"),
@@ -3333,37 +3258,6 @@
                     snapshot.forEach((doc) => {
                         state.bookings.push({ firestoreId: doc.id, ...doc.data() });
                     });
-
-                    // 🌟 ตรวจสอบการเปลี่ยนแปลงแบบเจาะลึกเฉพาะรายการที่เพิ่มเข้ามาใหม่
-                    if (!isInitialLoad) {
-                        snapshot.docChanges().forEach((change) => {
-                            if (change.type === "added") {
-                                const newBooking = change.doc.data();
-
-                                // เช็กว่าเป็นคิวใหม่ที่มีสถานะ 'pending' (รอรับบริการ) จริงๆ
-                                if (newBooking.status === 'pending') {
-
-                                    // 🌟 เช็กสิทธิ์: ให้แจ้งเตือนเฉพาะ "แอดมิน" หรือ "ช่างตัดผม" เท่านั้น
-                                    const currentUser = state.currentUser;
-                                    const isAdmin = currentUser && currentUser.role === 'admin';
-                                    const isBarber = currentUser && (
-                                        currentUser.isBarber === true ||
-                                        currentUser.role === 'barber' ||
-                                        (state.barbers && state.barbers.some(b => b.email === currentUser.email || b.id === currentUser.id))
-                                    );
-
-                                    // ถ้าผู้ใช้ปัจจุบันเป็นแอดมินหรือช่าง ถึงจะเล่นเสียงและเด้งกล่องแจ้งเตือน
-                                    if (isAdmin || isBarber) {
-                                        // 🔔 สั่งเล่นเสียงและเด้งแจ้งเตือนที่หน้าจอ
-                                        triggerAppNotification(
-                                            "🔔 มีคิวจองตัดผมใหม่!",
-                                            `คุณ ${newBooking.userName || 'ลูกค้า'} จองคิวทรง ${newBooking.styleName || 'ตัดผม'} (${newBooking.date || ''} ${newBooking.time || ''})`
-                                        );
-                                    }
-                                }
-                            }
-                        });
-                    }
 
                     // สั่งอัปเดตตารางและสถิติในหน้าจอทันที
                     if (typeof renderAdminBookingsTable === 'function') {
@@ -3382,13 +3276,7 @@
                     console.error("เกิดข้อผิดพลาดในการดึงข้อมูลเรียลไทม์:", error);
                 }
             );
-
-            // หลังจากโหลดรอบแรกเสร็จผ่านไป 1.5 วินาที ให้ปลดล็อกสถานะเริ่มต้น เพื่อเปิดใช้งานการแจ้งเตือน
-            setTimeout(() => {
-                isInitialLoad = false;
-            }, 1500);
         }
-
         window.addEventListener('DOMContentLoaded', () => {
             setTimeout(() => {
                 initRealtimeBookings();
@@ -3762,66 +3650,55 @@
         async function validateAndSubmitBooking(bookingData) {
             if (!window.db || !window.firebaseModules) {
                 showToast('ระบบฐานข้อมูลยังไม่พร้อมใช้งาน', 'error');
-                return false;
+                return;
             }
 
             const { collection, getDocs, query, where } = window.firebaseModules;
             const bookingsRef = collection(window.db, "bookings");
 
             try {
-                // 🌟 ปรับ Query ให้ค้นหาเฉพาะวันที่เลือกก่อน เพื่อป้องกันปัญหาฟิลด์ชื่อช่างไม่ตรงกัน
+                // 1. ดึงข้อมูลการจองทั้งหมดในวันที่ลูกค้าเลือก และช่างคนเดียวกัน (ถ้ามีการเลือกช่าง)
+                // เพื่อนำมาเช็กช่วงเวลาว่าชนกันหรือไม่
                 const q = query(
                     bookingsRef,
-                    where("date", "==", bookingData.date)
+                    where("date", "==", bookingData.date),
+                    where("barberId", "==", bookingData.barberId) // ตัดบรรทัดนี้ออกถ้าไม่ได้แยกช่าง
                 );
 
                 const querySnapshot = await getDocs(q);
                 let isConflict = false;
 
-                const newStartMin = timeToMinutes(bookingData.startTime);
-                const newEndMin = timeToMinutes(bookingData.endTime);
+                // แปลงช่วงเวลาที่ลูกค้าเลือกใหม่เป็นนาทีตั้งแต่เที่ยงคืน เพื่อให้เทียบช่วงเวลาง่ายขึ้น
+                // สมมติ bookingData เก็บเวลาเริ่ม เช่น "16:00" และเวลาสิ้นสุด "17:00"
+                const newStartMin = timeToMinutes(bookingData.startTime); // เช่น 16:00 -> 960 นาที
+                const newEndMin = timeToMinutes(bookingData.endTime);     // เช่น 17:00 -> 1020 นาที
 
-                console.log("--- กำลังตรวจสอบการจองสำหรับช่าง:", bookingData.barberName || bookingData.barberId, "เวลา:", bookingData.startTime, "---");
-
-                // 🌟 เปลี่ยนมาใช้ for...of เพื่อความแม่นยำในการคัดกรองข้อมูล
-                for (const docSnap of querySnapshot.docs) {
+                querySnapshot.forEach((docSnap) => {
                     const existingBooking = docSnap.data();
 
-                    // 🔍 ตรวจสอบว่าตรงกับช่างคนเดียวกันหรือไม่ (รองรับทั้งการเช็กด้วย ID หรือ Name)
-                    const isSameBarber =
-                        (bookingData.barberId && existingBooking.barberId === bookingData.barberId) ||
-                        (bookingData.barberName && existingBooking.barberName === bookingData.barberName);
+                    // ข้ามรายการที่ถูกยกเลิกไปแล้ว (ถ้ามีสถานะ cancelled)
+                    if (existingBooking.status === 'cancelled') return;
 
-                    if (!isSameBarber) continue; // ถ้าคนละช่าง ข้ามไปเลย
+                    const existStartMin = timeToMinutes(existingBooking.startTime);
+                    const existEndMin = timeToMinutes(existingBooking.endTime);
 
-                    console.log(`พบบันทึกคิว ID: ${docSnap.id}, ช่าง: ${existingBooking.barberName}, เวลา: ${existingBooking.startTime}-${existingBooking.endTime}, สถานะ: ${existingBooking.status}`);
-
-                    // 1. ถ้ารายการเก่าสถานะเป็น 'completed' หรือ 'cancelled' ให้ข้ามทันที (เปิดทางให้จองทับได้)
-                    if (existingBooking.status === 'completed' || existingBooking.status === 'cancelled') {
-                        console.log(" -> ข้ามคิวนี้เพราะเสร็จสิ้นหรือยกเลิกแล้ว");
-                        continue;
+                    // 🛑 เช็กเงื่อนไขเวลาทับซ้อน (Overlap Logic)
+                    // สูตร: (เวลาเริ่มใหม่ < เวลาสิ้นสุดเดิม) และ (เวลาสิ้นสุดใหม่ > เวลาเริ่มเดิม)
+                    if (newStartMin < existEndMin && newEndMin > existStartMin) {
+                        isConflict = true;
                     }
-
-                    // 2. ถ้าไม่มีสถานะ หรือสถานะเป็น 'pending' ถึงจะนำมาเช็กเวลาทับซ้อน
-                    if (!existingBooking.status || existingBooking.status === 'pending') {
-                        const existStartMin = timeToMinutes(existingBooking.startTime);
-                        const existEndMin = timeToMinutes(existingBooking.endTime);
-
-                        if (newStartMin < existEndMin && newEndMin > existStartMin) {
-                            console.log(" ❌ เจอเวลาชนกันกับคิวสถานะ pending!");
-                            isConflict = true;
-                            break; // เจอชนแล้ว หยุดลูปทันทีไม่ต้องเช็กต่อ
-                        }
-                    }
-                }
+                });
 
                 if (isConflict) {
-                    showToast('ช่วงเวลานี้มีคิวรอดำเนินการอยู่ กรุณาเลือกเวลาอื่นครับ', 'error');
-                    alert('ติดจอง! ช่วงเวลาตั้งแต่ ' + bookingData.startTime + ' ถึง ' + bookingData.endTime + ' มีคิวที่กำลังรอดำเนินการอยู่ กรุณาเลือกเวลาอื่นครับ');
-                    return false;
+                    // แจ้งเตือนผู้ใช้ว่าเวลานี้ถูกจองไปแล้ว
+                    showToast('ช่วงเวลานี้ถูกจองไปแล้ว กรุณาเลือกช่วงเวลาอื่นครับ', 'error');
+                    alert('ติดจอง! ช่วงเวลาตั้งแต่ ' + bookingData.startTime + ' ถึง ' + bookingData.endTime + ' มีผู้จองไปแล้ว กรุณาเลือกเวลาอื่น');
+                    return false; // ยกเลิกการจอง
                 }
 
-                console.log(" ✅ ผ่านการตรวจสอบ เวลาว่างสามารถจองได้!");
+                // 2. ถ้าไม่ชน สามารถบันทึกการจองลง Firebase ต่อได้ตามปกติ
+                // await addDoc(bookingsRef, bookingData);
+                // showToast('จองคิวสำเร็จ!', 'success');
                 return true;
 
             } catch (error) {
@@ -4615,132 +4492,6 @@
             });
         }
 
-        // 🌟 ฟังก์ชันขอสิทธิ์การแจ้งเตือน (ควรเรียกใช้ตอนผู้ใช้คลิกปุ่มเข้าสู่ระบบหรือกดเปิดใช้งาน)
-        function requestNotificationPermission() {
-            if ("Notification" in window && Notification.permission !== "granted") {
-                Notification.requestPermission().then(permission => {
-                    if (permission === "granted") {
-                        showToast('เปิดใช้งานการแจ้งเตือนสำเร็จ!', 'success');
-                    }
-                });
-            }
-        }
-
-        // 🌟 2. ปรับเสียงใหม่ให้เป็นเสียงกระดิ่งนุ่มๆ สไตล์แอปพลิเคชัน (Soft Chime)
-        // 🌟 1. ปรับปรุงเสียงกระดิ่งใหม่: เสียงดังขึ้น + เล่นยาว 4 จังหวะ (กังวานและนุ่มนวล)
-        function playMessengerSound() {
-            try {
-                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-
-                // ฟังก์ชันช่วยสร้างโน้ตเพลง (ปรับความดัง/Gain ให้เพิ่มขึ้นเป็น 0.3 เพื่อความชัดเจน)
-                const playTone = (freq, startTime, duration, volume = 0.3) => {
-                    const osc = audioCtx.createOscillator();
-                    const gain = audioCtx.createGain();
-
-                    osc.type = 'sine';
-                    osc.frequency.setValueAtTime(freq, audioCtx.currentTime + startTime);
-
-                    // ปรับระดับเสียงเริ่มต้นและจังหวะเฟดออก
-                    gain.gain.setValueAtTime(0, audioCtx.currentTime + startTime);
-                    gain.gain.linearRampToValueAtTime(volume, audioCtx.currentTime + startTime + 0.04);
-                    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + startTime + duration);
-
-                    osc.connect(gain);
-                    gain.connect(audioCtx.destination);
-
-                    osc.start(audioCtx.currentTime + startTime);
-                    osc.stop(audioCtx.currentTime + startTime + duration);
-                };
-
-                // บรรเลง 4 จังหวะต่อเนื่อง (โน้ตไต่ระดับให้เป็นเสียงกระดิ่งแจ้งเตือนที่ไพเราะและยาวขึ้น)
-                playTone(523.25, 0, 0.25, 0.35);     // จังหวะที่ 1 (C5)
-                playTone(659.25, 0.15, 0.25, 0.35);   // จังหวะที่ 2 (E5)
-                playTone(783.99, 0.30, 0.30, 0.40);   // จังหวะที่ 3 (G5)
-                playTone(1046.50, 0.45, 0.45, 0.40);  // จังหวะที่ 4 (C6 - เสียงสูงกังวาน)
-
-            } catch (e) {
-                console.log("Audio Context error:", e);
-            }
-        }
-
-        // 🌟 2. กล่องข้อความแจ้งเตือนลอยบนหน้าจอ (In-App Banner สวยงาม ชัดเจน รองรับทั้งมือถือและคอมพิวเตอร์)
-        function showCustomNotificationBanner(title, body) {
-            // ลบกล่องเก่า (ถ้ามีค้างอยู่) เพื่อไม่ให้บังกัน
-            const oldBanner = document.getElementById('custom-notif-banner');
-            if (oldBanner) oldBanner.remove();
-
-            const banner = document.createElement('div');
-            banner.id = 'custom-notif-banner';
-            // ปรับดีไซน์ให้แสดงผลเด่นชัดด้านบนสุดของหน้าจอมือถือ/คอมพิวเตอร์
-            banner.className = 'fixed top-4 left-1/2 transform -translate-x-1/2 z-[99999] bg-dark-800 border-2 border-amber-500 text-white px-5 py-3.5 rounded-2xl shadow-2xl flex items-center gap-3.5 w-[92%] max-w-md backdrop-blur-md bg-opacity-95 transition-all duration-300 translate-y-[-50px] opacity-0';
-
-            banner.innerHTML = `
-                <div class="bg-amber-500 text-dark-900 p-3 rounded-xl font-bold text-xl flex items-center justify-center shrink-0 shadow-lg">
-                    🔔
-                </div>
-                <div class="overflow-hidden flex-1">
-                    <h4 class="font-bold text-amber-400 text-sm truncate">${title}</h4>
-                    <p class="text-xs text-gray-200 mt-0.5 line-clamp-2">${body}</p>
-                </div>
-            `;
-            document.body.appendChild(banner);
-
-            // เอฟเฟกต์เลื่อนลงมาโชว์
-            setTimeout(() => {
-                banner.classList.remove('translate-y-[-50px]', 'opacity-0');
-            }, 10);
-
-            // ซ่อนอัตโนมัติหลัง 6 วินาที
-            setTimeout(() => {
-                banner.classList.add('translate-y-[-50px]', 'opacity-0');
-                setTimeout(() => banner.remove(), 300);
-            }, 6000);
-        }
-
-        // 🌟 3. ฟังก์ชันหลักสำหรับเรียกใช้งานแจ้งเตือน
-        function triggerAppNotification(title, bodyText) {
-            // 1. เล่นเสียงกระดิ่ง 4 จังหวะ เสียงดังขึ้นและนุ่มนวล
-            playMessengerSound();
-
-            // 2. แสดงกล่องแจ้งเตือนสวยๆ บนหน้าจอทันที (การันตีว่าเห็นแน่นอน 100% ทั้งในมือถือและคอมพิวเตอร์)
-            showCustomNotificationBanner(title, bodyText);
-
-            // 3. สั่นโทรศัพท์ (ถ้าอุปกรณ์รองรับและอนุญาต)
-            if ("vibrate" in navigator) {
-                try {
-                    navigator.vibrate([200, 100, 200, 100, 300]);
-                } catch (e) { }
-            }
-        }
-
-        async function registerDeviceForPush(staffId) {
-            if (!window.firebaseModules || !window.db) return;
-            const { getMessaging, getToken, doc, setDoc } = window.firebaseModules;
-            const messaging = getMessaging();
-
-            try {
-                const permission = await Notification.requestPermission();
-                if (permission === 'granted') {
-                    // ดึง Token ประจำเครื่องมือถือเครื่องนี้
-                    const token = await getToken(messaging, {
-                        vapidKey: 'ใส่_VAPID_KEY_ที่ได้มาจาก_Firebase_Console_ตรงนี้'
-                    });
-
-                    if (token) {
-                        // บันทึก Token ลง Firestore แยกตามรายบุคคล (แอดมิน/ช่าง)
-                        await setDoc(doc(window.db, "staff_tokens", staffId), {
-                            staffId: staffId,
-                            token: token,
-                            updatedAt: new Date().toISOString()
-                        });
-                        console.log("ลงทะเบียนรับแจ้งเตือนสำหรับเครื่องนี้สำเร็จ!");
-                    }
-                }
-            } catch (error) {
-                console.error("เกิดข้อผิดพลาดในการขอ Token:", error);
-            }
-        }
-
     </script>
     <!-- Modal ข้อมูลส่วนตัว -->
     <div id="profile-modal"
@@ -4819,8 +4570,8 @@
     </div>
 
     <!-- เครื่องมือดูคอนโซลบนมือถือ (Eruda) -->
-    <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
-    <script>eruda.init();</script>
+    <!-- <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
+    <script>eruda.init();</script> -->
 </body>
 
 </html>
