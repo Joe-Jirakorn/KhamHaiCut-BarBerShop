@@ -1773,15 +1773,15 @@
             if (!container) return;
 
             // 1. ใช้ state.barbers เป็นหลัก เพื่อให้ซิงค์กับ Real-time จาก Firebase เสมอ
-            let rawBarbers = state.barbers || [];
-
-            // ถ้า state ว่างเปล่า ค่อยลองดึงจาก localStorage มาใช้สำรองชั่วคราว
-            if (rawBarbers.length === 0) {
+            let rawBarbers = [];
+            if (typeof state !== 'undefined' && state.barbers && state.barbers.length > 0) {
+                rawBarbers = state.barbers;
+            } else {
                 try {
                     const savedBarbers = localStorage.getItem('barber_shop_barbers');
                     if (savedBarbers) {
                         rawBarbers = JSON.parse(savedBarbers);
-                        state.barbers = rawBarbers;
+                        if (typeof state !== 'undefined') state.barbers = rawBarbers;
                     }
                 } catch (e) {
                     rawBarbers = [];
@@ -1814,7 +1814,7 @@
                 // 🌟 ดึงรูปจาก b.avatar หรือถ้าไม่มีให้ใช้ลิงก์สำรองตาม id ของช่างทันที
                 const barberImage = b.avatar || defaultAvatars[b.id] || '';
 
-                const isSelected = String(state.bookingForm.selectedBarberId) === String(b.id);
+                const isSelected = typeof state !== 'undefined' && state.bookingForm && String(state.bookingForm.selectedBarberId) === String(b.id);
                 const isClosed = !isOpen || b.status === 'closed';
 
                 // 4. ตรวจสอบสถานะอย่างแม่นยำ (เช็กทั้ง available และ busy ชัดเจน)
@@ -1845,15 +1845,16 @@
                     dotColor = 'bg-red-500';
                 }
 
+                const barberName = b.name || 'ช่างก้อง';
+
                 return `
             <div onclick="selectBarberAndBook('${b.id}')"
-                class="cursor-pointer p-3 rounded-xl border-2 transition text-center flex flex-col items-center gap-2 ${isSelected ? 'border-amber-500 bg-amber-500/10 shadow-lg' : 'border-dark-700 bg-dark-900/50 hover:border-dark-600'
-                    }">
+                class="cursor-pointer p-3 rounded-xl border-2 transition text-center flex flex-col items-center gap-2 ${isSelected ? 'border-amber-500 bg-amber-500/10 shadow-lg' : 'border-dark-700 bg-dark-900/50 hover:border-dark-600'}">
                 <div class="relative">
-                    <img src="${barberImage}" class="w-12 h-12 rounded-full object-cover border border-dark-600" alt="${b.name}">
+                    <img src="${barberImage}" class="w-12 h-12 rounded-full object-cover border border-dark-600" alt="${barberName}">
                     <span class="absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full border-2 border-dark-800 ${dotColor}"></span>
                 </div>
-                <span class="text-xs font-bold text-white max-w-full truncate">${b.name.split(' ')[0]}</span>
+                <span class="text-xs font-bold text-white max-w-full truncate">${barberName.split(' ')[0]}</span>
                 <span class="text-[10px] px-2 py-0.5 rounded-full font-semibold ${badgeClass}">
                     ${statusText}
                 </span>
@@ -1982,15 +1983,20 @@
             if (!container) return;
 
             let rawBarbers = [];
-            try {
-                const savedBarbers = localStorage.getItem('barber_shop_barbers');
-                if (savedBarbers) {
-                    rawBarbers = JSON.parse(savedBarbers);
-                } else if (typeof state !== 'undefined' && state.barbers) {
-                    rawBarbers = state.barbers;
+
+            // 🌟 1. ยึด state.barbers เป็นอันดับแรกเพื่อให้รับค่า Real-time ทันที
+            if (typeof state !== 'undefined' && state.barbers && state.barbers.length > 0) {
+                rawBarbers = state.barbers;
+            } else {
+                try {
+                    const savedBarbers = localStorage.getItem('barber_shop_barbers');
+                    if (savedBarbers) {
+                        rawBarbers = JSON.parse(savedBarbers);
+                        if (typeof state !== 'undefined') state.barbers = rawBarbers;
+                    }
+                } catch (e) {
+                    rawBarbers = [];
                 }
-            } catch (e) {
-                rawBarbers = state.barbers || [];
             }
 
             // กรองเอาเฉพาะช่างก้อง (id === 'b1') เท่านั้น
@@ -2070,13 +2076,12 @@
             const container = document.getElementById('full-barbers-grid');
             if (!container) return;
 
-            // 1. ดึงข้อมูลช่างล่าสุดจาก state.barbers เป็นหลัก และกรองเอาเฉพาะ "ช่างก้อง" (id: 'b1') เท่านั้น
-            let currentBarbers = [];
+            // 1. ดึงข้อมูลจาก state.barbers เป็นหลัก (ซึ่งควรถูกอัปเดตแบบ Real-time ด้วย onSnapshot จาก Firebase)
             let rawBarbers = [];
-
             if (typeof state !== 'undefined' && state.barbers && state.barbers.length > 0) {
                 rawBarbers = state.barbers;
             } else {
+                // ถ้า state ยังว่าง ให้ลองดึงจาก Firebase ผ่านตัวแปรส่วนกลาง หรือ LocalStorage เป็นทางเลือกสุดท้าย
                 try {
                     const savedBarbers = localStorage.getItem('barber_shop_barbers');
                     if (savedBarbers) {
@@ -2088,10 +2093,10 @@
                 }
             }
 
-            // กรองเอาเฉพาะช่างก้อง (id === 'b1') คนเดียวเท่านั้น
-            currentBarbers = rawBarbers.filter(b => b.id === 'b1');
+            // กรองเอาเฉพาะช่างก้อง (id === 'b1') เท่านั้น
+            let currentBarbers = rawBarbers.filter(b => b.id === 'b1');
 
-            // เผื่อกรณีใน state ยังไม่มีข้อมูล b1 ให้สร้างข้อมูลตั้งต้นของช่างก้องขึ้นมาแสดงผลทันที
+            // เผื่อกรณีข้อมูลยังไม่มา ให้แสดงข้อมูลตั้งต้นของช่างก้องทันที
             if (currentBarbers.length === 0) {
                 currentBarbers = [{
                     id: 'b1',
@@ -2108,13 +2113,13 @@
                 'b2': 'https://i.postimg.cc/qMrLWY3v/863844196-1134350642473490-5849783856972700037-n.jpg'
             };
 
-            // 3. ดึงสถานะเปิด/ปิดร้านจาก LocalStorage
+            // 3. ดึงสถานะเปิด/ปิดร้านจาก LocalStorage หรือ state ร้าน
             const savedShopStatus = localStorage.getItem('barber_shop_open_status');
             const isOpen = savedShopStatus !== null ? (savedShopStatus === 'true') : true;
 
             container.innerHTML = currentBarbers.map(b => {
-                // 🌟 ดึงรูปภาพโดยเช็กจาก id ก่อนเป็นหลัก ป้องกันรูปร่วง
-                const barberImage = defaultAvatars[b.id] || b.avatar || 'https://i.postimg.cc/8FR1mMtP/858525001-1129326712975883-8607776798710260414-n.jpg';
+                // 🌟 ดึงรูปภาพโดยเช็กจาก b.avatar ก่อน ถ้าไม่มีค่อยใช้ defaultAvatars ป้องกันรูปร่วง
+                const barberImage = b.avatar || defaultAvatars[b.id] || 'https://i.postimg.cc/8FR1mMtP/858525001-1129326712975883-8607776798710260414-n.jpg';
 
                 const isClosed = !isOpen || b.status === 'closed';
 
@@ -2141,7 +2146,6 @@
                     statusText = 'ติดคิว';
                 }
 
-                // ป้องกันคำว่า undefined
                 const barberExp = b.exp || 'ช่างก้อง (เจ้าของร้าน)';
                 const barberBio = b.bio || 'ประสบการณ์ตัดผม 1 ปี ชอบการเฟดและเซ็ตผม';
 
@@ -2159,7 +2163,6 @@
                 </div>
                 <p class="text-xs text-gray-400">${barberBio}</p>
                 
-                <!-- ปุ่มจองคิวสีเทานิ่งๆ ไม่เปลี่ยนสี -->
                 <button onclick="selectBarberAndBook('${b.id}')" class="w-full bg-dark-700 hover:bg-dark-600 text-gray-300 font-semibold py-2.5 rounded-xl border border-dark-600 transition text-sm flex items-center justify-center gap-2 shadow-md">
                     <i class="fa-solid fa-calendar-plus text-amber-500"></i> จองคิวกับช่างท่านนี้
                 </button>
@@ -4820,8 +4823,8 @@
     </div>
 
     <!-- เครื่องมือดูคอนโซลบนมือถือ (Eruda) -->
-    <!-- <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
-    <script>eruda.init();</script> -->
+    <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
+    <script>eruda.init();</script>
 </body>
 
 </html>
