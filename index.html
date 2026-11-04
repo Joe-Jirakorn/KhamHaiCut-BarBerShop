@@ -1808,12 +1808,21 @@
             const isOpen = savedShopStatus !== null ? (savedShopStatus === 'true') : true;
 
             container.innerHTML = currentBarbers.map(b => {
-                // 🌟 5. ลำดับการดึงรูปภาพ: เน้นดึงจากบัญชีแอดมิน/ผู้ใช้ที่ล็อกอินอยู่ (state.currentUser) ก่อนเป็นอันดับแรก
+                // 🌟 5. เช็กสิทธิ์ความปลอดภัย: ดึงรูปจาก state.currentUser เฉพาะกรณีที่เป็นแอดมินหรือไอดีตรงกับช่างเท่านั้น
                 let barberImage = '';
-                if (typeof state !== 'undefined' && state.currentUser && (state.currentUser.avatar || state.currentUser.photoURL)) {
-                    barberImage = state.currentUser.avatar || state.currentUser.photoURL;
-                } else {
-                    barberImage = b.avatar || defaultAvatars[b.id] || '';
+                if (typeof state !== 'undefined' && state.currentUser) {
+                    const isAdminOrOwner = state.currentUser.role === 'admin' ||
+                        state.currentUser.isAdmin === true ||
+                        String(state.currentUser.id) === String(b.id);
+
+                    if (isAdminOrOwner) {
+                        barberImage = state.currentUser.avatar || state.currentUser.photoURL || '';
+                    }
+                }
+
+                // ถ้าไม่ใช่แอดมิน (เช่น ลูกค้าล็อกอิน) หรือไม่มีรูปใน currentUser ให้ดึงจากข้อมูลช่าง (b.avatar) หรือรูปสำรองปกติ
+                if (!barberImage) {
+                    barberImage = b.avatar || defaultAvatars[b.id] || 'https://i.postimg.cc/8FR1mMtP/858525001-1129326712975883-8607776798710260414-n.jpg';
                 }
 
                 const isSelected = String(state.bookingForm.selectedBarberId) === String(b.id);
@@ -2043,13 +2052,21 @@
                     statusText = 'ติดคิว (Busy)';
                 }
 
-                // 🌟 ปรับปรุงใหม่: รองรับบัญชีแอดมิน / เจ้าของร้าน
-                // ถ้าระบบมีการล็อกอินอยู่ และบัญชีนั้นมีรูปภาพ ให้ดึงมาแสดงเป็นรูปช่างก้องทันทีโดยไม่ต้องเช็กไอดีให้ยุ่งยาก
+                // 🌟 แก้ไขใหม่: ตรวจสอบสิทธิ์ความปลอดภัย (ต้องเป็นแอดมินหรือไอดีตรงกับช่าง ถึงจะดึงรูปจาก currentUser มาแสดง)
                 let barberImage = '';
-                if (typeof state !== 'undefined' && state.currentUser && (state.currentUser.avatar || state.currentUser.photoURL)) {
-                    barberImage = state.currentUser.avatar || state.currentUser.photoURL;
-                } else {
-                    barberImage = b.avatar || defaultAvatars[b.id] || '';
+                if (typeof state !== 'undefined' && state.currentUser) {
+                    const isAdminOrOwner = state.currentUser.role === 'admin' ||
+                        state.currentUser.isAdmin === true ||
+                        String(state.currentUser.id) === String(b.id);
+
+                    if (isAdminOrOwner) {
+                        barberImage = state.currentUser.avatar || state.currentUser.photoURL || '';
+                    }
+                }
+
+                // ถ้าไม่ใช่แอดมิน (เช่น ลูกค้าล็อกอิน) ให้ดึงรูปประจำตัวช่างจาก b.avatar ตามปกติ
+                if (!barberImage) {
+                    barberImage = b.avatar || defaultAvatars[b.id] || 'https://i.postimg.cc/8FR1mMtP/858525001-1129326712975883-8607776798710260414-n.jpg';
                 }
 
                 return `
