@@ -3270,11 +3270,24 @@
 
                                 // เช็กว่าเป็นคิวใหม่ที่มีสถานะ 'pending' (รอรับบริการ) จริงๆ
                                 if (newBooking.status === 'pending') {
-                                    // 🔔 สั่งเล่นเสียงและเด้งแจ้งเตือนที่แถบด้านบนมือถือ/คอมพิวเตอร์
-                                    triggerAppNotification(
-                                        "🔔 มีคิวจองตัดผมใหม่!",
-                                        `คุณ ${newBooking.userName || 'ลูกค้า'} จองคิวทรง ${newBooking.styleName || 'ตัดผม'} (${newBooking.date || ''} ${newBooking.time || ''})`
+
+                                    // 🌟 เช็กสิทธิ์: ให้แจ้งเตือนเฉพาะ "แอดมิน" หรือ "ช่างตัดผม" เท่านั้น
+                                    const currentUser = state.currentUser;
+                                    const isAdmin = currentUser && currentUser.role === 'admin';
+                                    const isBarber = currentUser && (
+                                        currentUser.isBarber === true ||
+                                        currentUser.role === 'barber' ||
+                                        (state.barbers && state.barbers.some(b => b.email === currentUser.email || b.id === currentUser.id))
                                     );
+
+                                    // ถ้าผู้ใช้ปัจจุบันเป็นแอดมินหรือช่าง ถึงจะเล่นเสียงและเด้งกล่องแจ้งเตือน
+                                    if (isAdmin || isBarber) {
+                                        // 🔔 สั่งเล่นเสียงและเด้งแจ้งเตือนที่หน้าจอ
+                                        triggerAppNotification(
+                                            "🔔 มีคิวจองตัดผมใหม่!",
+                                            `คุณ ${newBooking.userName || 'ลูกค้า'} จองคิวทรง ${newBooking.styleName || 'ตัดผม'} (${newBooking.date || ''} ${newBooking.time || ''})`
+                                        );
+                                    }
                                 }
                             }
                         });
