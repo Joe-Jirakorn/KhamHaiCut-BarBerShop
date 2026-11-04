@@ -1972,7 +1972,6 @@
                 renderBookingBarbers();
             }
         }
-
         // Attach Event Listeners to date/time inputs
         document.getElementById('booking-date')?.addEventListener('change', updateBookingSummary);
         document.getElementById('booking-time')?.addEventListener('change', updateBookingSummary);
@@ -2076,12 +2075,11 @@
             const container = document.getElementById('full-barbers-grid');
             if (!container) return;
 
-            // 1. ดึงข้อมูลจาก state.barbers เป็นหลัก (ซึ่งควรถูกอัปเดตแบบ Real-time ด้วย onSnapshot จาก Firebase)
+            // 1. ดึงข้อมูลจาก state.barbers เป็นหลัก
             let rawBarbers = [];
             if (typeof state !== 'undefined' && state.barbers && state.barbers.length > 0) {
                 rawBarbers = state.barbers;
             } else {
-                // ถ้า state ยังว่าง ให้ลองดึงจาก Firebase ผ่านตัวแปรส่วนกลาง หรือ LocalStorage เป็นทางเลือกสุดท้าย
                 try {
                     const savedBarbers = localStorage.getItem('barber_shop_barbers');
                     if (savedBarbers) {
@@ -2096,13 +2094,13 @@
             // กรองเอาเฉพาะช่างก้อง (id === 'b1') เท่านั้น
             let currentBarbers = rawBarbers.filter(b => b.id === 'b1');
 
-            // เผื่อกรณีข้อมูลยังไม่มา ให้แสดงข้อมูลตั้งต้นของช่างก้องทันที
+            // เผื่อกรณีข้อมูลยังไม่มา ให้แสดงโครงสร้างช่างก้อง
             if (currentBarbers.length === 0) {
                 currentBarbers = [{
                     id: 'b1',
                     name: 'ช่างก้อง',
                     exp: 'ช่างก้อง (เจ้าของร้าน)',
-                    bio: 'ประสบการณ์ตัดผม 1 ปี ชอบการเฟดและเซ็ตผม',
+                    bio: 'กำลังโหลดข้อมูล...',
                     status: 'available'
                 }];
             }
@@ -2113,17 +2111,14 @@
                 'b2': 'https://i.postimg.cc/qMrLWY3v/863844196-1134350642473490-5849783856972700037-n.jpg'
             };
 
-            // 3. ดึงสถานะเปิด/ปิดร้านจาก LocalStorage หรือ state ร้าน
+            // 3. ดึงสถานะเปิด/ปิดร้านจาก LocalStorage
             const savedShopStatus = localStorage.getItem('barber_shop_open_status');
             const isOpen = savedShopStatus !== null ? (savedShopStatus === 'true') : true;
 
             container.innerHTML = currentBarbers.map(b => {
-                // 🌟 ดึงรูปภาพโดยเช็กจาก b.avatar ก่อน ถ้าไม่มีค่อยใช้ defaultAvatars ป้องกันรูปร่วง
                 const barberImage = b.avatar || defaultAvatars[b.id] || 'https://i.postimg.cc/8FR1mMtP/858525001-1129326712975883-8607776798710260414-n.jpg';
-
                 const isClosed = !isOpen || b.status === 'closed';
 
-                // 🌟 4. เช็กสถานะว่างแบบยืดหยุ่นรองรับทุกค่า เพื่อให้ Real-time ทำงานถูกต้อง
                 const statusStr = String(b.status || '').trim().toLowerCase();
                 const isAvailable = !isClosed && (
                     statusStr === 'available' ||
@@ -2146,8 +2141,9 @@
                     statusText = 'ติดคิว';
                 }
 
+                // 🌟 ดึงข้อมูลตรงจาก Firebase (b.exp และ b.bio) ถ้าไม่มีค่อยใส่ค่ากลาง
                 const barberExp = b.exp || 'ช่างก้อง (เจ้าของร้าน)';
-                const barberBio = b.bio || 'ประสบการณ์ตัดผม 1 ปี ชอบการเฟดและเซ็ตผม';
+                const barberBio = b.bio || 'ช่างตัดผมมืออาชีพ บริการเป็นกันเอง';
 
                 return `
             <div class="bg-dark-800 rounded-2xl border border-dark-700 p-6 shadow-xl flex flex-col items-center text-center space-y-4">
