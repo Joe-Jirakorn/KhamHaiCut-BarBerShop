@@ -1773,19 +1773,31 @@
             if (!container) return;
 
             // 1. ใช้ state.barbers เป็นหลัก เพื่อให้ซิงค์กับ Real-time จาก Firebase เสมอ
-            let currentBarbers = state.barbers || [];
+            let rawBarbers = state.barbers || [];
 
             // ถ้า state ว่างเปล่า ค่อยลองดึงจาก localStorage มาใช้สำรองชั่วคราว
-            if (currentBarbers.length === 0) {
+            if (rawBarbers.length === 0) {
                 try {
                     const savedBarbers = localStorage.getItem('barber_shop_barbers');
                     if (savedBarbers) {
-                        currentBarbers = JSON.parse(savedBarbers);
-                        state.barbers = currentBarbers;
+                        rawBarbers = JSON.parse(savedBarbers);
+                        state.barbers = rawBarbers;
                     }
                 } catch (e) {
-                    currentBarbers = [];
+                    rawBarbers = [];
                 }
+            }
+
+            // กรองเอาเฉพาะช่างก้อง (id === 'b1') เท่านั้น
+            let currentBarbers = rawBarbers.filter(b => b.id === 'b1');
+
+            // เผื่อกรณีข้อมูลยังไม่มา ให้เซ็ตค่าเริ่มต้นของช่างก้องทันที
+            if (currentBarbers.length === 0) {
+                currentBarbers = [{
+                    id: 'b1',
+                    name: 'ช่างก้อง',
+                    status: 'available'
+                }];
             }
 
             // 🌟 2. กำหนดลิงก์รูปภาพสำรองประจำตัวช่าง (ป้องกันรูปร่วงในหน้าจองคิว)
