@@ -131,9 +131,10 @@
                         </div>
                         <div>
                             <span
-                                class="text-base sm:text-xl font-bold tracking-wider text-white block leading-tight">KhamHai</span>
+                                class="text-base sm:text-xl font-bold tracking-wider text-white block leading-tight">KhamHaiCut</span>
                             <span
-                                class="text-[10px] sm:text-xs text-amber-500 font-medium tracking-widest uppercase">BARBER</span>
+                                class="text-[10px] sm:text-xs text-amber-500 font-medium tracking-widest uppercase">BARBER
+                                SHOP</span>
                         </div>
                     </div>
 
@@ -255,7 +256,7 @@
                 <div class="relative z-10 p-8 sm:p-12 lg:p-16 max-w-2xl space-y-6">
                     <div
                         class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-sm font-medium">
-                        <span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span> เปิดบริการทุกวัน 09:00 -
+                        <span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span> เปิดบริการทุกวัน 08:00 -
                         20:00 น.
                     </div>
                     <h1 class="text-4xl sm:text-5xl font-extrabold text-white tracking-tight leading-none">
@@ -263,7 +264,7 @@
                             class="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-amber-600">ที่เป็นตัวคุณ</span>
                     </h1>
                     <p class="text-gray-300 text-base sm:text-lg">
-                        บริการตัดผม เซ็ตทรง ชโลมหนวดเครา โดยช่างผู้เชี่ยวชาญระดับมืออาชีพ บรรยากาศพรีเมียม
+                        บริการตัดผม เซ็ตทรง บรรยากาศร่มรื่น
                         จองคิวออนไลน์ง่ายๆ ไม่ต้องรอนาน
                     </p>
                     <div class="flex flex-wrap gap-4 pt-2">
@@ -289,10 +290,10 @@
                         </h2>
                         <p class="text-gray-400 text-sm">ตรวจสอบสถานะคิวของช่างแต่ละท่านก่อนทำการจอง</p>
                     </div>
-                    <button onclick="renderBarbersHomeStatus()"
+                    <!-- <button onclick="renderBarbersHomeStatus()"
                         class="text-sm text-amber-500 hover:underline flex items-center gap-1">
                         <i class="fa-solid fa-rotate-right"></i> อัปเดตข้อมูล
-                    </button>
+                    </button> -->
                 </div>
 
                 <div id="home-barbers-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -309,7 +310,7 @@
                         <i class="fa-solid fa-scissors"></i>
                     </div>
                     <h3 class="text-lg font-bold text-white">ช่างฝีมือประณีต</h3>
-                    <p class="text-gray-400 text-sm">ช่างทุกคนผ่านการฝึกอบรมระดับสากล
+                    <p class="text-gray-400 text-sm">ช่างทุกคนผ่านการฝึกอบรมระดับพื้นฐาน
                         เชี่ยวชาญทุกสไตล์ทั้งคลาสสิกและโมเดิร์น</p>
                 </div>
                 <div
@@ -328,9 +329,8 @@
                         class="w-14 h-14 rounded-full bg-amber-500/10 text-amber-500 flex items-center justify-center text-2xl">
                         <i class="fa-solid fa-wine-glass-stripe"></i>
                     </div>
-                    <h3 class="text-lg font-bold text-white">บรรยากาศพรีเมียมผ่อนคลาย</h3>
-                    <p class="text-gray-400 text-sm">พร้อมเครื่องดื่มต้อนรับฟรี ดนตรีฟังสบาย
-                        และเก้าอี้ตัดผมปรับนอนระดับเฟิร์สคลาส</p>
+                    <h3 class="text-lg font-bold text-white">บรรยากาศร่มรื่นผ่อนคลาย</h3>
+                    <p class="text-gray-400 text-sm">ดนตรีฟังสบาย </p>
                 </div>
             </div>
         </section>
@@ -872,18 +872,16 @@
 
             // Hairstyle Catalog
             hairstyles: [
-                { id: 'h1', name: 'Comma (คอมม่า)', basePrice: 80, desc: 'ตัดด้านข้างแบบอันเดอร์คัทหรือเฟด ให้ลุคที่ดูทันสมัย ละมุน และช่วยปรับรูปหน้าให้ดูโดดเด่น', img: 'https://i.postimg.cc/cCYKFkFv/images.jpg' },
-                { id: 'h2', name: 'Two-Block (ทูบล็อค)', basePrice: 80, desc: 'ทรงผมชายสไตล์เกาหลีที่แบ่งผมออกเป็น 2 ส่วนชัดเจน โดยตัดผมด้านข้างและด้านหลังให้สั้น', img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQCp6Tuel1CAr2mPE6arIbV4voCHP47vS-fc37_5uz8qg&s=10' },
-                { id: 'h3', name: 'Mullet (มัลเล็ต)', basePrice: 80, desc: 'ทรงเสยเนี๊ยบ ลุคสมาร์ท หล่อสุขุม', img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQSuJIHAi7jO-IZbgsrCb5B0xRfa0Ap0TXW5vPkF7zIyw&s=10' },
-                { id: 'h4', name: 'Buzz Cut (บัสคัต)', basePrice: 80, desc: 'สกินเฮดแกะลาย ลุคสปอร์ต ดูแลรักษาง่าย', img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSYy8eNpUcaf4IDAYYgT430c87UzmHEHf6pv2WrdNVqCw&s=10' },
-                { id: 'h5', name: 'Crop (คร็อป)', basePrice: 80, desc: 'ตัดสั้นมีเท็กซ์เจอร์ เหมาะกับรูปหน้าทุกแบบ', img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ6Guw3ZWQGQcL7HrNuqMFnuG1fZEzwrMCtryCaWMCWGw&s' },
-                { id: 'h6', name: 'Taper Fade (เทเปอร์เฟด)', basePrice: 80, desc: 'แพ็กเกจตัดผม + กันโกนแต่งหนวดเคราครบสูตร', img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSlDNvXNEFYNoi7XJihOgu_bMONxbaI8wwiZFak-NYQpA&s=10' },
-                { id: 'h7', name: 'Slicked Back (สลิคแบล็ค)', basePrice: 80, desc: 'การเซ็ตผมแบบเสยปาดเรียบไปด้านหลัง ผมด้านหน้าค่อนข้างยาว ไถด้านข้างให้สั้นแบบอันเดอร์คัต', img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSDcc_xa4XfLvmCBgsDekU5QLkkdAwybZj_CXcOzmbR2g&s=10' },
-                { id: 'h8', name: 'Undercut (อันเดอร์คัต)', basePrice: 80, desc: 'ตัดด้านข้างให้สั้นกว่าตรงกลาง เป็นทรงที่ดูแลง่าย ไม่ร้อนเหมาะกับอากาศบ้านเรามาก ๆ เซ็ตง่ายทำได้หลายลุค', img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQcFjL5ges-lJ42L_yUxjp_3ihUmsh4I9OiCZKxzpYw1w&s=10' },
-                { id: 'h9', name: 'Skinhead Fade (สกินเฟด)', basePrice: 80, desc: 'ไล่ลำดับความเข้มลงไปจากด้านข้างถึงท้ายทอย เป็นทรงที่ทำแล้วได้ลุคเท่ๆ กวนๆ ดูเป็นหนุ่มอารมณ์ดี ที่มีความเอาจริง เอาจัง', img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTpSrZp93j6-r3OYOnZA_GpYD08F2EpeifVG8Jnu9I0YA&s=10' },
-                { id: 'h10', name: 'Skinhead (สกินเฮด)', basePrice: 80, desc: 'คลาสสิค และเป็นที่นิยมของหนุ่ม ๆ มาอย่างยาวนาน พักหลัง ๆ มานี้ก็จะได้เห็นไอดอลหนุ่มชาวจีนทำผมทรงนี้', img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQhhwsGbfYZsEmf8yjyYKL9eNALIaisgnzOdaiibNmg4g&s=10' },
-                { id: 'h11', name: 'Side Part (ไซด์พาท,ปัดเป๋)', basePrice: 80, desc: 'ทรงผมผู้ชายที่เรียบง่าย ดูดี ไม่เคยตกยุค ทรงนี้มีความนิยมมาตั้งแต่ศตวรรษที่ 19 แล้ว ดังนั้นจึงเป็นอีกทรงผมชายที่คลาสสิก', img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRUbANz7vI2Vc6uL4O8XiCoXufd_easMpSHZAFJFgHGPw&s=10' },
-                { id: 'h12', name: 'Pompadour (ปอมปาดัว)', basePrice: 80, desc: 'ตัดผมด้านข้างและด้านหลังสั้น ด้านบนยาว เสยผมด้านหน้าขึ้นสูง  ปาดโหนก', img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTNYrsQ07w4lEOV5i21sWknnaOzCbvihURfMTkBMrOoKw&s=10' }
+                { id: 'h1', name: 'Comma (คอมม่า)', basePrice: 80, desc: 'เหมาะสำหรับคนที่มีผมแสกกลาง', img: 'https://i.postimg.cc/cCYKFkFv/images.jpg' },
+                { id: 'h2', name: 'Two-Block (ทูบล็อค)', basePrice: 80, desc: 'เหมาะสำหรับคนมีผมหน้าม้า', img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQCp6Tuel1CAr2mPE6arIbV4voCHP47vS-fc37_5uz8qg&s=10' },
+                { id: 'h3', name: 'Mullet (มัลเล็ต)', basePrice: 80, desc: 'เปิดข้างด้านบนอิสระ', img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQSuJIHAi7jO-IZbgsrCb5B0xRfa0Ap0TXW5vPkF7zIyw&s=10' },
+                { id: 'h4', name: 'Crop (คร็อป)', basePrice: 80, desc: 'เหมาะสำหรับคนมีหน้าม้าสั้นคล้ายทูบล็อค', img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ6Guw3ZWQGQcL7HrNuqMFnuG1fZEzwrMCtryCaWMCWGw&s' },
+                { id: 'h5', name: 'Taper Fade (เทเปอร์เฟด)', basePrice: 80, desc: 'ไล่ขาวด้านข้างและด้านหลังหลังใบหูแค่เก็บให้เรียบร้อย', img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSlDNvXNEFYNoi7XJihOgu_bMONxbaI8wwiZFak-NYQpA&s=10' },
+                { id: 'h6', name: 'Slicked Back (สลิคแบล็ค)', basePrice: 80, desc: 'เหมาะสำหรับคนที่มีแนวผมเสยไปข้างหลัง', img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSDcc_xa4XfLvmCBgsDekU5QLkkdAwybZj_CXcOzmbR2g&s=10' },
+                { id: 'h7', name: 'Undercut (อันเดอร์คัต)', basePrice: 80, desc: 'เปิดข้างหลังสูงด้านบนอิสระ', img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQcFjL5ges-lJ42L_yUxjp_3ihUmsh4I9OiCZKxzpYw1w&s=10' },
+                { id: 'h8', name: 'Skinhead Fade (สกินเฟด)', basePrice: 80, desc: 'สกินเฮดเลือกเบอร์ได้ แล้วไล่ขาวรอบหัว สูงกลางต่ำอิสระ', img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTpSrZp93j6-r3OYOnZA_GpYD08F2EpeifVG8Jnu9I0YA&s=10' },
+                { id: 'h9', name: 'Skinhead (สกินเฮด)', basePrice: 80, desc: 'เลือกเบอร์ได้อิสระ ไม่ได้ไล่ขาว', img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQhhwsGbfYZsEmf8yjyYKL9eNALIaisgnzOdaiibNmg4g&s=10' },
+                { id: 'h10', name: 'Side Part (ไซด์พาท,ปัดเป๋)', basePrice: 80, desc: 'เหมาะสำหรับคนที่ปัดผมไปด้านข้าง', img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRUbANz7vI2Vc6uL4O8XiCoXufd_easMpSHZAFJFgHGPw&s=10' },
             ],
 
             // Age Categories & Rate Multipliers
@@ -903,14 +901,14 @@
                     exp: 'ประสบการณ์ 1 ปี ชื่นชอบด้านการเฟด',
                     avatar: 'https://i.postimg.cc/8FR1mMtP/858525001-1129326712975883-8607776798710260414-n.jpg'
                 },
-                {
-                    id: 'b2',
-                    name: 'ช่างโจ (ช่างประจำร้าน)',
-                    email: 'phongsakorn7420@gmail.com',
-                    status: 'available',
-                    exp: 'ประสบการณ์ 5 ปี เชี่ยวชาญเฟดสายอเมริกัน',
-                    avatar: 'https://i.postimg.cc/qMrLWY3v/863844196-1134350642473490-5849783856972700037-n.jpg'
-                }
+                // {
+                //     id: 'b2',
+                //     name: 'ช่างโจ (ช่างประจำร้าน)',
+                //     email: 'phongsakorn7420@gmail.com',
+                //     status: 'available',
+                //     exp: 'ประสบการณ์ 5 ปี เชี่ยวชาญเฟดสายอเมริกัน',
+                //     avatar: 'https://i.postimg.cc/qMrLWY3v/863844196-1134350642473490-5849783856972700037-n.jpg'
+                // }
             ],
 
             isShopOpen: true,
@@ -1971,16 +1969,29 @@
             const container = document.getElementById('home-barbers-grid');
             if (!container) return;
 
-            let currentBarbers = [];
+            let rawBarbers = [];
             try {
                 const savedBarbers = localStorage.getItem('barber_shop_barbers');
                 if (savedBarbers) {
-                    currentBarbers = JSON.parse(savedBarbers);
+                    rawBarbers = JSON.parse(savedBarbers);
                 } else if (typeof state !== 'undefined' && state.barbers) {
-                    currentBarbers = state.barbers;
+                    rawBarbers = state.barbers;
                 }
             } catch (e) {
-                currentBarbers = state.barbers || [];
+                rawBarbers = state.barbers || [];
+            }
+
+            // กรองเอาเฉพาะช่างก้อง (id === 'b1') เท่านั้น
+            let currentBarbers = rawBarbers.filter(b => b.id === 'b1');
+
+            // เผื่อกรณีข้อมูลยังไม่มา ให้เซ็ตค่าเริ่มต้นของช่างก้องทันที
+            if (currentBarbers.length === 0) {
+                currentBarbers = [{
+                    id: 'b1',
+                    name: 'ช่างก้อง',
+                    exp: 'ช่างก้อง (เจ้าของร้าน)',
+                    status: 'available'
+                }];
             }
 
             // Fallback เผื่อข้อมูลใน LocalStorage ไม่มีรูป ให้ดึงจากชุดตั้งต้นตรงๆ ทันที
@@ -2047,20 +2058,36 @@
             const container = document.getElementById('full-barbers-grid');
             if (!container) return;
 
-            // 1. ดึงข้อมูลช่างล่าสุดจาก state.barbers เป็นหลัก (เพื่อให้รับค่า Real-time จาก Firebase ทันที)
+            // 1. ดึงข้อมูลช่างล่าสุดจาก state.barbers เป็นหลัก และกรองเอาเฉพาะ "ช่างก้อง" (id: 'b1') เท่านั้น
             let currentBarbers = [];
+            let rawBarbers = [];
+
             if (typeof state !== 'undefined' && state.barbers && state.barbers.length > 0) {
-                currentBarbers = state.barbers;
+                rawBarbers = state.barbers;
             } else {
                 try {
                     const savedBarbers = localStorage.getItem('barber_shop_barbers');
                     if (savedBarbers) {
-                        currentBarbers = JSON.parse(savedBarbers);
-                        if (typeof state !== 'undefined') state.barbers = currentBarbers;
+                        rawBarbers = JSON.parse(savedBarbers);
+                        if (typeof state !== 'undefined') state.barbers = rawBarbers;
                     }
                 } catch (e) {
-                    currentBarbers = [];
+                    rawBarbers = [];
                 }
+            }
+
+            // กรองเอาเฉพาะช่างก้อง (id === 'b1') คนเดียวเท่านั้น
+            currentBarbers = rawBarbers.filter(b => b.id === 'b1');
+
+            // เผื่อกรณีใน state ยังไม่มีข้อมูล b1 ให้สร้างข้อมูลตั้งต้นของช่างก้องขึ้นมาแสดงผลทันที
+            if (currentBarbers.length === 0) {
+                currentBarbers = [{
+                    id: 'b1',
+                    name: 'ช่างก้อง',
+                    exp: 'ช่างก้อง (เจ้าของร้าน)',
+                    bio: 'ประสบการณ์ตัดผม 1 ปี ชอบการเฟดและเซ็ตผม',
+                    status: 'available'
+                }];
             }
 
             // 2. กำหนดลิงก์รูปภาพสำรองประจำตัวช่างตาม id
@@ -2103,8 +2130,8 @@
                 }
 
                 // ป้องกันคำว่า undefined
-                const barberExp = b.exp || (b.id === 'b1' ? 'ช่างก้อง (เจ้าของร้าน)' : 'ช่างประจำร้าน');
-                const barberBio = b.bio || 'เชี่ยวชาญการตัดแต่งทรงผมชายสไตล์คลาสสิก ออกแบบทรงผมเข้ากับรูปหน้า และบริการกันโกนหนวดระดับพรีเมียม';
+                const barberExp = b.exp || 'ช่างก้อง (เจ้าของร้าน)';
+                const barberBio = b.bio || 'ประสบการณ์ตัดผม 1 ปี ชอบการเฟดและเซ็ตผม';
 
                 return `
             <div class="bg-dark-800 rounded-2xl border border-dark-700 p-6 shadow-xl flex flex-col items-center text-center space-y-4">
@@ -2478,19 +2505,32 @@
             if (!container) return;
 
             // 🌟 1. ยึด state.barbers เป็นอันดับแรกเพื่อให้รับค่า Real-time จาก Firebase ทันที
-            let currentBarbers = [];
+            let rawBarbers = [];
             if (typeof state !== 'undefined' && state.barbers && state.barbers.length > 0) {
-                currentBarbers = state.barbers;
+                rawBarbers = state.barbers;
             } else {
                 try {
                     const savedBarbers = localStorage.getItem('barber_shop_barbers');
                     if (savedBarbers) {
-                        currentBarbers = JSON.parse(savedBarbers);
-                        if (typeof state !== 'undefined') state.barbers = currentBarbers;
+                        rawBarbers = JSON.parse(savedBarbers);
+                        if (typeof state !== 'undefined') state.barbers = rawBarbers;
                     }
                 } catch (e) {
-                    currentBarbers = [];
+                    rawBarbers = [];
                 }
+            }
+
+            // กรองเอาเฉพาะช่างก้อง (id === 'b1') เท่านั้น
+            let currentBarbers = rawBarbers.filter(b => b.id === 'b1');
+
+            // เผื่อกรณีข้อมูลยังไม่มา ให้เซ็ตค่าเริ่มต้นของช่างก้องทันที
+            if (currentBarbers.length === 0) {
+                currentBarbers = [{
+                    id: 'b1',
+                    name: 'ช่างก้อง',
+                    exp: 'ช่างก้อง (เจ้าของร้าน)',
+                    status: 'available'
+                }];
             }
 
             // 2. กำหนดลิงก์รูปภาพสำรองประจำตัวช่าง
@@ -4661,6 +4701,35 @@
                 } catch (e) { }
             }
         }
+
+        async function registerDeviceForPush(staffId) {
+            if (!window.firebaseModules || !window.db) return;
+            const { getMessaging, getToken, doc, setDoc } = window.firebaseModules;
+            const messaging = getMessaging();
+
+            try {
+                const permission = await Notification.requestPermission();
+                if (permission === 'granted') {
+                    // ดึง Token ประจำเครื่องมือถือเครื่องนี้
+                    const token = await getToken(messaging, {
+                        vapidKey: 'ใส่_VAPID_KEY_ที่ได้มาจาก_Firebase_Console_ตรงนี้'
+                    });
+
+                    if (token) {
+                        // บันทึก Token ลง Firestore แยกตามรายบุคคล (แอดมิน/ช่าง)
+                        await setDoc(doc(window.db, "staff_tokens", staffId), {
+                            staffId: staffId,
+                            token: token,
+                            updatedAt: new Date().toISOString()
+                        });
+                        console.log("ลงทะเบียนรับแจ้งเตือนสำหรับเครื่องนี้สำเร็จ!");
+                    }
+                }
+            } catch (error) {
+                console.error("เกิดข้อผิดพลาดในการขอ Token:", error);
+            }
+        }
+
     </script>
     <!-- Modal ข้อมูลส่วนตัว -->
     <div id="profile-modal"
