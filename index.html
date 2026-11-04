@@ -3785,28 +3785,43 @@
 
             if (!state.currentUser) return;
 
-            // 🌟 ดึงค่าจากฟอร์ม
-            const newName = state.currentUser.name;
-            const newPhone = document.getElementById('profile-phone').value.trim(); // เบอร์โทรศัพท์
-
-            // 🌟 ดึงค่าวันเกิดจาก Input และคำนวณอายุใหม่
-            const birthdateInput = document.getElementById('profile-birthdate');
-            const newBirthdate = birthdateInput ? birthdateInput.value : (state.currentUser.birthdate || '');
-            const newAge = typeof calculateAge === 'function' ? calculateAge(newBirthdate) : (state.currentUser.age || 0);
-
-            // อัปเดตค่าลงใน Object state.currentUser ปัจจุบัน
-            state.currentUser.phone = newPhone;
-            state.currentUser.birthdate = newBirthdate;
-            state.currentUser.age = newAge;
-
-            if (tempProfileAvatarBase64) {
-                state.currentUser.avatar = tempProfileAvatarBase64;
+            // 🌟 1. ดึงปุ่มบันทึกมาเปลี่ยนสถานะเป็น Loading (หมุนๆ)
+            const saveBtn = document.getElementById('save-profile-btn');
+            let originalBtnText = '';
+            if (saveBtn) {
+                originalBtnText = saveBtn.innerHTML;
+                saveBtn.disabled = true;
+                saveBtn.innerHTML = `
+            <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white inline-block" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            กำลังบันทึก...
+        `;
             }
 
-            // 🌟 1. บันทึกลง LocalStorage ของ User ก่อนทันที (ป้องกันข้อมูลหายเวลาเปิดดูรอบหน้าหรือรีเฟรช)
-            localStorage.setItem('barber_current_user', JSON.stringify(state.currentUser));
-
             try {
+                // 🌟 ดึงค่าจากฟอร์ม
+                const newName = state.currentUser.name;
+                const newPhone = document.getElementById('profile-phone').value.trim(); // เบอร์โทรศัพท์
+
+                // 🌟 ดึงค่าวันเกิดจาก Input และคำนวณอายุใหม่
+                const birthdateInput = document.getElementById('profile-birthdate');
+                const newBirthdate = birthdateInput ? birthdateInput.value : (state.currentUser.birthdate || '');
+                const newAge = typeof calculateAge === 'function' ? calculateAge(newBirthdate) : (state.currentUser.age || 0);
+
+                // อัปเดตค่าลงใน Object state.currentUser ปัจจุบัน
+                state.currentUser.phone = newPhone;
+                state.currentUser.birthdate = newBirthdate;
+                state.currentUser.age = newAge;
+
+                if (tempProfileAvatarBase64) {
+                    state.currentUser.avatar = tempProfileAvatarBase64;
+                }
+
+                // 🌟 1. บันทึกลง LocalStorage ของ User ก่อนทันที (ป้องกันข้อมูลหายเวลาเปิดดูรอบหน้าหรือรีเฟรช)
+                localStorage.setItem('barber_current_user', JSON.stringify(state.currentUser));
+
                 // 2. ซิงก์ข้อมูลลงใน Local state.barbers
                 state.barbers = JSON.parse(localStorage.getItem('barber_shop_barbers')) || state.barbers;
 
@@ -3859,6 +3874,12 @@
                 console.error("Error updating profile:", error);
                 showToast('เกิดข้อผิดพลาดในการซิงก์ข้อมูลออนไลน์ แต่บันทึกในเครื่องแล้ว', 'warning');
                 closeModal('profile-modal');
+            } finally {
+                // 🌟 4. คืนค่าปุ่มกลับมาเป็นปกติเสมอ ไม่ว่าจะสำเร็จหรือพัง
+                if (saveBtn) {
+                    saveBtn.disabled = false;
+                    saveBtn.innerHTML = originalBtnText;
+                }
             }
         }
 
@@ -4540,7 +4561,7 @@
                 </div>
 
                 <!-- ปุ่มบันทึก -->
-                <button type="submit"
+                <button type="submit" id="save-profile-btn"
                     class="w-full bg-amber-500 hover:bg-amber-600 text-dark-900 font-bold py-2.5 rounded-xl transition shadow-md">
                     บันทึกการแก้ไข
                 </button>
