@@ -2113,18 +2113,22 @@
             const isOpen = savedShopStatus !== null ? (savedShopStatus === 'true') : true;
 
             container.innerHTML = currentBarbers.map(b => {
-                // 🌟 5. ซิงค์และดึงรูปภาพโดยให้สิทธิ์รูปจาก state.currentUser (แอดมินที่ล็อกอิน) เป็นหลักทันที
                 let barberImage = '';
+
+                // 🌟 5. เช็กสิทธิ์ความปลอดภัย: ดึงรูปจาก state.currentUser เฉพาะกรณีที่เป็นแอดมินหรือไอดีตรงกับช่างเท่านั้น
                 if (typeof state !== 'undefined' && state.currentUser) {
-                    barberImage = state.currentUser.avatar || state.currentUser.photoURL || '';
+                    const isAdminOrOwner = state.currentUser.role === 'admin' ||
+                        state.currentUser.isAdmin === true ||
+                        String(state.currentUser.id) === String(b.id);
+
+                    if (isAdminOrOwner) {
+                        barberImage = state.currentUser.avatar || state.currentUser.photoURL || '';
+                    }
                 }
 
-                // ถ้าใน state.currentUser ไม่มี ให้ดึงจากข้อมูลช่าง (b.avatar) หรือรูปสำรองตามค่าเริ่มต้น
+                // ถ้าไม่ใช่แอดมิน (เช่น ลูกค้าล็อกอิน) หรือไม่มีรูปใน currentUser ให้ดึงจากข้อมูลช่าง (b.avatar) หรือรูปสำรองปกติ
                 if (!barberImage) {
                     barberImage = b.avatar || defaultAvatars[b.id] || 'https://i.postimg.cc/8FR1mMtP/858525001-1129326712975883-8607776798710260414-n.jpg';
-                } else {
-                    // อัปเดตกลับเข้าไปในข้อมูลช่างตัวจริง เพื่อให้ทุกส่วนดึงรูปใหม่ไปใช้ทันที
-                    b.avatar = barberImage;
                 }
 
                 const isClosed = !isOpen || b.status === 'closed';
