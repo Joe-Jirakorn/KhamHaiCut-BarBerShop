@@ -3183,30 +3183,29 @@
                     if (lastBookingCount !== null && newBookings.length > lastBookingCount && isAdminOrBarber) {
                         console.log("🔔 [NOTIFICATION] มีรายการจองคิวใหม่เข้ามา!");
 
-                        // 1. 🔊 เล่นเสียงเตือน 5 จังหวะ (ความดังชัดเจน)
+                        // 1. 🔊 เพิ่มความดังและปรับจังหวะเสียงเตือนให้ชัดเจนเร้าใจยิ่งขึ้น
                         try {
                             const AudioContext = window.AudioContext || window.webkitAudioContext;
                             if (AudioContext) {
                                 const ctx = new AudioContext();
-                                const playBeep = (time, freq) => {
+                                const playBeep = (time, freq, vol = 0.8) => {
                                     const osc = ctx.createOscillator();
                                     const gain = ctx.createGain();
                                     osc.type = 'sine';
                                     osc.frequency.value = freq;
-                                    gain.gain.setValueAtTime(0.5, time);
-                                    gain.gain.exponentialRampToValueAtTime(0.001, time + 0.2);
+                                    gain.gain.setValueAtTime(vol, time);
+                                    gain.gain.exponentialRampToValueAtTime(0.001, time + 0.25);
                                     osc.connect(gain);
                                     gain.connect(ctx.destination);
                                     osc.start(time);
-                                    osc.stop(time + 0.2);
+                                    osc.stop(time + 0.25);
                                 };
 
                                 const now = ctx.currentTime;
-                                playBeep(now, 700);
-                                playBeep(now + 0.15, 850);
-                                playBeep(now + 0.30, 1000);
-                                playBeep(now + 0.45, 1150);
-                                playBeep(now + 0.60, 1350);
+                                playBeep(now, 800, 0.9);
+                                playBeep(now + 0.12, 1000, 0.9);
+                                playBeep(now + 0.24, 1200, 1.0);
+                                playBeep(now + 0.36, 1400, 1.0);
                             }
                         } catch (err) {
                             console.warn("ไม่สามารถเล่นเสียงได้:", err);
@@ -3216,17 +3215,14 @@
                         const latestBooking = newBookings[newBookings.length - 1] || {};
 
                         const customerName = latestBooking.customerName || latestBooking.name || latestBooking.userName || 'ลูกค้าทั่วไป';
-
-                        // 🌟 [แก้ไขจุดนี้] ดึงฟิลด์ styleName ขึ้นมาก่อน เพื่อให้แสดงชื่อทรงผมจริงที่ลูกค้าเลือก
                         const haircutStyle = latestBooking.styleName || latestBooking.service || latestBooking.haircutStyle || latestBooking.haircut || 'ตัดผม/บริการ';
-
                         const bookingTime = latestBooking.time || latestBooking.bookingTime || '';
                         const bookingDate = latestBooking.date || latestBooking.bookingDate || '';
                         const fullDateTime = (bookingDate && bookingTime) ? `${bookingDate} ${bookingTime}` : (bookingTime || bookingDate || 'เร็วๆ นี้');
 
-                        // สร้างกล่อง Alert สีเหลืองกลางจอ
+                        // สร้างกล่อง Alert สีเหลืองกลางจอ (นำปุ่มออกตามต้องการ)
                         const alertBox = document.createElement('div');
-                        alertBox.id = 'active-booking-popup-modal'; // ตั้ง ID ไว้เพื่อให้สั่งเคลียร์ได้
+                        alertBox.id = 'active-booking-popup-modal';
                         alertBox.className = 'fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm animate-fade-in p-4';
                         alertBox.innerHTML = `
                             <div class="bg-dark-800 border-2 border-amber-500 rounded-2xl p-6 w-full max-w-md text-white shadow-2xl relative animate-scale-up text-center">
@@ -3234,9 +3230,9 @@
                                     <i class="fa-solid fa-bell animate-bounce"></i>
                                 </div>
                                 <h3 class="text-xl font-bold text-amber-400 mt-3 mb-1">🔔 มีรายการจองคิวใหม่เข้ามา!</h3>
-                                <p class="text-xs text-gray-400 mb-4">ระบบบันทึกคิวเรียบร้อยแล้ว กรุณาตรวจสอบข้อมูล</p>
+                                <p class="text-xs text-gray-400 mb-4">ระบบบันทึกคิวเรียบร้อยแล้ว หน้าต่างจะปิดอัตโนมัติใน 3 วินาที...</p>
                                 
-                                <div class="bg-dark-900/80 border border-dark-700 rounded-xl p-4 text-left space-y-2 mb-5 text-sm">
+                                <div class="bg-dark-900/80 border border-dark-700 rounded-xl p-4 text-left space-y-2 mb-2 text-sm">
                                     <div class="flex justify-between">
                                         <span class="text-gray-400">👤 ชื่อลูกค้า:</span>
                                         <span class="font-semibold text-white">${customerName}</span>
@@ -3250,11 +3246,6 @@
                                         <span class="font-semibold text-white">${fullDateTime}</span>
                                     </div>
                                 </div>
-
-                                <button onclick="closeActiveBookingPopup()" 
-                                    class="w-full bg-amber-500 hover:bg-amber-600 text-dark-900 font-bold py-2.5 rounded-xl transition shadow-md">
-                                    รับทราบ / ปิดหน้าต่าง
-                                </button>
                             </div>
                         `;
 
@@ -3264,13 +3255,13 @@
 
                         document.body.appendChild(alertBox);
 
-                        // 🌟 3. ตั้งเวลา 5 วินาที (5000 มิลลิวินาที) ให้หน้าต่างปิดตัวเองอัตโนมัติ
+                        // 🌟 3. ตั้งเวลาลดเหลือ 3 วินาที (3000 มิลลิวินาที) ปิดเองและพาออกจากหน้านี้อัตโนมัติ
                         if (window.popupAutoCloseTimer) {
                             clearTimeout(window.popupAutoCloseTimer);
                         }
                         window.popupAutoCloseTimer = setTimeout(() => {
-                            closeActiveBookingPopup();
-                        }, 5000);
+                            closeActiveBookingPopupAndRedirect();
+                        }, 3000);
                     }
 
                     lastBookingCount = newBookings.length;
@@ -3309,6 +3300,20 @@
                     console.error("เกิดข้อผิดพลาดในการดึงข้อมูลเรียลไทม์:", error);
                 }
             );
+        }
+
+        // ฟังก์ชันปิด Popup พร้อมพาออกจากหน้าแจ้งเตือน (เปลี่ยนไปหน้าแดชบอร์ดหรือหน้าแรกอัตโนมัติ)
+        function closeActiveBookingPopupAndRedirect() {
+            const popup = document.getElementById('active-booking-popup-modal');
+            if (popup) popup.remove();
+            if (window.popupAutoCloseTimer) {
+                clearTimeout(window.popupAutoCloseTimer);
+            }
+
+            // 🌟 สั่งเปลี่ยนหน้าจอหรือพาออกจากหน้านี้อัตโนมัติ (เช่น กลับไปหน้าแรกหรือหน้าจัดการแอดมินหลัก)
+            if (typeof navigateTo === 'function') {
+                navigateTo('admin-dashboard'); // หรือเปลี่ยนเป็นหน้า 'home' ตามที่ก้องต้องการ
+            }
         }
 
         // ฟังก์ชันช่วยปิด Popup และเคลียร์ Timer
