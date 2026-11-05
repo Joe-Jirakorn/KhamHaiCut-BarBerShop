@@ -2194,12 +2194,8 @@
                 return;
             }
 
-            // 🌟 ปรับปรุงการกรองให้ครอบคลุมทุกเครื่องและทุกกรณี:
-            // หากข้อมูลไม่มีฟิลด์ status หรือสถานะเป็นค่าว่าง หรือมีคำว่า 'รอ' / 'pending' ให้ดึงมาแสดงทั้งหมดทันที
             const pendingBookings = bookings.filter(b => {
                 const status = (b.status || '').toLowerCase().trim();
-
-                // ถือว่าเป็นคิวที่ต้องแสดง หากสถานะเป็น pending, รอดำเนินการ, มีคำว่า 'รอ', หรือแม้แต่ "ยังไม่มีการกำหนดสถานะ (!b.status)"
                 const isPending = status === 'pending' ||
                     status === 'รอดำเนินการ' ||
                     status.includes('รอ') ||
@@ -2214,6 +2210,18 @@
                 return;
             }
 
+            const currentUser = (typeof state !== 'undefined' && state.currentUser) ? state.currentUser : null;
+
+            // 🌟 1. ตรวจสอบสถานะแอดมินตัวจริง
+            const isMasterAdmin = Boolean(currentUser && (
+                currentUser.role === 'admin' ||
+                currentUser.isAdmin === true ||
+                String(currentUser.id) === 'b1'
+            ));
+
+            const rawGuestIds = JSON.parse(localStorage.getItem('my_guest_booking_ids') || '[]');
+            const guestBookingIds = rawGuestIds.map(id => String(id).replace(/\s+/g, '').toLowerCase());
+
             tbody.innerHTML = pendingBookings.map(b => {
                 const bookingId = b.id || (b.firestoreId ? b.firestoreId.slice(0, 6) : 'KH-0000');
                 const styleName = b.styleName || b.service || b.haircutStyle || 'ตัดผม/บริการ';
@@ -2222,6 +2230,36 @@
                 const timeStr = b.time || b.bookingTime || '-';
                 const priceVal = b.price || '160';
                 const docId = b.firestoreId || b.id;
+
+                const bEmail = (b.userEmail || b.email || b.customerEmail || '').trim().toLowerCase();
+                const uEmail = (currentUser && currentUser.email ? currentUser.email : '').trim().toLowerCase();
+                const bPhone = (b.userPhone || b.phone || b.customerPhone || '').trim();
+                const uPhone = (currentUser && currentUser.phone ? currentUser.phone : '').trim();
+
+                let isTrueOwner = false;
+
+                if (currentUser) {
+                    const matchEmail = Boolean(uEmail && bEmail && bEmail === uEmail);
+                    const matchPhone = Boolean(uPhone && bPhone && bPhone === uPhone);
+                    isTrueOwner = matchEmail || matchPhone;
+                } else {
+                    const cleanBookingId = String(b.id || '').replace(/\s+/g, '').toLowerCase();
+                    const cleanFirestoreId = String(b.firestoreId || '').replace(/\s+/g, '').toLowerCase();
+                    isTrueOwner = guestBookingIds.includes(cleanBookingId) || (cleanFirestoreId && guestBookingIds.includes(cleanFirestoreId));
+                }
+
+                // 🛑 2. กฎสิทธิ์การแสดงปุ่ม: Admin เห็นทุกคิว | User ทั่วไปต้องเป็นเจ้าของคิวเท่านั้น
+                const canCancel = isMasterAdmin ? true : isTrueOwner;
+                let actionButton = '';
+
+                if (canCancel) {
+                    actionButton = `<button onclick="cancelBooking('${docId}')" 
+                class="px-3 py-1 rounded-full text-xs font-medium bg-red-500/10 text-red-400 border border-red-500/30 hover:bg-red-500/20 transition">
+                ยกเลิก
+            </button>`;
+                } else {
+                    actionButton = `<span class="text-xs text-gray-500">-</span>`;
+                }
 
                 return `
             <tr class="hover:bg-dark-700/50 transition">
@@ -2236,10 +2274,7 @@
                     </span>
                 </td>
                 <td class="px-6 py-4 text-center">
-                    <button onclick="cancelBooking('${docId}')" 
-                        class="px-3 py-1 rounded-full text-xs font-medium bg-red-500/10 text-red-400 border border-red-500/30 hover:bg-red-500/20 transition">
-                        ยกเลิก
-                    </button>
+                    ${actionButton}
                 </td>
             </tr>
         `;
@@ -4344,116 +4379,6 @@
                 alert("เกิดข้อผิดพลาดในการบันทึกข้อมูล");
             }
         }
-
-        // 1. ฟังก์ชันหลักสำหรับแสดงประวัติการจองฝั่ง User (ดึงจากคิวทั้งหมดในระบบมาแสดงผลทันที)
-        // ================= 1. ตารางประวัติการจองฝั่ง User (เปิดสิทธิ์ให้ Admin เห็นปุ่มยกเลิกทุกคิว) =================
-        function renderUserBookingsTable() {
-            const tbody = document.getElementById('user-bookings-table-body');
-            if (!tbody) return;
-
-            let bookings = state.bookings || [];
-
-            if (!window.isBookingsLoaded && bookings.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="7" class="px-6 py-8 text-center text-amber-400/80 animate-pulse"><i class="fa-solid fa-spinner fa-spin mr-2"></i> กำลังซิงค์ข้อมูลคิวจากระบบ...</td></tr>`;
-                return;
-            }
-
-            if (bookings.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="7" class="px-6 py-8 text-center text-gray-500">ไม่มีประวัติการจองคิวที่รอดำเนินการ</td></tr>`;
-                return;
-            }
-
-            const uniqueBookingsMap = new Map();
-            bookings.forEach(b => {
-                const uniqueKey = (b.id || b.firestoreId || '').trim();
-                if (uniqueKey && !uniqueBookingsMap.has(uniqueKey)) {
-                    uniqueBookingsMap.set(uniqueKey, b);
-                }
-            });
-            bookings = Array.from(uniqueBookingsMap.values());
-
-            const pendingBookings = bookings.filter(b => {
-                const status = (b.status || 'pending').toLowerCase().trim();
-                return status === 'pending' || status.includes('รอ') || status === 'รอดำเนินการ' || !b.status;
-            });
-
-            if (pendingBookings.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="7" class="px-6 py-8 text-center text-gray-500">ไม่มีประวัติการจองคิวที่รอดำเนินการ</td></tr>`;
-                return;
-            }
-
-            const currentUser = (typeof state !== 'undefined' && state.currentUser) ? state.currentUser : null;
-
-            // ตรวจสอบสถานะแอดมินตัวจริง
-            const isMasterAdmin = Boolean(currentUser && (
-                currentUser.role === 'admin' ||
-                currentUser.isAdmin === true ||
-                String(currentUser.id) === 'b1' ||
-                String(currentUser.email || '').toLowerCase().includes('admin')
-            ));
-
-            const rawGuestIds = JSON.parse(localStorage.getItem('my_guest_booking_ids') || '[]');
-            const guestBookingIds = rawGuestIds.map(id => String(id).replace(/\s+/g, '').toLowerCase());
-
-            tbody.innerHTML = pendingBookings.map(b => {
-                const bookingId = b.id || (b.firestoreId ? b.firestoreId.slice(0, 6) : 'KH-0000');
-                const styleName = b.styleName || b.service || b.haircutStyle || 'ตัดผม/บริการ';
-                const barberName = b.barberName || 'ช่างก้อง (เจ้าของร้าน)';
-                const dateStr = b.date || b.bookingDate || '-';
-                const timeStr = b.time || b.bookingTime || '-';
-                const priceVal = b.price || '160';
-                const docId = b.firestoreId || b.id;
-
-                const bEmail = (b.userEmail || b.email || b.customerEmail || '').trim().toLowerCase();
-                const uEmail = (currentUser && currentUser.email ? currentUser.email : '').trim().toLowerCase();
-                const bPhone = (b.userPhone || b.phone || b.customerPhone || '').trim();
-                const uPhone = (currentUser && currentUser.phone ? currentUser.phone : '').trim();
-
-                let isTrueOwner = false;
-
-                if (currentUser) {
-                    const matchEmail = Boolean(uEmail && bEmail && bEmail === uEmail);
-                    const matchPhone = Boolean(uPhone && bPhone && bPhone === uPhone);
-                    isTrueOwner = matchEmail || matchPhone;
-                } else {
-                    const cleanBookingId = String(b.id || '').replace(/\s+/g, '').toLowerCase();
-                    const cleanFirestoreId = String(b.firestoreId || '').replace(/\s+/g, '').toLowerCase();
-                    isTrueOwner = guestBookingIds.includes(cleanBookingId) || (cleanFirestoreId && guestBookingIds.includes(cleanFirestoreId));
-                }
-
-                // ถ้าเป็น Admin ตัวจริง ให้แสดงปุ่มยกเลิกได้ทุกคิวทันที | ถ้าเป็น User ทั่วไป ต้องเป็นเจ้าของคิวเท่านั้น
-                const canCancel = isMasterAdmin || isTrueOwner;
-                let actionButton = '';
-
-                if (canCancel) {
-                    actionButton = `<button onclick="cancelBooking('${docId}')" 
-                class="px-3 py-1 rounded-full text-xs font-medium bg-red-500/10 text-red-400 border border-red-500/30 hover:bg-red-500/20 transition">
-                ยกเลิก
-            </button>`;
-                } else {
-                    actionButton = `<span class="text-xs text-gray-500">-</span>`;
-                }
-
-                return `
-            <tr class="hover:bg-dark-700/50 transition">
-                <td class="px-6 py-4 font-mono text-amber-400 font-semibold">${bookingId}</td>
-                <td class="px-6 py-4 text-white">${styleName}</td>
-                <td class="px-6 py-4 text-gray-300">${barberName}</td>
-                <td class="px-6 py-4 text-gray-300">${dateStr} (${timeStr})</td>
-                <td class="px-6 py-4 font-semibold text-amber-500">฿${priceVal}</td>
-                <td class="px-6 py-4">
-                    <span class="px-2.5 py-1 rounded-full text-xs font-medium bg-amber-500/10 text-amber-400 border border-amber-500/30">
-                        รอดำเนินการ
-                    </span>
-                </td>
-                <td class="px-6 py-4 text-center">
-                    ${actionButton}
-                </td>
-            </tr>
-        `;
-            }).join('');
-        }
-
 
         // ================= 2. ฟังก์ชันยืนยันการจอง (Global Scope สมบูรณ์ ป้องกัน Error Not Defined) =================
         async function submitBooking(event, btnElement) {
