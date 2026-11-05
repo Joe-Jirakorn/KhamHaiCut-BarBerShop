@@ -3380,112 +3380,73 @@
 
         // ฟังก์ชันฟังสถานะช่างแบบเรียลไทม์ฝั่ง User
         function initRealtimeBarbers() {
-            if (!window.db || !window.firebaseModules) {
-                console.warn("⚠️ [DEBUG - REALTIME] ยังไม่พบ window.db หรือ window.firebaseModules ข้ามการรัน Real-time ไปก่อน");
-                return;
-            }
+            if (!window.db || !window.firebaseModules) return;
 
             const { doc, onSnapshot } = window.firebaseModules;
 
             try {
                 const barberRef = doc(window.db, "barbers", "b1");
 
-                console.log("📡 [DEBUG - REALTIME] กำลังเริ่มเชื่อมต่อฟัง Real-time (onSnapshot) ที่ Document: barbers/b1 ...");
+                console.log("📡 [REALTIME] เริ่มเชื่อมฟังข้อมูลช่าง b1...");
 
                 onSnapshot(barberRef, (docSnap) => {
                     if (typeof state === 'undefined') {
                         window.state = {};
                     }
-                    if (!state.barbers) {
-                        state.barbers = [];
-                    }
 
                     const defaultAvatar = 'https://i.postimg.cc/8FR1mMtP/858525001-1129326712975883-8607776798710260414-n.jpg';
 
+                    // 🌟 ข้อมูลมาตรฐานของช่างก้อง (บังคับฟิกซ์ค่าตรงนี้เพื่อความชัวร์ไม่ให้ชื่อเพี้ยน)
+                    let masterBarber = {
+                        id: 'b1',
+                        name: 'ช่างก้อง (เจ้าของร้าน)',
+                        exp: 'ช่างก้อง (เจ้าของร้าน)',
+                        bio: 'ประสบการณ์ตัดผม 1 ปี ชอบการเฟดและเซ็ตผม',
+                        status: 'available',
+                        avatar: defaultAvatar
+                    };
+
                     if (docSnap.exists()) {
-                        const fbBarber = { id: docSnap.id, ...docSnap.data() };
+                        const fbData = docSnap.data();
+                        console.log("📥 [REALTIME] ได้รับข้อมูลใหม่จาก Firebase:", fbData);
 
-                        // 🌟 พ่น Console บอกชัดเจนว่าอุปกรณ์นี้ได้รับข้อมูลใหม่จาก Firebase แล้ว
-                        console.log("📥 [DEBUG - REALTIME RECEIVED] 🟢 อุปกรณ์นี้ (ทั้งคอมหรือมือถือ) ได้รับสัญญาณข้อมูลสดจาก Firebase แล้ว!", {
-                            time: new Date().toLocaleTimeString(),
-                            barberName: fbBarber.name,
-                            hasAvatar: !!fbBarber.avatar,
-                            avatarLength: fbBarber.avatar ? fbBarber.avatar.length : 0
-                        });
+                        masterBarber.status = fbData.status || 'available';
+                        if (fbData.name) masterBarber.name = fbData.name;
+                        if (fbData.avatar) masterBarber.avatar = fbData.avatar;
+                        if (fbData.exp) masterBarber.exp = fbData.exp;
+                        if (fbData.bio) masterBarber.bio = fbData.bio;
 
-                        let targetBarber = state.barbers.find(b => b.id === 'b1');
-                        if (targetBarber) {
-                            targetBarber.status = fbBarber.status || targetBarber.status || 'available';
-                            if (fbBarber.name) targetBarber.name = fbBarber.name;
-                            targetBarber.avatar = fbBarber.avatar || targetBarber.avatar || defaultAvatar;
-                            if (fbBarber.exp) targetBarber.exp = fbBarber.exp;
-                            if (fbBarber.bio) targetBarber.bio = fbBarber.bio;
-                        } else {
-                            state.barbers = [{
-                                id: 'b1',
-                                name: fbBarber.name || 'ช่างก้อง (เจ้าของร้าน)',
-                                avatar: fbBarber.avatar || defaultAvatar,
-                                status: fbBarber.status || 'available',
-                                exp: fbBarber.exp || 'ช่างก้อง (เจ้าของร้าน)',
-                                bio: fbBarber.bio || 'ประสบการณ์ตัดผม 1 ปี ชอบการเฟดและเซ็ตผม'
-                            }];
-                        }
-
-                        // ซิงค์ avatar ลง state.currentUser ทันที
+                        // ซิงค์รูปลงใน currentUser ของแอดมินทันที
                         if (state.currentUser && (state.currentUser.role === 'admin' || state.currentUser.isAdmin === true || String(state.currentUser.id) === 'b1')) {
-                            if (fbBarber.avatar) {
-                                state.currentUser.avatar = fbBarber.avatar;
+                            if (fbData.avatar) {
+                                state.currentUser.avatar = fbData.avatar;
                                 localStorage.setItem('barber_current_user', JSON.stringify(state.currentUser));
-                                console.log("👤 [DEBUG - USER SYNC] อัปเดต avatar ใน state.currentUser และ LocalStorage สำเร็จ");
                             }
-                        }
-                    } else {
-                        console.warn("⚠️ [DEBUG - REALTIME] ไม่พบ Document barbers/b1 บน Firebase");
-                        let targetBarber = state.barbers.find(b => b.id === 'b1');
-                        if (!targetBarber) {
-                            state.barbers = [{
-                                id: 'b1',
-                                name: 'ช่างก้อง (เจ้าของร้าน)',
-                                exp: 'ช่างก้อง (เจ้าของร้าน)',
-                                bio: 'ประสบการณ์ตัดผม 1 ปี ชอบการเฟดและเซ็ตผม',
-                                status: 'available',
-                                avatar: defaultAvatar
-                            }];
                         }
                     }
 
-                    state.barbers = state.barbers.filter(b => b.id === 'b1');
+                    // 🌟 บังคับให้ state.barbers มีแค่ช่างก้อง b1 ตัวจริงตัวเดียวเท่านั้น ห้ามมีช่างอื่นปนเปื้อน
+                    state.barbers = [masterBarber];
 
+                    // 🌟 เคลียร์และบันทึกทับ LocalStorage ทันที เพื่อป้องกันข้อมูลเก่าค้างในเครื่อง
                     try {
                         localStorage.setItem('barber_shop_barbers', JSON.stringify(state.barbers));
                     } catch (e) { }
 
-                    // สั่งเรนเดอร์หน้าจอทุกส่วนทันที
+                    console.log("✨ [REALTIME] อัปเดต state.barbers สำเร็จ:", state.barbers);
+
+                    // 🛑 สั่งเรนเดอร์หน้าจอทุกส่วนในเว็บทันทีแบบสดๆ
                     if (typeof updateUserUI === 'function') updateUserUI();
                     if (typeof renderBarbersHomeStatus === 'function') renderBarbersHomeStatus();
                     if (typeof renderBarberSelectGrid === 'function') renderBarberSelectGrid();
                     if (typeof renderAdminBarberControls === 'function') renderAdminBarberControls();
                     if (typeof renderFullBarbersList === 'function') renderFullBarbersList();
-                    if (typeof renderUI === 'function') renderUI();
-
-                    console.log("🎨 [DEBUG - RENDER SUCCESS] เรนเดอร์อัปเดตหน้าจอทุกส่วนเรียบร้อยแล้ว!");
 
                 }, (error) => {
-                    console.error("❌ [DEBUG - REALTIME ERROR] การเชื่อมต่อ Real-time ขัดข้อง:", error);
-                    try {
-                        const savedBarbers = localStorage.getItem('barber_shop_barbers');
-                        if (savedBarbers && typeof state !== 'undefined') {
-                            const parsed = JSON.parse(savedBarbers);
-                            state.barbers = parsed.filter(b => b.id === 'b1');
-                            if (typeof updateUserUI === 'function') updateUserUI();
-                            if (typeof renderBarbersHomeStatus === 'function') renderBarbersHomeStatus();
-                            if (typeof renderFullBarbersList === 'function') renderFullBarbersList();
-                            if (typeof renderBarberSelectGrid === 'function') renderBarberSelectGrid();
-                        }
-                    } catch (e) { }
+                    console.error("❌ [REALTIME ERROR]:", error);
                 });
             } catch (e) {
-                console.error("❌ [DEBUG - INIT ERROR] ไม่สามารถเริ่มระบบ Real-time ได้:", e);
+                console.error("❌ [INIT ERROR]:", e);
             }
         }
 
@@ -4664,8 +4625,8 @@
     </div>
     <script src="script.js?v=2.0"></script>
     <!-- เครื่องมือดูคอนโซลบนมือถือ (Eruda) -->
-    <!-- <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
-    <script>eruda.init();</script> -->
+    <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
+    <script>eruda.init();</script>
 </body>
 
 </html>
