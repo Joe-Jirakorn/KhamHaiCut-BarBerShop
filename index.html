@@ -3779,6 +3779,14 @@
                     localStorage.setItem('barber_current_user', JSON.stringify(state.currentUser));
                 } catch (e) { }
 
+                // 🌟 อัปเดตข้อมูลช่าง (barbers) ใน state และ LocalStorage ทันที เพื่อให้ UI เปลี่ยนรูปตามแบบเรียลไทม์
+                if (state.barbers && state.barbers.length > 0) {
+                    state.barbers[0].avatar = currentAvatar;
+                    try {
+                        localStorage.setItem('barber_shop_barbers', JSON.stringify(state.barbers));
+                    } catch (e) { }
+                }
+
                 // 2. บันทึกขึ้น Firebase Firestore
                 if (window.firebaseModules && window.db) {
                     const { doc, setDoc, updateDoc } = window.firebaseModules;
