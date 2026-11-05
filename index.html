@@ -3371,7 +3371,7 @@
             const { doc, onSnapshot } = window.firebaseModules;
 
             try {
-                // 🌟 ฟังข้อมูลเจาะจงที่ Document "b1" โดยตรงแบบเรียลไทม์ ไม่ต้องวนลูปคอลเลกชัน
+                // 🌟 ฟังข้อมูลเจาะจงที่ Document "b1" โดยตรงแบบเรียลไทม์
                 const barberRef = doc(window.db, "barbers", "b1");
 
                 onSnapshot(barberRef, (docSnap) => {
@@ -3393,7 +3393,7 @@
                             targetBarber.status = fbBarber.status || targetBarber.status || 'available';
                             if (fbBarber.name) targetBarber.name = fbBarber.name;
 
-                            // 🌟 อัปเดต avatar ทันทีเมื่อ Firebase มีการเปลี่ยนแปลง (ถ้าไม่มีใช้ค่าเดิมหรือรูปสำรอง)
+                            // 🌟 อัปเดต avatar ทันทีเมื่อ Firebase มีการเปลี่ยนแปลง
                             targetBarber.avatar = fbBarber.avatar || targetBarber.avatar || defaultAvatar;
 
                             if (fbBarber.exp) targetBarber.exp = fbBarber.exp;
@@ -3402,12 +3402,21 @@
                             // ถ้ายังไม่มีใน state ให้ใส่ข้อมูลจาก Firebase เข้าไป
                             state.barbers = [{
                                 id: 'b1',
-                                name: fbBarber.name || 'ช่างก้อง',
+                                name: fbBarber.name || 'ช่างก้อง (เจ้าของร้าน)',
                                 avatar: fbBarber.avatar || defaultAvatar,
                                 status: fbBarber.status || 'available',
                                 exp: fbBarber.exp || 'ช่างก้อง (เจ้าของร้าน)',
                                 bio: fbBarber.bio || 'ประสบการณ์ตัดผม 1 ปี ชอบการเฟดและเซ็ตผม'
                             }];
+                        }
+
+                        // 🌟 [จุดที่เพิ่มเข้ามา]: ถ้าเครื่องนี้กำลังล็อกอินเป็นแอดมินหรือช่าง (b1) อยู่ 
+                        // ให้ซิงค์รูปภาพใหม่ลงใน state.currentUser และ LocalStorage อัตโนมัติทันทีโดยไม่ต้อง Logout
+                        if (state.currentUser && (state.currentUser.role === 'admin' || state.currentUser.isAdmin === true || String(state.currentUser.id) === 'b1')) {
+                            if (fbBarber.avatar && state.currentUser.avatar !== fbBarber.avatar) {
+                                state.currentUser.avatar = fbBarber.avatar;
+                                localStorage.setItem('barber_current_user', JSON.stringify(state.currentUser));
+                            }
                         }
                     } else {
                         // ถ้ายังไม่มี Document b1 ใน Firebase ให้ใช้ค่าเริ่มต้น
@@ -3415,7 +3424,7 @@
                         if (!targetBarber) {
                             state.barbers = [{
                                 id: 'b1',
-                                name: 'ช่างก้อง',
+                                name: 'ช่างก้อง (เจ้าของร้าน)',
                                 exp: 'ช่างก้อง (เจ้าของร้าน)',
                                 bio: 'ประสบการณ์ตัดผม 1 ปี ชอบการเฟดและเซ็ตผม',
                                 status: 'available',
@@ -3434,7 +3443,8 @@
 
                     console.log("ซิงค์สถานะช่างเรียลไทม์สำเร็จ:", state.barbers);
 
-                    // 🛑 สั่งเรนเดอร์หน้าจอทุกส่วนให้อัปเดตตามทันทีแบบสดๆ
+                    // 🛑 สั่งเรนเดอร์หน้าจอและอัปเดต UI ทุกส่วนรวมถึงรูปโปรไฟล์มุมขวาบนให้อัปเดตตามทันทีแบบสดๆ
+                    if (typeof updateUserUI === 'function') updateUserUI();
                     if (typeof renderBarbersHomeStatus === 'function') renderBarbersHomeStatus();
                     if (typeof renderBarberSelectGrid === 'function') renderBarberSelectGrid();
                     if (typeof renderAdminBarberControls === 'function') renderAdminBarberControls();
@@ -3449,6 +3459,7 @@
                         if (savedBarbers && typeof state !== 'undefined') {
                             const parsed = JSON.parse(savedBarbers);
                             state.barbers = parsed.filter(b => b.id === 'b1');
+                            if (typeof updateUserUI === 'function') updateUserUI();
                             if (typeof renderBarbersHomeStatus === 'function') renderBarbersHomeStatus();
                             if (typeof renderFullBarbersList === 'function') renderFullBarbersList();
                         }
@@ -4587,8 +4598,8 @@
     </div>
     <script src="script.js?v=2.0"></script>
     <!-- เครื่องมือดูคอนโซลบนมือถือ (Eruda) -->
-    <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
-    <script>eruda.init();</script>
+    <!-- <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
+    <script>eruda.init();</script> -->
 </body>
 
 </html>
