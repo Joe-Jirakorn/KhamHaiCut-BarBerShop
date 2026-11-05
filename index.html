@@ -1545,41 +1545,29 @@
                 }
             }
 
-            // 🌟 2. จัดการรูปโปรไฟล์แยกตามสิทธิ์บัญชีอย่างอิสระ
+            // 🌟 2. แสดงรูปโปรไฟล์ในเมนูดรอปดาวน์ของบัญชีที่ล็อกอินอยู่ (แยกอิสระ ใครรูปมัน)
             if (state.currentUser) {
-                let latestAvatar = state.currentUser.avatar || state.currentUser.photoURL || 'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=100&auto=format&fit=crop&q=80';
-
-                // ตรวจสอบว่าบัญชีปัจจุบันเป็นแอดมินหรือช่างหรือไม่
-                const userRole = state.currentUser.role ? state.currentUser.role.toLowerCase() : '';
-                const isAdminOrBarber = userRole === 'admin' || userRole === 'barber' || state.currentUser.isAdmin === true || state.currentUser.email === 'phongsakorn2115@gmail.com' || state.currentUser.id === 'b1';
-
-                // ถ้าเป็นแอดมิน/ช่าง ถึงจะดึงรูปจาก state.barbers (b1) มาซิงค์ร่วมด้วย
-                if (isAdminOrBarber && state.barbers && state.barbers.length > 0) {
-                    const barberB1 = state.barbers.find(b => b.id === 'b1' || b.email === state.currentUser.email);
-                    if (barberB1 && barberB1.avatar) {
-                        latestAvatar = barberB1.avatar;
-                        state.currentUser.avatar = latestAvatar;
-                        localStorage.setItem('barber_current_user', JSON.stringify(state.currentUser));
+                const userAvatarEl = document.getElementById('user-avatar');
+                if (userAvatarEl) {
+                    const userPic = state.currentUser.avatar || state.currentUser.photoURL || 'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=100&auto=format&fit=crop&q=80';
+                    if (userAvatarEl.src !== userPic) {
+                        userAvatarEl.src = userPic;
                     }
                 }
+            }
 
-                // อัปเดตรูปเฉพาะในส่วนอวาตาร์ผู้ใช้ (Dropdown / เมนูดรอปดาวน์)
-                const userAvatarEl = document.getElementById('user-avatar');
-                if (userAvatarEl && userAvatarEl.src !== latestAvatar) {
-                    userAvatarEl.src = latestAvatar;
-                }
-
-                // เฉพาะรูปในหน้าแดชบอร์ดแอดมินหรือการ์ดช่าง ถึงจะอัปเดตตาม b1
-                const adminAvatars = document.querySelectorAll('.admin-avatar-display, img.barber-avatar-img, [data-barber-id="b1"] img');
-                adminAvatars.forEach(img => {
-                    if (state.barbers && state.barbers.length > 0) {
-                        const barberB1 = state.barbers.find(b => b.id === 'b1');
-                        if (barberB1 && barberB1.avatar && img.src !== barberB1.avatar) {
+            // 🌟 3. จัดการรูปช่าง/แอดมิน (b1) ในหน้าแรก, หน้าจองคิว, ช่างของเรา, และบาร์เบอร์แอดมิน (ดึงจาก state.barbers เท่านั้น ไม่เกี่ยวกับรูป User)
+            const adminAvatars = document.querySelectorAll('.admin-avatar-display, img.barber-avatar-img, [data-barber-id="b1"] img');
+            adminAvatars.forEach(img => {
+                if (state.barbers && state.barbers.length > 0) {
+                    const barberB1 = state.barbers.find(b => b.id === 'b1');
+                    if (barberB1 && barberB1.avatar) {
+                        if (img.src !== barberB1.avatar) {
                             img.src = barberB1.avatar;
                         }
                     }
-                });
-            }
+                }
+            });
 
             const authBtns = document.getElementById('auth-buttons');
             const userMenu = document.getElementById('user-profile-menu');
