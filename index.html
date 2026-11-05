@@ -862,6 +862,7 @@
         // 🌟 ประกาศตัวแปร state ไว้บนสุดของสคริปต์ ป้องกัน Error ตั้งแต่เริ่มเปิดเว็บ
         // 🌟 บังคับสร้าง state ไว้บนสุดของทุกสิ่งทุกอย่าง ป้องกัน Error ทุกบรรทัด
         /* ================= STATE MANAGEMENT ================= */
+        /* ================= STATE MANAGEMENT ================= */
         window.state = {
             // รองรับการเก็บข้อมูลผู้ใช้ปัจจุบัน (ดึงจาก LocalStorage)
             currentUser: JSON.parse(localStorage.getItem('barber_current_user')) || null,
@@ -893,7 +894,7 @@
                 { id: 'a3', label: 'ผู้ใหญ่', minAge: '18-80 ปีขึ้นไป', rate: 1.0, discountLabel: 'ราคาปกติ', icon: 'fa-person-cane' }
             ],
 
-            // Barbers Data
+            // Barbers Data (ดึงรูปจาก currentUser ถ้าเป็นแอดมินหรือช่าง)
             barbers: JSON.parse(localStorage.getItem('barber_shop_barbers')) || [
                 {
                     id: 'b1',
@@ -901,7 +902,13 @@
                     email: 'phongsakorn2115@gmail.com',
                     status: 'available',
                     exp: 'ประสบการณ์ 1 ปี ชื่นชอบด้านการเฟด',
-                    avatar: 'https://i.postimg.cc/8FR1mMtP/858525001-1129326712975883-8607776798710260414-n.jpg'
+                    avatar: (() => {
+                        const cur = JSON.parse(localStorage.getItem('barber_current_user'));
+                        if (cur && (cur.role === 'admin' || cur.isAdmin === true || cur.email === 'phongsakorn2115@gmail.com')) {
+                            return cur.avatar || cur.photoURL || 'https://i.postimg.cc/8FR1mMtP/858525001-1129326712975883-8607776798710260414-n.jpg';
+                        }
+                        return 'https://i.postimg.cc/8FR1mMtP/858525001-1129326712975883-8607776798710260414-n.jpg';
+                    })()
                 }
             ],
 
