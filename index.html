@@ -2476,15 +2476,16 @@
                     localStorage.setItem('barber_bookings', JSON.stringify(state.bookings));
                 }
 
-                // 🌟 6. บันทิกรหัสจองเก็บไว้ในเครื่อง (สำหรับ Guest) เพื่อให้ดึงประวัติมาแสดงผลได้ทันที
-                const isUserLoggedIn = state.currentUser && (state.currentUser.email || state.currentUser.id) && !state.currentUser.isGuest;
-                if (!isUserLoggedIn) {
-                    const savedGuestIds = JSON.parse(localStorage.getItem('my_guest_booking_ids') || '[]');
-                    if (!savedGuestIds.includes(newBooking.id)) {
-                        savedGuestIds.push(newBooking.id);
-                        localStorage.setItem('my_guest_booking_ids', JSON.stringify(savedGuestIds));
-                    }
+                // 🌟 6. บันทิกรหัสจองเก็บไว้ในเครื่องทันทีสำหรับเครื่องนี้ เพื่อให้ปุ่มยกเลิกแสดงผลได้ทันที
+                const savedGuestIds = JSON.parse(localStorage.getItem('my_guest_booking_ids') || '[]');
+                if (!savedGuestIds.includes(newBooking.id)) {
+                    savedGuestIds.push(newBooking.id);
+                    localStorage.setItem('my_guest_booking_ids', JSON.stringify(savedGuestIds));
                 }
+
+                // 🌟 ดันข้อมูลเข้า state ชั่วคราวเพื่อให้ตารางวาดใหม่ทันทีโดยไม่ต้องรอรีเฟรช
+                if (!Array.isArray(state.bookings)) state.bookings = [];
+                state.bookings.push(newBooking);
 
                 alert(`จองคิวสำเร็จ! รหัสจองของคุณคือ ${newBooking.id} (ยอดรวม ${netTotal} บาท)`);
 
@@ -4540,13 +4541,13 @@
                 return;
             }
 
-            // ตรวจสอบสิทธิ์ผู้ใช้ปัจจุบัน
             const currentUser = (typeof state !== 'undefined' && state.currentUser) ? state.currentUser : null;
-            const isAdminOrBarber = currentUser && (
-                currentUser.role === 'admin' ||
-                currentUser.isAdmin === true ||
-                String(currentUser.id) === 'b1'
-            );
+
+            // เช็กสถานะว่าเป็นแอดมิน/ช่าง "ในโหมดจัดการ" หรือไม่ (ถ้าเป็น User ทั่วไปค่านี้จะเป็น false)
+            const isManagerRole = currentUser && (currentUser.role === 'admin' || currentUser.isAdmin === true || String(currentUser.id) === 'b1');
+            const isAdminOrBarber = isManagerRole && (state.currentViewMode === 'admin' || state.isBarberActive === true);
+
+            const guestBookingIds = JSON.parse(localStorage.getItem('my_guest_booking_ids') || '[]');
 
             tbody.innerHTML = pendingBookings.map(b => {
                 const bookingId = b.id || (b.firestoreId ? b.firestoreId.slice(0, 6) : 'KH-0000');
@@ -4557,17 +4558,20 @@
                 const priceVal = b.price || '160';
                 const docId = b.firestoreId || b.id;
 
-                // 🌟 เช็กว่าเป็นเจ้าของคิวนี้หรือไม่ (เทียบจากอีเมลหรือเบอร์โทรศัพท์)
-                const isOwner = currentUser && (
-                    (b.customerEmail && currentUser.email && b.customerEmail === currentUser.email) ||
-                    (b.email && currentUser.email && b.email === currentUser.email) ||
-                    (b.userEmail && currentUser.email && b.userEmail === currentUser.email) ||
+                // 🌟 เช็กความเป็นเจ้าของคิวจากบัญชีผู้ใช้
+                const isOwnerByAccount = currentUser && (
+                    (b.customerEmail && currentUser.email && b.customerEmail.toLowerCase() === currentUser.email.toLowerCase()) ||
+                    (b.email && currentUser.email && b.email.toLowerCase() === currentUser.email.toLowerCase()) ||
+                    (b.userEmail && currentUser.email && b.userEmail.toLowerCase() === currentUser.email.toLowerCase()) ||
                     (b.customerPhone && currentUser.phone && b.customerPhone === currentUser.phone) ||
-                    (b.phone && currentUser.phone && b.phone === currentUser.phone)
+                    (b.phone && currentUser.phone && b.phone === currentUser.phone) ||
+                    (b.userId && currentUser.id && b.userId === currentUser.id)
                 );
 
-                // 🌟 ถ้าเป็นแอดมิน/ช่าง หรือเป็นเจ้าของคิว ถึงจะมีสิทธิ์เห็นปุ่มยกเลิก
-                const canCancel = isAdminOrBarber || isOwner;
+                const isOwnerByGuest = guestBookingIds.includes(b.id);
+
+                // 🌟 สิทธิ์การยกเลิก: จะแสดงก็ต่อเมื่อเป็นแอดมินที่กำลังคุมระบบ หรือเป็นเจ้าของคิวตัวจริงเท่านั้น
+                const canCancel = isAdminOrBarber || isOwnerByAccount || isOwnerByGuest;
                 let actionButton = '';
 
                 if (canCancel) {
