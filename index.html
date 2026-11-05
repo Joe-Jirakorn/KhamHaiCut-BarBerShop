@@ -4527,7 +4527,7 @@
                 return;
             }
 
-            // 🌟 กรองเฉพาะรายการที่สถานะเป็น "รอดำเนินการ" เท่านั้น
+            // กรองเฉพาะรายการที่รอดำเนินการ
             const pendingBookings = bookings.filter(b => {
                 const status = (b.status || 'pending').toLowerCase().trim();
                 return status === 'pending' || status.includes('รอ') || status === 'รอดำเนินการ' || !b.status;
@@ -4538,7 +4538,14 @@
                 return;
             }
 
-            // 🌟 วนลูปแสดงผลเฉพาะคิวที่รอดำเนินการ
+            // ตรวจสอบสิทธิ์ผู้ใช้ปัจจุบัน
+            const currentUser = (typeof state !== 'undefined' && state.currentUser) ? state.currentUser : null;
+            const isAdminOrBarber = currentUser && (
+                currentUser.role === 'admin' ||
+                currentUser.isAdmin === true ||
+                String(currentUser.id) === 'b1'
+            );
+
             tbody.innerHTML = pendingBookings.map(b => {
                 const bookingId = b.id || (b.firestoreId ? b.firestoreId.slice(0, 6) : 'KH-0000');
                 const styleName = b.styleName || b.service || b.haircutStyle || 'ตัดผม/บริการ';
@@ -4547,6 +4554,28 @@
                 const timeStr = b.time || b.bookingTime || '-';
                 const priceVal = b.price || '160';
                 const docId = b.firestoreId || b.id;
+
+                // 🌟 เช็กว่าเป็นเจ้าของคิวนี้หรือไม่ (เทียบจากอีเมลหรือเบอร์โทรศัพท์)
+                const isOwner = currentUser && (
+                    (b.customerEmail && currentUser.email && b.customerEmail === currentUser.email) ||
+                    (b.email && currentUser.email && b.email === currentUser.email) ||
+                    (b.userEmail && currentUser.email && b.userEmail === currentUser.email) ||
+                    (b.customerPhone && currentUser.phone && b.customerPhone === currentUser.phone) ||
+                    (b.phone && currentUser.phone && b.phone === currentUser.phone)
+                );
+
+                // 🌟 ถ้าเป็นแอดมิน/ช่าง หรือเป็นเจ้าของคิว ถึงจะมีสิทธิ์เห็นปุ่มยกเลิก
+                const canCancel = isAdminOrBarber || isOwner;
+                let actionButton = '';
+
+                if (canCancel) {
+                    actionButton = `<button onclick="cancelBooking('${docId}')" 
+                class="px-3 py-1 rounded-full text-xs font-medium bg-red-500/10 text-red-400 border border-red-500/30 hover:bg-red-500/20 transition">
+                ยกเลิก
+            </button>`;
+                } else {
+                    actionButton = `<span class="text-xs text-gray-500">-</span>`;
+                }
 
                 return `
             <tr class="hover:bg-dark-700/50 transition">
@@ -4561,10 +4590,7 @@
                     </span>
                 </td>
                 <td class="px-6 py-4 text-center">
-                    <button onclick="cancelBooking('${docId}')" 
-                        class="px-3 py-1 rounded-full text-xs font-medium bg-red-500/10 text-red-400 border border-red-500/30 hover:bg-red-500/20 transition">
-                        ยกเลิก
-                    </button>
+                    ${actionButton}
                 </td>
             </tr>
         `;
