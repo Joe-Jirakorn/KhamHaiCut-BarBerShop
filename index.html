@@ -2257,45 +2257,45 @@
 
             const currentUser = (typeof state !== 'undefined' && state.currentUser) ? state.currentUser : null;
 
-            // 🌟 1. เช็กสิทธิ์แอดมินตัวจริง (ต้องเปิดโหมดแอดมิน หรืออยู่ในโหมดจัดการระบบเท่านั้น)
-            const isMasterAdmin = currentUser && (
+            // 🌟 1. ตรวจสอบสถานะความเป็นแอดมินตัวจริง (เช็กให้ครอบคลุมทุกลักษณะของแอดมิน)
+            const isMasterAdmin = Boolean(currentUser && (
                 currentUser.role === 'admin' ||
                 currentUser.isAdmin === true ||
-                String(currentUser.id) === 'b1'
-            );
-            const isAdminOrBarber = Boolean(isMasterAdmin && (state.currentViewMode === 'admin' || state.isAdminMode === true));
+                String(currentUser.id) === 'b1' ||
+                String(currentUser.email || '').toLowerCase().includes('admin')
+            ));
 
-            // 🌟 2. เช็กความเป็นเจ้าของคิวผ่านบัญชีผู้ใช้
-            const isOwnerByAccount = currentUser && (
-                (targetBooking.customerEmail && currentUser.email && targetBooking.customerEmail.toLowerCase() === currentUser.email.toLowerCase()) ||
-                (targetBooking.email && currentUser.email && targetBooking.email.toLowerCase() === currentUser.email.toLowerCase()) ||
-                (targetBooking.userEmail && currentUser.email && targetBooking.userEmail.toLowerCase() === currentUser.email.toLowerCase()) ||
-                (targetBooking.customerPhone && currentUser.phone && targetBooking.customerPhone === currentUser.phone) ||
-                (targetBooking.phone && currentUser.phone && targetBooking.phone === currentUser.phone)
-            );
+            // 🛑 2. ถ้าเป็น Master Admin ให้ผ่านสิทธิ์ทันที 100% โดยไม่ต้องเช็กอีเมลหรือเบอร์โทรซ้ำซ้อน
+            if (isMasterAdmin) {
+                // ข้ามไปขั้นตอนยืนยันการยกเลิกได้เลย
+            } else {
+                // ถ้าไม่ใช่ Admin ต้องเช็กความเป็นเจ้าของคิวผ่านบัญชีผู้ใช้ หรือ LocalStorage (Guest) ตามปกติ
+                const bEmail = (targetBooking.userEmail || targetBooking.email || targetBooking.customerEmail || '').trim().toLowerCase();
+                const uEmail = (currentUser && currentUser.email ? currentUser.email : '').trim().toLowerCase();
+                const bPhone = (targetBooking.userPhone || targetBooking.phone || targetBooking.customerPhone || '').trim();
+                const uPhone = (currentUser && currentUser.phone ? currentUser.phone : '').trim();
 
-            // 🌟 3. เช็กความเป็นเจ้าของคิวผ่านรหัสจองในเครื่อง LocalStorage (Guest IDs)
-            const rawGuestIds = JSON.parse(localStorage.getItem('my_guest_booking_ids') || '[]');
-            const guestBookingIds = rawGuestIds.map(id => String(id).replace(/\s+/g, '').toLowerCase());
+                const isOwnerByAccount = Boolean(currentUser && (
+                    (uEmail && bEmail && bEmail === uEmail) ||
+                    (uPhone && bPhone && bPhone === uPhone)
+                ));
 
-            const cleanBookingId = String(targetBooking.id || '').replace(/\s+/g, '').toLowerCase();
-            const cleanFirestoreId = String(targetBooking.firestoreId || '').replace(/\s+/g, '').toLowerCase();
-            const isOwnerByGuestId = guestBookingIds.includes(cleanBookingId) || (cleanFirestoreId && guestBookingIds.includes(cleanFirestoreId));
+                let isOwnerByGuestId = false;
+                if (!currentUser) {
+                    const rawGuestIds = JSON.parse(localStorage.getItem('my_guest_booking_ids') || '[]');
+                    const guestBookingIds = rawGuestIds.map(id => String(id).replace(/\s+/g, '').toLowerCase());
+                    const cleanBookingId = String(targetBooking.id || '').replace(/\s+/g, '').toLowerCase();
+                    const cleanFirestoreId = String(targetBooking.firestoreId || '').replace(/\s+/g, '').toLowerCase();
+                    isOwnerByGuestId = guestBookingIds.includes(cleanBookingId) || (cleanFirestoreId && guestBookingIds.includes(cleanFirestoreId));
+                }
 
-            // 🌟 4. เช็กความเป็นเจ้าของคิวผ่านเบอร์โทรศัพท์ที่บันทึกไว้ในเครื่อง (รองรับข้ามอุปกรณ์/มือถือ)
-            const savedGuestPhone = (localStorage.getItem('my_guest_phone') || '').trim();
-            const targetPhone = (targetBooking.customerPhone || targetBooking.phone || '').trim();
-            const isOwnerByPhone = savedGuestPhone && targetPhone && (targetPhone === savedGuestPhone);
-
-            // 🛑 5. ตัดสินสิทธิ์: หากไม่ใช่แอดมินตัวจริง และ "ไม่ได้เป็นเจ้าของคิวเลยสักช่องทาง" ถึงจะบล็อกสิทธิ์
-            const hasPermission = isAdminOrBarber || isOwnerByAccount || isOwnerByGuestId || isOwnerByPhone;
-
-            if (!hasPermission) {
-                alert('คุณไม่มีสิทธิ์ยกเลิกคิวนี้ครับ');
-                return;
+                if (!isOwnerByAccount && !isOwnerByGuestId) {
+                    alert('คุณไม่มีสิทธิ์ยกเลิกคิวนี้ครับ');
+                    return;
+                }
             }
 
-            // 6. ยืนยันการยกเลิก
+            // 3. ยืนยันการยกเลิก
             const confirmCancel = confirm(`คุณต้องการยกเลิกคิวรหัส ${targetBooking.id || 'นี้'} ใช่หรือไม่?`);
             if (!confirmCancel) return;
 
@@ -2322,7 +2322,7 @@
 
                     alert('ยกเลิกคิวเรียบร้อยแล้วครับ');
 
-                    // รีเฟรชตารางแสดงผลทันที
+                    // รีเฟรชตารางแสดงผลทันทีทั้ง 2 ฝั่ง
                     if (typeof renderUserBookingsTable === 'function') renderUserBookingsTable();
                     if (typeof renderAdminBookingsTable === 'function') renderAdminBookingsTable();
 
@@ -2336,202 +2336,6 @@
             } catch (error) {
                 console.error("Error cancelling booking in Firebase: ", error);
                 alert("เกิดข้อผิดพลาดในการยกเลิกคิว กรุณาลองใหม่อีกครั้ง");
-            }
-        }
-
-        /* ================= BOOKING SUBMISSION ================= */
-        async function submitBooking(event, btnElement) {
-            if (event) event.preventDefault();
-
-            const dateInput = document.getElementById('booking-date');
-            const selectedDate = dateInput ? dateInput.value : '';
-            const todayStr = new Date().toISOString().split('T')[0];
-
-            const savedShopStatus = localStorage.getItem('barber_shop_open_status');
-            const isOpen = savedShopStatus !== null ? (savedShopStatus === 'true') : true;
-
-            if (!isOpen && selectedDate === todayStr) {
-                if (typeof Swal !== 'undefined') {
-                    Swal.fire({
-                        icon: 'warning',
-                        title: 'ร้านปิดให้บริการวันนี้',
-                        text: 'ไม่สามารถจองคิวสำหรับวันนี้ได้ เนื่องจากสถานะร้านปิดให้บริการ กรุณาเลือกวันอื่นล่วงหน้าครับ',
-                        confirmButtonColor: '#f59e0b'
-                    });
-                } else {
-                    alert('ร้านปิดให้บริการวันนี้ ไม่สามารถจองคิวได้ กรุณาเลือกวันอื่นครับ');
-                }
-                return;
-            }
-
-            const btn = btnElement || document.getElementById('submitBookingBtn');
-            if (btn && btn.disabled) return;
-
-            const originalHTML = btn ? btn.innerHTML : '';
-            if (btn) {
-                btn.disabled = true;
-                btn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i> กำลังบันทึกคิว...`;
-            }
-
-            try {
-                const styleId = state.bookingForm?.selectedStyleId || state.selectedStyle;
-                const ageId = state.bookingForm?.selectedAgeId || state.selectedAgeGroup;
-                const barberId = state.bookingForm?.selectedBarberId || state.selectedBarber;
-
-                const selectedStyleObj = state.hairstyles.find(h => h.id === styleId || h === state.selectedStyle);
-                const selectedAgeObj = state.ageGroups.find(a => a.id === ageId || a === state.selectedAgeGroup);
-                const selectedBarberObj = state.barbers.find(b => b.id === barberId || b === state.selectedBarber);
-
-                if (!selectedStyleObj || !selectedAgeObj || !selectedBarberObj) {
-                    alert("กรุณาเลือกทรงผม กลุ่มอายุ และช่างตัดผมให้ครบถ้วนครับ");
-                    return;
-                }
-
-                const selectedAddons = state.bookingForm.addons
-                    ? state.bookingForm.addons.filter(addon => addon.selected)
-                    : [];
-
-                const timeInput = document.getElementById('booking-time');
-                const nameInput = document.getElementById('cust-name');
-                const phoneInput = document.getElementById('cust-phone');
-
-                const date = selectedDate;
-                const time = timeInput ? timeInput.value : '';
-                const name = nameInput ? nameInput.value.trim() : '';
-                const phone = phoneInput ? phoneInput.value.trim() : '';
-
-                if (!date || !time || !name || !phone) {
-                    alert("กรุณากรอกข้อมูลวันที่ เวลา และข้อมูลติดต่อให้ครบถ้วน");
-                    return;
-                }
-
-                const base = selectedStyleObj.basePrice || selectedStyleObj.price || 80;
-                const mult = selectedAgeObj.rate !== undefined ? selectedAgeObj.rate : (selectedAgeObj.multiplier || 1.0);
-                const haircutPrice = Math.round(base * mult);
-                const addonsTotal = selectedAddons.reduce((sum, addon) => sum + (addon.price || 0), 0);
-                const netTotal = haircutPrice + addonsTotal;
-
-                // เช็กเวลาชนกันใน Firebase
-                if (window.firebaseModules && window.db) {
-                    const { collection, getDocs, query, where } = window.firebaseModules;
-                    const bookingsRef = collection(window.db, "bookings");
-
-                    const q = query(
-                        bookingsRef,
-                        where("date", "==", date),
-                        where("time", "==", time),
-                        where("barberName", "==", selectedBarberObj.name)
-                    );
-
-                    const querySnapshot = await getDocs(q);
-                    let hasConflict = false;
-
-                    querySnapshot.forEach((docSnap) => {
-                        const existing = docSnap.data();
-                        const status = (existing.status || 'pending').toLowerCase().trim();
-                        const isCancelled = status.includes('cancel') || status.includes('ยกเลิก');
-                        const isCompleted = status.includes('complet') || status.includes('เสร็จ');
-
-                        if (!isCancelled && !isCompleted) {
-                            hasConflict = true;
-                        }
-                    });
-
-                    if (hasConflict) {
-                        alert(`ติดจอง! ช่วงเวลา ${time} ในวันที่ ${date} กับช่าง ${selectedBarberObj.name} มีผู้จองที่กำลังรอดำเนินการอยู่ กรุณาเลือกช่วงเวลาอื่นครับ`);
-                        return;
-                    }
-                }
-
-                // คำนวณรหัสจอง Global Running
-                let maxNumber = 0;
-                if (window.firebaseModules && window.db) {
-                    const { collection, getDocs } = window.firebaseModules;
-                    const allBookingsSnapshot = await getDocs(collection(window.db, "bookings"));
-
-                    if (!allBookingsSnapshot.empty) {
-                        allBookingsSnapshot.forEach((docSnap) => {
-                            const data = docSnap.data();
-                            const bookingId = data.id || "";
-                            const match = bookingId.match(/(\d+)$/);
-                            if (match) {
-                                const num = parseInt(match[1], 10);
-                                if (num > maxNumber) maxNumber = num;
-                            }
-                        });
-                    }
-                }
-
-                const nextBookingNum = maxNumber + 1;
-                const formattedBookingId = 'KH - ' + String(nextBookingNum).padStart(4, '0');
-
-                const newBooking = {
-                    id: formattedBookingId,
-                    userId: state.currentUser ? (state.currentUser.id || state.currentUser.firestoreId || 'u-user') : 'guest',
-                    userEmail: state.currentUser ? (state.currentUser.email || '').trim().toLowerCase() : '',
-                    userName: name,
-                    userPhone: phone,
-                    styleName: selectedStyleObj.name,
-                    ageGroupLabel: selectedAgeObj.label || selectedAgeObj.name,
-                    barberId: barberId,
-                    barberName: selectedBarberObj.name,
-                    addons: selectedAddons.map(a => a.name),
-                    addonsDetails: selectedAddons,
-                    date: date,
-                    time: time,
-                    price: netTotal,
-                    status: 'pending',
-                    createdAt: new Date().toISOString()
-                };
-
-                if (window.firebaseModules && window.db) {
-                    await window.firebaseModules.addDoc(
-                        window.firebaseModules.collection(window.db, "bookings"),
-                        newBooking
-                    );
-                } else {
-                    if (!Array.isArray(state.bookings)) state.bookings = [];
-                    state.bookings.push(newBooking);
-                    localStorage.setItem('barber_bookings', JSON.stringify(state.bookings));
-                }
-
-                // 🌟 บันทึกทั้งรหัสจอง และเบอร์โทรศัพท์ลงเครื่อง (รองรับข้ามอุปกรณ์/บราวเซอร์)
-                if (phone) {
-                    localStorage.setItem('my_guest_phone', phone);
-                }
-                const savedGuestIds = JSON.parse(localStorage.getItem('my_guest_booking_ids') || '[]');
-                if (!savedGuestIds.includes(newBooking.id)) {
-                    savedGuestIds.push(newBooking.id);
-                    localStorage.setItem('my_guest_booking_ids', JSON.stringify(savedGuestIds));
-                }
-
-                if (!Array.isArray(state.bookings)) state.bookings = [];
-                state.bookings.push(newBooking);
-
-                alert(`จองคิวสำเร็จ! รหัสจองของคุณคือ ${newBooking.id} (ยอดรวม ${netTotal} บาท)`);
-
-                if (state.bookingForm.addons) {
-                    state.bookingForm.addons.forEach(addon => addon.selected = false);
-                }
-
-                if (typeof navigateTo === 'function') {
-                    navigateTo('my-bookings');
-                }
-
-                if (typeof fetchBookings === 'function') {
-                    fetchBookings();
-                } else if (typeof renderUserBookingsTable === 'function') {
-                    renderUserBookingsTable();
-                }
-
-            } catch (error) {
-                console.error("Error saving booking to Firebase: ", error);
-                alert("เกิดข้อผิดพลาดในการบันทึกข้อมูล กรุณาลองใหม่อีกครั้ง");
-            } finally {
-                if (btn) {
-                    btn.disabled = false;
-                    btn.innerHTML = originalHTML;
-                }
             }
         }
 
@@ -2703,7 +2507,7 @@
             const filter = document.getElementById('admin-queue-filter')?.value || 'all';
             if (!body) return;
 
-            let list = state.bookings;
+            let list = state.bookings || [];
             if (filter !== 'all') {
                 list = list.filter(b => b.status === filter);
             }
@@ -2723,26 +2527,28 @@
                     statusBadge = '<span class="bg-red-500/10 text-red-400 border border-red-500/20 px-2 py-0.5 rounded text-xs font-semibold">ยกเลิกแล้ว</span>';
                 }
 
+                // 🌟 ป้องกันกรณี firestoreId เป็นค่าว่าง ให้ใช้ bk.id สำรองไว้ทันที เพื่อไม่ให้ปุ่มหาย
+                const targetDocId = bk.firestoreId || bk.id;
+
                 return `
             <tr class="hover:bg-dark-700/50 transition text-xs">
-                <td class="px-4 py-3 font-mono text-amber-400 font-bold">${bk.id}</td>
+                <td class="px-4 py-3 font-mono text-amber-400 font-bold">${bk.id || '-'}</td>
                 <td class="px-4 py-3 font-semibold text-white">
-                    ${bk.userName}
-                    <div class="text-[10px] text-gray-400">${bk.userPhone}</div>
+                    ${bk.userName || bk.name || 'ลูกค้ารายย่อย'}
+                    <div class="text-[10px] text-gray-400">${bk.userPhone || bk.phone || '-'}</div>
                 </td>
-                <td class="px-4 py-3 text-gray-300">${bk.styleName} (${bk.ageGroupLabel.split(' ')[0]})</td>
-                <td class="px-4 py-3 text-gray-300">${bk.barberName}</td>
-                <td class="px-4 py-3 text-gray-300">${bk.date} <span class="text-amber-500 font-medium">${bk.time} น.</span></td>
-                <td class="px-4 py-3 font-bold text-white">฿${bk.price}</td>
+                <td class="px-4 py-3 text-gray-300">${bk.styleName || 'บริการตัดผม'} (${(bk.ageGroupLabel || 'ทั่วไป').split(' ')[0]})</td>
+                <td class="px-4 py-3 text-gray-300">${bk.barberName || 'ช่างก้อง'}</td>
+                <td class="px-4 py-3 text-gray-300">${bk.date || '-'} <span class="text-amber-500 font-medium">${bk.time || '-'} น.</span></td>
+                <td class="px-4 py-3 font-bold text-white">฿${bk.price || '160'}</td>
                 <td class="px-4 py-3">${statusBadge}</td>
                 <td class="px-4 py-3 text-center">
                     <div class="flex items-center justify-center gap-1">
                         ${bk.status === 'pending' ? `
-                            <!-- 🛠️ เปลี่ยนจาก bk.id เป็น bk.firestoreId เพื่อให้อัปเดตบน Firebase ได้แม่นยำ -->
-                            <button onclick="updateQueueStatus('${bk.firestoreId}', 'completed')" class="bg-emerald-500/20 hover:bg-emerald-500 text-emerald-400 hover:text-dark-900 border border-emerald-500/30 px-2 py-1 rounded font-semibold transition" title="ทำรายการเสร็จสิ้น">
+                            <button onclick="updateQueueStatus('${targetDocId}', 'completed')" class="bg-emerald-500/20 hover:bg-emerald-500 text-emerald-400 hover:text-dark-900 border border-emerald-500/30 px-2 py-1 rounded font-semibold transition" title="ทำรายการเสร็จสิ้น">
                                 <i class="fa-solid fa-check"></i> เสร็จสิ้น
                             </button>
-                            <button onclick="updateQueueStatus('${bk.firestoreId}', 'cancelled')" class="bg-red-500/20 hover:bg-red-500 text-red-400 hover:text-white border border-red-500/30 px-2 py-1 rounded font-semibold transition" title="ยกเลิก">
+                            <button onclick="updateQueueStatus('${targetDocId}', 'cancelled')" class="bg-red-500/20 hover:bg-red-500 text-red-400 hover:text-white border border-red-500/30 px-2 py-1 rounded font-semibold transition" title="ยกเลิก">
                                 <i class="fa-solid fa-xmark"></i> ยกเลิก
                             </button>
                         ` : bk.status === 'completed' ? `
@@ -3297,12 +3103,12 @@
                 return;
             }
 
-            // 🌟 โหลดข้อมูลจาก LocalStorage มาแสดงผลล่วงหน้าทันทีเพื่อแก้ปัญหาดีเรย์ตอนเปิดเว็บ
+            // 🌟 โหลดข้อมูลจาก LocalStorage มาแสดงผลลัพธ์ล่วงหน้าทันทีเพื่อแก้ปัญหาดีเรย์ตอนเปิดเว็บ
             const cachedBookings = localStorage.getItem('khamhai_cached_bookings');
             if (cachedBookings && typeof state !== 'undefined') {
                 try {
                     state.bookings = JSON.parse(cachedBookings);
-                    state.userBookings = state.bookings;
+                    // ให้ state.userBookings เก็บเฉพาะข้อมูลเริ่มต้น หรือปล่อยให้ระบบกรองตามสิทธิ์
                     if (typeof renderUserBookingsTable === 'function') {
                         renderUserBookingsTable();
                     } else if (typeof renderUserBookings === 'function') {
@@ -3418,20 +3224,24 @@
 
                     lastBookingCount = newBookings.length;
 
-                    // 🌟 อัปเดต State และบันทึกแคชลง LocalStorage ทันทีที่ดึงข้อมูลสำเร็จ
+                    // 🌟 อัปเดต State หลักและบันทึกแคชลง LocalStorage ทันที
                     if (typeof state !== 'undefined') {
                         state.bookings = newBookings;
                         localStorage.setItem('khamhai_cached_bookings', JSON.stringify(newBookings));
 
+                        // 🛑 แก้ไขจุดนี้: แยกเก็บ userBookings เฉพาะของ User คนนั้นจริงๆ เท่านั้น ห้ามเอาคิวทั้งหมดมาเทรวม
                         if (currentUser && currentUser.email) {
                             const filtered = newBookings.filter(b => {
-                                return (b.customerEmail === currentUser.email || b.email === currentUser.email || b.userEmail === currentUser.email);
+                                return (b.customerEmail === currentUser.email || b.email === currentUser.email || b.userEmail === currentUser.email || b.customerPhone === currentUser.phone || b.phone === currentUser.phone || b.userPhone === currentUser.phone);
                             });
-                            state.userBookings = filtered.length > 0 ? filtered : newBookings;
+                            state.userBookings = filtered;
                         } else {
-                            state.userBookings = newBookings;
+                            state.userBookings = [];
                         }
                     }
+
+                    // 🌟 ปักธงยืนยันว่าโหลดข้อมูลเรียลไทม์เสร็จสมบูรณ์แล้ว
+                    window.isBookingsLoaded = true;
 
                     // 🌟 สั่งอัปเดตตารางหน้าจอทันทีทุกครั้งที่มีข้อมูลวิ่งมาถึง
                     if (typeof renderAdminBookingsTable === 'function') {
@@ -3655,78 +3465,78 @@
             }
         }
 
-        async function validateAndSubmitBooking(bookingData) {
-            if (!window.db || !window.firebaseModules) {
-                showToast('ระบบฐานข้อมูลยังไม่พร้อมใช้งาน', 'error');
-                return false;
-            }
+        // async function validateAndSubmitBooking(bookingData) {
+        //     if (!window.db || !window.firebaseModules) {
+        //         showToast('ระบบฐานข้อมูลยังไม่พร้อมใช้งาน', 'error');
+        //         return false;
+        //     }
 
-            const { collection, getDocs, query, where } = window.firebaseModules;
-            const bookingsRef = collection(window.db, "bookings");
+        //     const { collection, getDocs, query, where } = window.firebaseModules;
+        //     const bookingsRef = collection(window.db, "bookings");
 
-            try {
-                console.log("🔍 [DEBUG] กำลังตรวจสอบการจองสำหรับ:", bookingData);
+        //     try {
+        //         console.log("🔍 [DEBUG] กำลังตรวจสอบการจองสำหรับ:", bookingData);
 
-                const q = query(
-                    bookingsRef,
-                    where("date", "==", bookingData.date),
-                    where("barberId", "==", bookingData.barberId)
-                );
+        //         const q = query(
+        //             bookingsRef,
+        //             where("date", "==", bookingData.date),
+        //             where("barberId", "==", bookingData.barberId)
+        //         );
 
-                const querySnapshot = await getDocs(q);
-                let isConflict = false;
+        //         const querySnapshot = await getDocs(q);
+        //         let isConflict = false;
 
-                const newStartMin = timeToMinutes(bookingData.startTime);
-                const newEndMin = timeToMinutes(bookingData.endTime);
-                console.log(`⏱️ เวลาใหม่ (นาที): ${newStartMin} ถึง ${newEndMin}`);
+        //         const newStartMin = timeToMinutes(bookingData.startTime);
+        //         const newEndMin = timeToMinutes(bookingData.endTime);
+        //         console.log(`⏱️ เวลาใหม่ (นาที): ${newStartMin} ถึง ${newEndMin}`);
 
-                querySnapshot.forEach((docSnap) => {
-                    const existingBooking = docSnap.data();
-                    console.log(`📄 พบเอกสารใน Firebase [ID: ${docSnap.id}]:`, existingBooking);
+        //         querySnapshot.forEach((docSnap) => {
+        //             const existingBooking = docSnap.data();
+        //             console.log(`📄 พบเอกสารใน Firebase [ID: ${docSnap.id}]:`, existingBooking);
 
-                    // เช็กสถานะ
-                    const existingStatus = (existingBooking.status || 'pending').toLowerCase().trim();
-                    console.log(`📌 สถานะเดิมในระบบ: "${existingStatus}"`);
+        //             // เช็กสถานะ
+        //             const existingStatus = (existingBooking.status || 'pending').toLowerCase().trim();
+        //             console.log(`📌 สถานะเดิมในระบบ: "${existingStatus}"`);
 
-                    const isCancelled = existingStatus === 'cancelled' || existingStatus.includes('ยกเลิก');
-                    const isCompleted = existingStatus === 'completed' || existingStatus.includes('เสร็จ');
+        //             const isCancelled = existingStatus === 'cancelled' || existingStatus.includes('ยกเลิก');
+        //             const isCompleted = existingStatus === 'completed' || existingStatus.includes('เสร็จ');
 
-                    if (isCancelled || isCompleted) {
-                        console.log(`✅ ข้ามคิวนี้ [ID: ${docSnap.id}] เพราะถือว่าจบ/ยกเลิกแล้ว`);
-                        return;
-                    }
+        //             if (isCancelled || isCompleted) {
+        //                 console.log(`✅ ข้ามคิวนี้ [ID: ${docSnap.id}] เพราะถือว่าจบ/ยกเลิกแล้ว`);
+        //                 return;
+        //             }
 
-                    // รองรับทั้งฟิลด์ startTime/endTime หรือฟิลด์ time แบบเดิม
-                    const rawStartTime = existingBooking.startTime || existingBooking.time?.split('-')[0] || '09:00';
-                    const rawEndTime = existingBooking.endTime || existingBooking.time?.split('-')[1] || '10:00';
+        //             // รองรับทั้งฟิลด์ startTime/endTime หรือฟิลด์ time แบบเดิม
+        //             const rawStartTime = existingBooking.startTime || existingBooking.time?.split('-')[0] || '09:00';
+        //             const rawEndTime = existingBooking.endTime || existingBooking.time?.split('-')[1] || '10:00';
 
-                    const existStartMin = timeToMinutes(rawStartTime);
-                    const existEndMin = timeToMinutes(rawEndTime);
+        //             const existStartMin = timeToMinutes(rawStartTime);
+        //             const existEndMin = timeToMinutes(rawEndTime);
 
-                    console.log(`⏰ เทียบเวลาชน - คิวเดิม: ${rawStartTime} (${existStartMin}) - ${rawEndTime} (${existEndMin})`);
+        //             console.log(`⏰ เทียบเวลาชน - คิวเดิม: ${rawStartTime} (${existStartMin}) - ${rawEndTime} (${existEndMin})`);
 
-                    // เช็กเวลาทับซ้อน
-                    if (newStartMin < existEndMin && newEndMin > existStartMin) {
-                        console.warn(`❌ พบเวลาชนกันจิงๆ กับคิว ID: ${docSnap.id}`);
-                        isConflict = true;
-                    }
-                });
+        //             // เช็กเวลาทับซ้อน
+        //             if (newStartMin < existEndMin && newEndMin > existStartMin) {
+        //                 console.warn(`❌ พบเวลาชนกันจิงๆ กับคิว ID: ${docSnap.id}`);
+        //                 isConflict = true;
+        //             }
+        //         });
 
-                if (isConflict) {
-                    showToast('ช่วงเวลานี้ถูกจองไปแล้ว กรุณาเลือกช่วงเวลาอื่นครับ', 'error');
-                    alert('ติดจอง! ช่วงเวลาตั้งแต่ ' + bookingData.startTime + ' ถึง ' + bookingData.endTime + ' มีผู้จองที่กำลังรอดำเนินการอยู่ กรุณาเลือกเวลาอื่นครับ');
-                    return false;
-                }
+        //         if (isConflict) {
+        //             showToast('ช่วงเวลานี้ถูกจองไปแล้ว กรุณาเลือกช่วงเวลาอื่นครับ', 'error');
+        //             alert('ติดจอง! ช่วงเวลาตั้งแต่ ' + bookingData.startTime + ' ถึง ' + bookingData.endTime + ' มีผู้จองที่กำลังรอดำเนินการอยู่ กรุณาเลือกเวลาอื่นครับ');
+        //             return false;
+        //         }
 
-                console.log("✨ ผ่านการตรวจสอบ เวลาว่างสามารถจองได้!");
-                return true;
+        //         console.log("✨ ผ่านการตรวจสอบ เวลาว่างสามารถจองได้!");
+        //         return true;
 
-            } catch (error) {
-                console.error("Error checking booking conflict:", error);
-                showToast('เกิดข้อผิดพลาดในการตรวจสอบคิว', 'error');
-                return false;
-            }
-        }
+        //     } catch (error) {
+        //         console.error("Error checking booking conflict:", error);
+        //         showToast('เกิดข้อผิดพลาดในการตรวจสอบคิว', 'error');
+        //         return false;
+        //     }
+        // }
 
         // ฟังก์ชันช่วยแปลงเวลา "HH:MM" เป็นนาที เพื่อให้เปรียบเทียบช่วงเวลาได้ง่าย
         function timeToMinutes(timeStr) {
@@ -4536,16 +4346,31 @@
         }
 
         // 1. ฟังก์ชันหลักสำหรับแสดงประวัติการจองฝั่ง User (ดึงจากคิวทั้งหมดในระบบมาแสดงผลทันที)
+        // ================= 1. ตารางประวัติการจองฝั่ง User (เปิดสิทธิ์ให้ Admin เห็นปุ่มยกเลิกทุกคิว) =================
         function renderUserBookingsTable() {
             const tbody = document.getElementById('user-bookings-table-body');
             if (!tbody) return;
 
-            const bookings = state.bookings || [];
+            let bookings = state.bookings || [];
 
-            if (bookings.length === 0) {
+            if (!window.isBookingsLoaded && bookings.length === 0) {
                 tbody.innerHTML = `<tr><td colspan="7" class="px-6 py-8 text-center text-amber-400/80 animate-pulse"><i class="fa-solid fa-spinner fa-spin mr-2"></i> กำลังซิงค์ข้อมูลคิวจากระบบ...</td></tr>`;
                 return;
             }
+
+            if (bookings.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" class="px-6 py-8 text-center text-gray-500">ไม่มีประวัติการจองคิวที่รอดำเนินการ</td></tr>`;
+                return;
+            }
+
+            const uniqueBookingsMap = new Map();
+            bookings.forEach(b => {
+                const uniqueKey = (b.id || b.firestoreId || '').trim();
+                if (uniqueKey && !uniqueBookingsMap.has(uniqueKey)) {
+                    uniqueBookingsMap.set(uniqueKey, b);
+                }
+            });
+            bookings = Array.from(uniqueBookingsMap.values());
 
             const pendingBookings = bookings.filter(b => {
                 const status = (b.status || 'pending').toLowerCase().trim();
@@ -4559,16 +4384,16 @@
 
             const currentUser = (typeof state !== 'undefined' && state.currentUser) ? state.currentUser : null;
 
-            const isMasterAdmin = currentUser && (
+            // ตรวจสอบสถานะแอดมินตัวจริง
+            const isMasterAdmin = Boolean(currentUser && (
                 currentUser.role === 'admin' ||
                 currentUser.isAdmin === true ||
-                String(currentUser.id) === 'b1'
-            );
-            const isAdminOrBarber = Boolean(isMasterAdmin && (state.currentViewMode === 'admin' || state.isAdminMode === true));
+                String(currentUser.id) === 'b1' ||
+                String(currentUser.email || '').toLowerCase().includes('admin')
+            ));
 
             const rawGuestIds = JSON.parse(localStorage.getItem('my_guest_booking_ids') || '[]');
             const guestBookingIds = rawGuestIds.map(id => String(id).replace(/\s+/g, '').toLowerCase());
-            const savedGuestPhone = (localStorage.getItem('my_guest_phone') || '').trim();
 
             tbody.innerHTML = pendingBookings.map(b => {
                 const bookingId = b.id || (b.firestoreId ? b.firestoreId.slice(0, 6) : 'KH-0000');
@@ -4579,24 +4404,25 @@
                 const priceVal = b.price || '160';
                 const docId = b.firestoreId || b.id;
 
-                const bEmail = (b.customerEmail || b.email || b.userEmail || '').trim().toLowerCase();
+                const bEmail = (b.userEmail || b.email || b.customerEmail || '').trim().toLowerCase();
                 const uEmail = (currentUser && currentUser.email ? currentUser.email : '').trim().toLowerCase();
-                const bPhone = (b.customerPhone || b.phone || '').trim();
+                const bPhone = (b.userPhone || b.phone || b.customerPhone || '').trim();
                 const uPhone = (currentUser && currentUser.phone ? currentUser.phone : '').trim();
 
-                const isOwnerByAccount = currentUser && (
-                    (bEmail && uEmail && bEmail === uEmail) ||
-                    (bPhone && uPhone && bPhone === uPhone)
-                );
+                let isTrueOwner = false;
 
-                const cleanBookingId = String(b.id || '').replace(/\s+/g, '').toLowerCase();
-                const cleanFirestoreId = String(b.firestoreId || '').replace(/\s+/g, '').toLowerCase();
-                const isOwnerByGuestId = guestBookingIds.includes(cleanBookingId) || (cleanFirestoreId && guestBookingIds.includes(cleanFirestoreId));
+                if (currentUser) {
+                    const matchEmail = Boolean(uEmail && bEmail && bEmail === uEmail);
+                    const matchPhone = Boolean(uPhone && bPhone && bPhone === uPhone);
+                    isTrueOwner = matchEmail || matchPhone;
+                } else {
+                    const cleanBookingId = String(b.id || '').replace(/\s+/g, '').toLowerCase();
+                    const cleanFirestoreId = String(b.firestoreId || '').replace(/\s+/g, '').toLowerCase();
+                    isTrueOwner = guestBookingIds.includes(cleanBookingId) || (cleanFirestoreId && guestBookingIds.includes(cleanFirestoreId));
+                }
 
-                // 🌟 ตรวจสอบความเป็นเจ้าของจากเบอร์โทรศัพท์ที่บันทึกไว้ในเครื่อง (เชื่อมโยงข้ามมือถือและคอมพิวเตอร์ได้)
-                const isOwnerByPhone = savedGuestPhone && bPhone && (bPhone === savedGuestPhone);
-
-                const canCancel = isAdminOrBarber || isOwnerByAccount || isOwnerByGuestId || isOwnerByPhone;
+                // ถ้าเป็น Admin ตัวจริง ให้แสดงปุ่มยกเลิกได้ทุกคิวทันที | ถ้าเป็น User ทั่วไป ต้องเป็นเจ้าของคิวเท่านั้น
+                const canCancel = isMasterAdmin || isTrueOwner;
                 let actionButton = '';
 
                 if (canCancel) {
@@ -4626,6 +4452,191 @@
             </tr>
         `;
             }).join('');
+        }
+
+
+        // ================= 2. ฟังก์ชันยืนยันการจอง (Global Scope สมบูรณ์ ป้องกัน Error Not Defined) =================
+        async function submitBooking(event, btnElement) {
+            if (event) event.preventDefault();
+
+            const dateInput = document.getElementById('booking-date');
+            const selectedDate = dateInput ? dateInput.value : '';
+            const todayStr = new Date().toISOString().split('T')[0];
+
+            const savedShopStatus = localStorage.getItem('barber_shop_open_status');
+            const isOpen = savedShopStatus !== null ? (savedShopStatus === 'true') : true;
+
+            if (!isOpen && selectedDate === todayStr) {
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'ร้านปิดให้บริการวันนี้',
+                        text: 'ไม่สามารถจองคิวสำหรับวันนี้ได้ เนื่องจากสถานะร้านปิดให้บริการ กรุณาเลือกวันอื่นล่วงหน้าครับ',
+                        confirmButtonColor: '#f59e0b'
+                    });
+                } else {
+                    alert('ร้านปิดให้บริการวันนี้ ไม่สามารถจองคิวได้ กรุณาเลือกวันอื่นครับ');
+                }
+                return;
+            }
+
+            const btn = btnElement || document.getElementById('submitBookingBtn');
+            if (btn && btn.disabled) return;
+
+            const originalHTML = btn ? btn.innerHTML : '';
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i> กำลังบันทึกคิว...`;
+            }
+
+            try {
+                const styleId = state.bookingForm?.selectedStyleId || state.selectedStyle;
+                const ageId = state.bookingForm?.selectedAgeId || state.selectedAgeGroup;
+                const barberId = state.bookingForm?.selectedBarberId || state.selectedBarber;
+
+                const selectedStyleObj = state.hairstyles.find(h => h.id === styleId || h === state.selectedStyle);
+                const selectedAgeObj = state.ageGroups.find(a => a.id === ageId || a === state.selectedAgeGroup);
+                const selectedBarberObj = state.barbers.find(b => b.id === barberId || b === state.selectedBarber);
+
+                if (!selectedStyleObj || !selectedAgeObj || !selectedBarberObj) {
+                    alert("กรุณาเลือกทรงผม กลุ่มอายุ และช่างตัดผมให้ครบถ้วนครับ");
+                    return;
+                }
+
+                const selectedAddons = state.bookingForm.addons
+                    ? state.bookingForm.addons.filter(addon => addon.selected)
+                    : [];
+
+                const timeInput = document.getElementById('booking-time');
+                const nameInput = document.getElementById('cust-name');
+                const phoneInput = document.getElementById('cust-phone');
+
+                const date = selectedDate;
+                const time = timeInput ? timeInput.value : '';
+                const name = nameInput ? nameInput.value.trim() : '';
+                const phone = phoneInput ? phoneInput.value.trim() : '';
+
+                if (!date || !time || !name || !phone) {
+                    alert("กรุณากรอกข้อมูลวันที่ เวลา และข้อมูลติดต่อให้ครบถ้วน");
+                    return;
+                }
+
+                const base = selectedStyleObj.basePrice || selectedStyleObj.price || 80;
+                const mult = selectedAgeObj.rate !== undefined ? selectedAgeObj.rate : (selectedAgeObj.multiplier || 1.0);
+                const haircutPrice = Math.round(base * mult);
+                const addonsTotal = selectedAddons.reduce((sum, addon) => sum + (addon.price || 0), 0);
+                const netTotal = haircutPrice + addonsTotal;
+
+                // ตรวจสอบเวลาชนกัน
+                if (typeof validateAndSubmitBooking === 'function') {
+                    const bookingCheckData = {
+                        date: date,
+                        barberId: barberId,
+                        startTime: time,
+                        endTime: time
+                    };
+                    const isValid = await validateAndSubmitBooking(bookingCheckData);
+                    if (!isValid) return;
+                }
+
+                let maxNumber = 0;
+                if (window.firebaseModules && window.db) {
+                    const { collection, getDocs } = window.firebaseModules;
+                    const allBookingsSnapshot = await getDocs(collection(window.db, "bookings"));
+
+                    if (!allBookingsSnapshot.empty) {
+                        allBookingsSnapshot.forEach((docSnap) => {
+                            const data = docSnap.data();
+                            const bookingId = data.id || "";
+                            const match = bookingId.match(/(\d+)$/);
+                            if (match) {
+                                const num = parseInt(match[1], 10);
+                                if (num > maxNumber) maxNumber = num;
+                            }
+                        });
+                    }
+                }
+
+                const nextBookingNum = maxNumber + 1;
+                const formattedBookingId = 'KH - ' + String(nextBookingNum).padStart(4, '0');
+
+                const newBooking = {
+                    id: formattedBookingId,
+                    userId: state.currentUser ? (state.currentUser.id || state.currentUser.firestoreId || 'u-user') : 'guest',
+                    userEmail: state.currentUser ? (state.currentUser.email || '').trim().toLowerCase() : '',
+                    userName: name,
+                    userPhone: phone,
+                    styleName: selectedStyleObj.name,
+                    ageGroupLabel: selectedAgeObj.label || selectedAgeObj.name,
+                    barberId: barberId,
+                    barberName: selectedBarberObj.name,
+                    addons: selectedAddons.map(a => a.name),
+                    addonsDetails: selectedAddons,
+                    date: date,
+                    time: time,
+                    price: netTotal,
+                    status: 'pending',
+                    createdAt: new Date().toISOString()
+                };
+
+                // บันทึกลง Firebase และผูก firestoreId ทันที
+                if (window.firebaseModules && window.db) {
+                    const docRef = await window.firebaseModules.addDoc(
+                        window.firebaseModules.collection(window.db, "bookings"),
+                        newBooking
+                    );
+                    newBooking.firestoreId = docRef.id;
+                } else {
+                    if (!Array.isArray(state.bookings)) state.bookings = [];
+                    state.bookings.push(newBooking);
+                    localStorage.setItem('barber_bookings', JSON.stringify(state.bookings));
+                }
+
+                // บันทิกรหัสจองเฉพาะเครื่องนี้ (สำหรับ Guest)
+                const savedGuestIds = JSON.parse(localStorage.getItem('my_guest_booking_ids') || '[]');
+                const cleanNewId = String(newBooking.id).replace(/\s+/g, '').toLowerCase();
+                if (!savedGuestIds.includes(newBooking.id) && !savedGuestIds.includes(cleanNewId)) {
+                    savedGuestIds.push(newBooking.id);
+                    localStorage.setItem('my_guest_booking_ids', JSON.stringify(savedGuestIds));
+                }
+
+                // อัปเดตลง State ทันที
+                if (!Array.isArray(state.bookings)) state.bookings = [];
+                const existingIdx = state.bookings.findIndex(b => b.id === newBooking.id);
+                if (existingIdx !== -1) {
+                    state.bookings[existingIdx] = newBooking;
+                } else {
+                    state.bookings.push(newBooking);
+                }
+
+                window.isBookingsLoaded = true;
+
+                alert(`จองคิวสำเร็จ! รหัสจองของคุณคือ ${newBooking.id} (ยอดรวม ${netTotal} บาท)`);
+
+                if (state.bookingForm.addons) {
+                    state.bookingForm.addons.forEach(addon => addon.selected = false);
+                }
+
+                if (typeof navigateTo === 'function') {
+                    navigateTo('my-bookings');
+                }
+
+                if (typeof renderUserBookingsTable === 'function') {
+                    renderUserBookingsTable();
+                }
+                if (typeof renderAdminBookingsTable === 'function') {
+                    renderAdminBookingsTable();
+                }
+
+            } catch (error) {
+                console.error("Error saving booking to Firebase: ", error);
+                alert("เกิดข้อผิดพลาดในการบันทึกข้อมูล กรุณาลองใหม่อีกครั้ง");
+            } finally {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = originalHTML;
+                }
+            }
         }
 
 
