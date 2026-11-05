@@ -3368,12 +3368,14 @@
         function initRealtimeBarbers() {
             if (!window.db || !window.firebaseModules) return;
 
-            const { collection, onSnapshot } = window.firebaseModules;
+            const { doc, onSnapshot } = window.firebaseModules;
 
             try {
-                // ดึงและฟังข้อมูลจาก Collection "barbers" บน Firebase แบบเรียลไทม์
-                onSnapshot(collection(window.db, "barbers"), (snapshot) => {
-                    // 🛑 ป้องกันกรณี state ยังไม่ถูกสร้าง ให้สร้างโครงสร้างสำรองเตรียมไว้
+                // 🌟 ฟังข้อมูลเจาะจงที่ Document "b1" โดยตรงแบบเรียลไทม์ ไม่ต้องวนลูปคอลเลกชัน
+                const barberRef = doc(window.db, "barbers", "b1");
+
+                onSnapshot(barberRef, (docSnap) => {
+                    // 🛑 ป้องกันกรณี state ยังไม่ถูกสร้าง
                     if (typeof state === 'undefined') {
                         window.state = {};
                     }
@@ -3381,67 +3383,67 @@
                         state.barbers = [];
                     }
 
-                    // แปลงข้อมูลจาก Snapshot ของ Firebase และคัดกรองเก็บเฉพาะ "ช่างก้อง" (id: 'b1') เท่านั้น
-                    const firebaseBarbers = [];
-                    snapshot.forEach((docSnap) => {
-                        const barberData = { id: docSnap.id, ...docSnap.data() };
-                        if (barberData.id === 'b1') {
-                            firebaseBarbers.push(barberData);
+                    const defaultAvatar = 'https://i.postimg.cc/8FR1mMtP/858525001-1129326712975883-8607776798710260414-n.jpg';
+
+                    if (docSnap.exists()) {
+                        const fbBarber = { id: docSnap.id, ...docSnap.data() };
+
+                        let targetBarber = state.barbers.find(b => b.id === 'b1');
+                        if (targetBarber) {
+                            targetBarber.status = fbBarber.status || targetBarber.status || 'available';
+                            if (fbBarber.name) targetBarber.name = fbBarber.name;
+
+                            // 🌟 อัปเดต avatar ทันทีเมื่อ Firebase มีการเปลี่ยนแปลง (ถ้าไม่มีใช้ค่าเดิมหรือรูปสำรอง)
+                            targetBarber.avatar = fbBarber.avatar || targetBarber.avatar || defaultAvatar;
+
+                            if (fbBarber.exp) targetBarber.exp = fbBarber.exp;
+                            if (fbBarber.bio) targetBarber.bio = fbBarber.bio;
+                        } else {
+                            // ถ้ายังไม่มีใน state ให้ใส่ข้อมูลจาก Firebase เข้าไป
+                            state.barbers = [{
+                                id: 'b1',
+                                name: fbBarber.name || 'ช่างก้อง',
+                                avatar: fbBarber.avatar || defaultAvatar,
+                                status: fbBarber.status || 'available',
+                                exp: fbBarber.exp || 'ช่างก้อง (เจ้าของร้าน)',
+                                bio: fbBarber.bio || 'ประสบการณ์ตัดผม 1 ปี ชอบการเฟดและเซ็ตผม'
+                            }];
                         }
-                    });
-
-                    // ถ้า state.barbers เดิมยังว่างอยู่ ให้ยัดข้อมูลช่างก้องจาก Firebase ใส่ทันที
-                    if (state.barbers.length === 0) {
-                        state.barbers = firebaseBarbers;
                     } else {
-                        // 🌟 ผสานข้อมูล (Merge) เฉพาะของช่างก้อง (b1) เท่านั้น
-                        firebaseBarbers.forEach(fbBarber => {
-                            if (fbBarber.id === 'b1') {
-                                const targetBarber = state.barbers.find(b => b.id === 'b1');
-                                if (targetBarber) {
-                                    targetBarber.status = fbBarber.status || targetBarber.status || 'available';
-                                    if (fbBarber.name) targetBarber.name = fbBarber.name;
-                                    if (fbBarber.avatar) targetBarber.avatar = fbBarber.avatar;
-                                    if (fbBarber.exp) targetBarber.exp = fbBarber.exp;
-                                    if (fbBarber.bio) targetBarber.bio = fbBarber.bio;
-                                } else {
-                                    state.barbers.push(fbBarber);
-                                }
-                            }
-                        });
+                        // ถ้ายังไม่มี Document b1 ใน Firebase ให้ใช้ค่าเริ่มต้น
+                        let targetBarber = state.barbers.find(b => b.id === 'b1');
+                        if (!targetBarber) {
+                            state.barbers = [{
+                                id: 'b1',
+                                name: 'ช่างก้อง',
+                                exp: 'ช่างก้อง (เจ้าของร้าน)',
+                                bio: 'ประสบการณ์ตัดผม 1 ปี ชอบการเฟดและเซ็ตผม',
+                                status: 'available',
+                                avatar: defaultAvatar
+                            }];
+                        }
                     }
 
-                    // 🌟 กรองซ้ำอีกรอบเพื่อให้มั่นใจว่าใน state.barbers จะมีแค่ช่างก้อง (b1) คนเดียวเป๊ะๆ
+                    // 🌟 กรองให้มั่นใจว่ามีเฉพาะช่างก้อง (b1) เท่านั้น
                     state.barbers = state.barbers.filter(b => b.id === 'b1');
-
-                    // เผื่อกรณีข้อมูลช่างก้องยังไม่มา ให้ใส่ค่าเริ่มต้น
-                    if (state.barbers.length === 0) {
-                        state.barbers = [{
-                            id: 'b1',
-                            name: 'ช่างก้อง',
-                            exp: 'ช่างก้อง (เจ้าของร้าน)',
-                            bio: 'ประสบการณ์ตัดผม 1 ปี ชอบการเฟดและเซ็ตผม',
-                            status: 'available'
-                        }];
-                    }
 
                     // บันทึกสำรองลง LocalStorage เพื่อความเสถียร
                     try {
                         localStorage.setItem('barber_shop_barbers', JSON.stringify(state.barbers));
                     } catch (e) { }
 
-                    console.log("ซิงค์สถานะช่างเรียลไทม์สำเร็จ (เฉพาะช่างก้อง):", state.barbers);
+                    console.log("ซิงค์สถานะช่างเรียลไทม์สำเร็จ:", state.barbers);
 
-                    // 🛑 สั่งเรนเดอร์หน้าจอทุกส่วนที่แสดงผลข้อมูลช่างให้อัปเดตตามทันที
+                    // 🛑 สั่งเรนเดอร์หน้าจอทุกส่วนให้อัปเดตตามทันทีแบบสดๆ
                     if (typeof renderBarbersHomeStatus === 'function') renderBarbersHomeStatus();
                     if (typeof renderBarberSelectGrid === 'function') renderBarberSelectGrid();
                     if (typeof renderAdminBarberControls === 'function') renderAdminBarberControls();
                     if (typeof renderFullBarbersList === 'function') renderFullBarbersList();
 
                 }, (error) => {
-                    console.warn("⚠️ การเชื่อมต่อ Real-time ขัดข้อง (อาจเกิดจากไม่ได้ใช้งานนานหรือเน็ตหลุด):", error);
+                    console.warn("⚠️ การเชื่อมต่อ Real-time ขัดข้อง:", error);
 
-                    // 🌟 ระบบสำรอง: หาก Real-time หลุด ให้ดึงข้อมูลล่าสุดจาก LocalStorage มากรองเฉพาะ b1 แสดงประทังหน้าจอก่อน
+                    // ระบบสำรองดึงจาก LocalStorage หากเน็ตหลุด
                     try {
                         const savedBarbers = localStorage.getItem('barber_shop_barbers');
                         if (savedBarbers && typeof state !== 'undefined') {
@@ -3456,13 +3458,6 @@
                 console.error("Failed to initialize realtime barbers listener:", e);
             }
         }
-
-        // สั่งให้ทำงานเมื่อเปิดหน้าเว็บ
-        window.addEventListener('DOMContentLoaded', () => {
-            setTimeout(() => {
-                initRealtimeBarbers();
-            }, 1200);
-        });
 
         async function loadBarbersFromFirebase() {
             if (!window.db || !window.firebaseModules) return;
