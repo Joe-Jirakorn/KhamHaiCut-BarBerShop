@@ -1545,12 +1545,16 @@
                 }
             }
 
-            // 🌟 2. ดึงรูปจาก state.barbers หรือ currentUser ล่าสุดมาซิงค์ให้ตรงกันเสมอ
+            // 🌟 2. จัดการรูปโปรไฟล์แยกตามสิทธิ์บัญชีอย่างอิสระ
             if (state.currentUser) {
-                let latestAvatar = state.currentUser.avatar || state.currentUser.photoURL;
+                let latestAvatar = state.currentUser.avatar || state.currentUser.photoURL || 'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=100&auto=format&fit=crop&q=80';
 
-                // ถ้าเป็นแอดมินหรือช่างหลัก (b1) ให้ดึงจาก state.barbers ตัวล่าสุด
-                if (state.barbers && state.barbers.length > 0) {
+                // ตรวจสอบว่าบัญชีปัจจุบันเป็นแอดมินหรือช่างหรือไม่
+                const userRole = state.currentUser.role ? state.currentUser.role.toLowerCase() : '';
+                const isAdminOrBarber = userRole === 'admin' || userRole === 'barber' || state.currentUser.isAdmin === true || state.currentUser.email === 'phongsakorn2115@gmail.com' || state.currentUser.id === 'b1';
+
+                // ถ้าเป็นแอดมิน/ช่าง ถึงจะดึงรูปจาก state.barbers (b1) มาซิงค์ร่วมด้วย
+                if (isAdminOrBarber && state.barbers && state.barbers.length > 0) {
                     const barberB1 = state.barbers.find(b => b.id === 'b1' || b.email === state.currentUser.email);
                     if (barberB1 && barberB1.avatar) {
                         latestAvatar = barberB1.avatar;
@@ -1559,11 +1563,20 @@
                     }
                 }
 
-                // 🌟 3. [แก้ไขจุดที่ผิดพลาด]: เจาะจงเปลี่ยนเฉพาะรูปอวาตาร์ของระบบและช่างหลัก (b1) เท่านั้น ไม่ไปโดนรูปทรงผม
-                const adminAvatars = document.querySelectorAll('#user-avatar, .user-avatar-img, .admin-avatar-display, img.barber-avatar-img, [data-barber-id="b1"] img');
+                // อัปเดตรูปเฉพาะในส่วนอวาตาร์ผู้ใช้ (Dropdown / เมนูดรอปดาวน์)
+                const userAvatarEl = document.getElementById('user-avatar');
+                if (userAvatarEl && userAvatarEl.src !== latestAvatar) {
+                    userAvatarEl.src = latestAvatar;
+                }
+
+                // เฉพาะรูปในหน้าแดชบอร์ดแอดมินหรือการ์ดช่าง ถึงจะอัปเดตตาม b1
+                const adminAvatars = document.querySelectorAll('.admin-avatar-display, img.barber-avatar-img, [data-barber-id="b1"] img');
                 adminAvatars.forEach(img => {
-                    if (latestAvatar && img.src !== latestAvatar) {
-                        img.src = latestAvatar;
+                    if (state.barbers && state.barbers.length > 0) {
+                        const barberB1 = state.barbers.find(b => b.id === 'b1');
+                        if (barberB1 && barberB1.avatar && img.src !== barberB1.avatar) {
+                            img.src = barberB1.avatar;
+                        }
                     }
                 });
             }
@@ -3633,26 +3646,43 @@
             if (dropdownPanel) dropdownPanel.classList.add('hidden');
 
             if (!state.currentUser) {
-                showToast('กรุณาเข้าสู่ระบบก่อน', 'error');
+                if (typeof showToast === 'function') {
+                    showToast('กรุณาเข้าสู่ระบบก่อน', 'error');
+                } else {
+                    alert('กรุณาเข้าสู่ระบบก่อน');
+                }
                 return;
             }
 
-            // เติมข้อมูลลงในฟอร์ม
-            document.getElementById('profile-name').value = state.currentUser.name || '';
-            document.getElementById('profile-email').value = state.currentUser.email || '';
-            document.getElementById('profile-phone').value = state.currentUser.phone || '';
-            document.getElementById('profile-age').value = state.currentUser.age || '';
+            // เติมข้อมูลลงในฟอร์ม (พร้อมเช็ก Element ป้องกัน Error)
+            const nameInput = document.getElementById('profile-name');
+            if (nameInput) nameInput.value = state.currentUser.name || '';
 
-            // 🌟 เพิ่มบรรทัดนี้ เพื่อดึงวันเกิดเดิมมาแสดงในช่อง Input เมื่อเปิด Modal
+            const emailInput = document.getElementById('profile-email');
+            if (emailInput) emailInput.value = state.currentUser.email || '';
+
+            const phoneInput = document.getElementById('profile-phone');
+            if (phoneInput) phoneInput.value = state.currentUser.phone || '';
+
+            const ageInput = document.getElementById('profile-age');
+            if (ageInput) ageInput.value = state.currentUser.age || '';
+
+            // ดึงวันเกิดเดิมมาแสดงในช่อง Input เมื่อเปิด Modal
             const birthdateInput = document.getElementById('profile-birthdate');
             if (birthdateInput) {
                 birthdateInput.value = state.currentUser.birthdate || '';
             }
 
-            // ตั้งค่ารูปโปรไฟล์
+            // ตั้งค่ารูปโปรไฟล์พรีวิว
             const previewImg = document.getElementById('profile-preview-img');
-            previewImg.src = state.currentUser.avatar || 'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=100&auto=format&fit=crop&q=80';
-            tempProfileAvatarBase64 = state.currentUser.avatar || '';
+            if (previewImg) {
+                previewImg.src = state.currentUser.avatar || 'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=100&auto=format&fit=crop&q=80';
+            }
+
+            // กำหนดค่าตัวแปรชั่วคราวสำหรับเก็บ Base64 รูปเดิม
+            if (typeof tempProfileAvatarBase64 !== 'undefined') {
+                tempProfileAvatarBase64 = state.currentUser.avatar || '';
+            }
 
             // แสดง Modal
             const modal = document.getElementById('profile-modal');
