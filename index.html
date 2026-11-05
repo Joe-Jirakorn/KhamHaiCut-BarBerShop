@@ -811,8 +811,16 @@
                 </div>
                 <div>
                     <label class="block text-xs font-medium text-gray-400 mb-1">รหัสผ่าน:</label>
-                    <input type="password" id="login-password" required placeholder="••••••••"
-                        class="w-full bg-dark-900 border border-dark-600 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500">
+                    <div class="relative w-full">
+                        <input type="password" id="login-password" required placeholder="••••••••"
+                            class="w-full bg-dark-900 border border-dark-600 rounded-xl px-4 py-2.5 pr-10 text-sm text-white focus:outline-none focus:border-amber-500">
+
+                        <!-- ปุ่มคลิกเปิด-ปิด เพื่อดูรหัสผ่าน -->
+                        <button type="button" onclick="togglePasswordVisibility('login-password', 'login-eye-icon')"
+                            class="absolute inset-y-0 right-0 pr-3.5 flex items-center text-gray-400 hover:text-amber-500 focus:outline-none transition-colors">
+                            <i id="login-eye-icon" class="fa-solid fa-eye text-sm"></i>
+                        </button>
+                    </div>
                 </div>
                 <button type="submit"
                     class="w-full bg-amber-500 hover:bg-amber-600 text-dark-900 font-bold py-3 rounded-xl shadow transition">
@@ -4849,6 +4857,27 @@
                     if (typeof renderBarberSelectGrid === 'function') renderBarberSelectGrid();
                 }
             });
+        }
+
+        function togglePasswordVisibility(passwordFieldId, iconId) {
+            const passwordInput = document.getElementById(passwordFieldId);
+            const eyeIcon = document.getElementById(iconId);
+
+            if (passwordInput && eyeIcon) {
+                if (passwordInput.type === 'password') {
+                    // เปลี่ยนชนิด input เป็น text เพื่อให้มองเห็นรหัสผ่าน
+                    passwordInput.type = 'text';
+                    // เปลี่ยนไอคอนเป็นรูปตาแบบมีขีดทับ (ซ่อน)
+                    eyeIcon.classList.remove('fa-eye');
+                    eyeIcon.classList.add('fa-eye-slash');
+                } else {
+                    // เปลี่ยนกลับเป็นรหัสผ่าน (ซ่อนตัวอักษร)
+                    passwordInput.type = 'password';
+                    // เปลี่ยนไอคอนกลับเป็นรูปตาปกติ
+                    eyeIcon.classList.remove('fa-eye-slash');
+                    eyeIcon.classList.add('fa-eye');
+                }
+            }
         }
 
     </script>
