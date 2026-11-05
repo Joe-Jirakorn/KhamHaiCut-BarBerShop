@@ -3375,12 +3375,17 @@
 
         // ฟังก์ชันฟังสถานะช่างแบบเรียลไทม์ฝั่ง User
         function initRealtimeBarbers() {
-            if (!window.db || !window.firebaseModules) return;
+            if (!window.db || !window.firebaseModules) {
+                console.warn("⚠️ [DEBUG - REALTIME] ยังไม่พบ window.db หรือ window.firebaseModules ข้ามการรัน Real-time ไปก่อน");
+                return;
+            }
 
             const { doc, onSnapshot } = window.firebaseModules;
 
             try {
                 const barberRef = doc(window.db, "barbers", "b1");
+
+                console.log("📡 [DEBUG - REALTIME] กำลังเริ่มเชื่อมต่อฟัง Real-time (onSnapshot) ที่ Document: barbers/b1 ...");
 
                 onSnapshot(barberRef, (docSnap) => {
                     if (typeof state === 'undefined') {
@@ -3394,6 +3399,14 @@
 
                     if (docSnap.exists()) {
                         const fbBarber = { id: docSnap.id, ...docSnap.data() };
+
+                        // 🌟 พ่น Console บอกชัดเจนว่าอุปกรณ์นี้ได้รับข้อมูลใหม่จาก Firebase แล้ว
+                        console.log("📥 [DEBUG - REALTIME RECEIVED] 🟢 อุปกรณ์นี้ (ทั้งคอมหรือมือถือ) ได้รับสัญญาณข้อมูลสดจาก Firebase แล้ว!", {
+                            time: new Date().toLocaleTimeString(),
+                            barberName: fbBarber.name,
+                            hasAvatar: !!fbBarber.avatar,
+                            avatarLength: fbBarber.avatar ? fbBarber.avatar.length : 0
+                        });
 
                         let targetBarber = state.barbers.find(b => b.id === 'b1');
                         if (targetBarber) {
@@ -3413,14 +3426,16 @@
                             }];
                         }
 
-                        // 🌟 ซิงค์ avatar ลง state.currentUser ทันที
+                        // ซิงค์ avatar ลง state.currentUser ทันที
                         if (state.currentUser && (state.currentUser.role === 'admin' || state.currentUser.isAdmin === true || String(state.currentUser.id) === 'b1')) {
                             if (fbBarber.avatar) {
                                 state.currentUser.avatar = fbBarber.avatar;
                                 localStorage.setItem('barber_current_user', JSON.stringify(state.currentUser));
+                                console.log("👤 [DEBUG - USER SYNC] อัปเดต avatar ใน state.currentUser และ LocalStorage สำเร็จ");
                             }
                         }
                     } else {
+                        console.warn("⚠️ [DEBUG - REALTIME] ไม่พบ Document barbers/b1 บน Firebase");
                         let targetBarber = state.barbers.find(b => b.id === 'b1');
                         if (!targetBarber) {
                             state.barbers = [{
@@ -3436,25 +3451,22 @@
 
                     state.barbers = state.barbers.filter(b => b.id === 'b1');
 
-                    // 🌟 บันทึกทับ LocalStorage ทั้งคู่ให้ตรงกันเป๊ะ
                     try {
                         localStorage.setItem('barber_shop_barbers', JSON.stringify(state.barbers));
                     } catch (e) { }
 
-                    console.log("ซิงค์สถานะช่างเรียลไทม์สำเร็จ:", state.barbers);
-
-                    // 🛑 [จุดสำคัญ]: เรียกทุกฟังก์ชันเรนเดอร์หน้าจอที่มีในระบบ เพื่อให้การ์ดช่างทุกหน้าเปลี่ยนรูปตามทันทีแบบสดๆ
+                    // สั่งเรนเดอร์หน้าจอทุกส่วนทันที
                     if (typeof updateUserUI === 'function') updateUserUI();
                     if (typeof renderBarbersHomeStatus === 'function') renderBarbersHomeStatus();
                     if (typeof renderBarberSelectGrid === 'function') renderBarberSelectGrid();
                     if (typeof renderAdminBarberControls === 'function') renderAdminBarberControls();
                     if (typeof renderFullBarbersList === 'function') renderFullBarbersList();
-
-                    // เผื่อมีฟังก์ชันเรนเดอร์ชื่ออื่นๆ ในโปรเจกต์
                     if (typeof renderUI === 'function') renderUI();
 
+                    console.log("🎨 [DEBUG - RENDER SUCCESS] เรนเดอร์อัปเดตหน้าจอทุกส่วนเรียบร้อยแล้ว!");
+
                 }, (error) => {
-                    console.warn("⚠️ การเชื่อมต่อ Real-time ขัดข้อง:", error);
+                    console.error("❌ [DEBUG - REALTIME ERROR] การเชื่อมต่อ Real-time ขัดข้อง:", error);
                     try {
                         const savedBarbers = localStorage.getItem('barber_shop_barbers');
                         if (savedBarbers && typeof state !== 'undefined') {
@@ -3468,7 +3480,7 @@
                     } catch (e) { }
                 });
             } catch (e) {
-                console.error("Failed to initialize realtime barbers listener:", e);
+                console.error("❌ [DEBUG - INIT ERROR] ไม่สามารถเริ่มระบบ Real-time ได้:", e);
             }
         }
 
@@ -4442,7 +4454,10 @@
         async function saveUserProfile(event) {
             if (event) event.preventDefault();
 
+            console.log("🟡 [DEBUG - SAVE] เริ่มต้นกระบวนการบันทึกโปรไฟล์...");
+
             if (!state.currentUser) {
+                console.warn("❌ [DEBUG - SAVE] ไม่พบข้อมูล state.currentUser กรุณาเข้าสู่ระบบก่อน");
                 alert("กรุณาเข้าสู่ระบบก่อนบันทึกข้อมูล");
                 return;
             }
@@ -4451,21 +4466,23 @@
             const phoneInput = document.getElementById('profile-phone');
             const birthdateInput = document.getElementById('profile-birthdate');
             const nameInput = document.getElementById('profile-name');
-            const avatarInput = document.getElementById('profile-avatar-input'); // ช่องเลือกไฟล์รูปภาพ (ถ้ามี)
+            const avatarInput = document.getElementById('profile-avatar-input'); // ช่องเลือกไฟล์รูปภาพ
 
             const newPhone = phoneInput ? phoneInput.value.trim() : '';
             const newBirthdate = birthdateInput ? birthdateInput.value : '';
             const newName = nameInput ? nameInput.value.trim() : state.currentUser.name;
 
-            // 🌟 จัดการเรื่องรูปภาพ: ถ้ามีการอัปโหลดไฟล์ใหม่ ให้แปลงเป็น Base64
+            // 🌟 จัดการเรื่องรูปภาพ
             let currentAvatar = state.currentUser.avatar || state.currentUser.photoURL || '';
 
             if (avatarInput && avatarInput.files && avatarInput.files[0]) {
                 try {
                     const file = avatarInput.files[0];
+                    console.log("📁 [DEBUG - FILE] พบไฟล์รูปภาพใหม่ที่เลือก:", file.name, "ขนาด:", Math.round(file.size / 1024), "KB");
 
-                    // 🛑 เช็กขนาดไฟล์ไม่ให้เกิน 700KB เพื่อป้องกัน Firebase Firestore Error (จำกัด 1MB ต่อ Document)
+                    // 🛑 เช็กขนาดไฟล์ไม่ให้เกิน 700KB
                     if (file.size > 700 * 1024) {
+                        console.warn("⚠️ [DEBUG - FILE] ไฟล์มีขนาดใหญ่เกิน 700KB");
                         alert('รูปภาพมีขนาดใหญ่เกินไป กรุณาเลือกรูปภาพที่มีขนาดต่ำกว่า 700KB ครับ');
                         return;
                     }
@@ -4476,9 +4493,12 @@
                         reader.onerror = error => reject(error);
                         reader.readAsDataURL(file);
                     });
+                    console.log("✅ [DEBUG - FILE] แปลงไฟล์รูปเป็น Base64 สำเร็จ!");
                 } catch (err) {
-                    console.error("Error reading avatar file:", err);
+                    console.error("❌ [DEBUG - FILE ERROR] เกิดข้อผิดพลาดในการอ่านไฟล์รูป:", err);
                 }
+            } else {
+                console.log("ℹ️ [DEBUG - FILE] ไม่พบการเลือกไฟล์รูปใหม่ ใช้รูปเดิมที่มีอยู่");
             }
 
             // คำนวณอายุอัตโนมัติจากวันเกิดที่เลือก
@@ -4495,6 +4515,7 @@
 
             // บันทึกลง LocalStorage ของเครื่องนี้
             localStorage.setItem('barber_current_user', JSON.stringify(state.currentUser));
+            console.log("💾 [DEBUG - STORAGE] บันทึก state.currentUser ลง LocalStorage สำเร็จ");
 
             // 🌟 บันทึกลง Firebase Firestore แบบแชร์กลางทุกอุปกรณ์
             try {
@@ -4512,27 +4533,36 @@
                             avatar: currentAvatar,
                             updatedAt: new Date().toISOString()
                         });
+                        console.log("☁️ [DEBUG - FIREBASE] อัปเดตข้อมูลใน collection 'users' สำเร็จ");
                     }
 
-                    // 🌟 2. อัปเดตข้อมูลเฉพาะช่างก้อง (Document ID: "b1") ใน collection "barbers"
-                    // ตรวจสอบสิทธิ์: ถ้าเป็นแอดมินหรือช่าง (b1) ถึงจะอัปเดตสถานะช่างกลาง
+                    // 🌟 2. อัปเดตข้อมูลช่างก้อง (Document ID: "b1") ใน collection "barbers"
                     const isAdminOrBarber = state.currentUser.role === 'admin' ||
                         state.currentUser.isAdmin === true ||
-                        String(state.currentUser.id) === 'b1';
+                        String(state.currentUser.id) === 'b1' ||
+                        newName.includes('ก้อง');
 
                     if (isAdminOrBarber) {
                         const barberRef = doc(window.db, "barbers", "b1");
                         const existingBarber = (state.barbers && state.barbers.find(b => b.id === 'b1')) || {};
                         const currentBarberStatus = existingBarber.status || 'available';
 
+                        console.log("🚀 [DEBUG - FIREBASE UPLOAD] กำลังส่งรูปล่าสุดขึ้น Firebase ที่ barbers/b1...");
+
                         await setDoc(barberRef, {
                             id: 'b1',
-                            name: 'ช่างก้อง (เจ้าของร้าน)', // 🛑 ล็อกชื่อช่างให้คงที่เสมอ ไม่โดนชื่อในฟอร์มโปรไฟล์มาทับ
-                            avatar: currentAvatar,          // 🌟 ส่งรูปล่าสุดขึ้นคลาวด์เพื่อให้ทุกเครื่องซิงค์ตาม
+                            name: 'ช่างก้อง (เจ้าของร้าน)', // ล็อกชื่อช่างให้คงที่
+                            avatar: currentAvatar,          // ส่งรูปล่าสุดขึ้นคลาวด์
                             status: currentBarberStatus,
                             updatedAt: new Date().toISOString()
                         }, { merge: true });
+
+                        console.log("🔥 [DEBUG - FIREBASE SUCCESS] ส่งข้อมูลขึ้น barbers/b1 สำเร็จ! มือถือและคอมพิวเตอร์เครื่องอื่นต้องได้รับสัญญาณเรียลไทม์ทันที");
+                    } else {
+                        console.warn("⚠️ [DEBUG - PERMISSION] Account นี้ไม่ใช่ Admin/Barber b1 จึงไม่ได้อัปเดต barbers/b1");
                     }
+                } else {
+                    console.warn("⚠️ [DEBUG - FIREBASE] ไม่พบ window.db หรือ window.firebaseModules");
                 }
 
                 alert('บันทึกข้อมูลส่วนตัวและซิงค์รูปภาพข้ามอุปกรณ์เรียบร้อยแล้ว!');
@@ -4543,8 +4573,10 @@
                 if (typeof renderBarbersHomeStatus === 'function') renderBarbersHomeStatus();
                 if (typeof renderBarberSelectGrid === 'function') renderBarberSelectGrid();
 
+                console.log("🎨 [DEBUG - RENDER] อัปเดตหน้าจอ UI ในเครื่องนี้เรียบร้อย");
+
             } catch (error) {
-                console.error("Error saving user profile: ", error);
+                console.error("❌ [DEBUG - ERROR] เกิดข้อผิดพลาดในการบันทึกข้อมูล:", error);
                 alert("เกิดข้อผิดพลาดในการบันทึกข้อมูล (ขนาดไฟล์ภาพอาจใหญ่เกินไป)");
             }
         }
@@ -4627,8 +4659,8 @@
     </div>
     <script src="script.js?v=2.0"></script>
     <!-- เครื่องมือดูคอนโซลบนมือถือ (Eruda) -->
-    <!-- <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
-    <script>eruda.init();</script> -->
+    <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
+    <script>eruda.init();</script>
 </body>
 
 </html>
