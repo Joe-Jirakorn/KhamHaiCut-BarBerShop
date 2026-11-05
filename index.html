@@ -858,6 +858,15 @@
 
     <!-- JavaScript Application Logic -->
     <script>
+
+        // 🌟 ประกาศตัวแปร state ไว้บนสุดของสคริปต์ ป้องกัน Error ตั้งแต่เริ่มเปิดเว็บ
+        window.state = window.state || {
+            currentUser: null,
+            currentMode: 'user',
+            bookings: [],
+            userBookings: [],
+            bookingForm: {}
+        };
         /* ================= STATE MANAGEMENT ================= */
         const state = {
             // รองรับการเก็บเบอร์โทรศัพท์ใน currentUser (ดึงจาก LocalStorage)
