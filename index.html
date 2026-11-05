@@ -875,7 +875,7 @@
 
             // Hairstyle Catalog
             hairstyles: [
-                { id: 'h1', name: 'Comma (คอมม่า)', basePrice: 80, desc: 'เหมาะสำหรับคนมีผมแสก', img: 'https://i.postimg.cc/cCYKFkFv/images.jpg' },
+                { id: 'h1', name: 'Comma (คอมม่า)', basePrice: 80, desc: 'เหมาะสำหรับคนมีผมแสก', img: 'https://i.postimg.cc/LXRrWRVm/images-(1).jpg' },
                 { id: 'h2', name: 'Two-Block (ทูบล็อค)', basePrice: 80, desc: 'เหมาะสำหรับคนมีหน้าม้า', img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQCp6Tuel1CAr2mPE6arIbV4voCHP47vS-fc37_5uz8qg&s=10' },
                 { id: 'h3', name: 'Mullet (มัลเล็ต)', basePrice: 80, desc: 'เปิดข้าง หลังและข้างบนอิสระ', img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQSuJIHAi7jO-IZbgsrCb5B0xRfa0Ap0TXW5vPkF7zIyw&s=10' },
                 { id: 'h4', name: 'Crop (คร็อป)', basePrice: 80, desc: 'ตัดสั้นมีเท็กซ์เจอร์ เหมาะกับรูปหน้าทุกแบบ', img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ6Guw3ZWQGQcL7HrNuqMFnuG1fZEzwrMCtryCaWMCWGw&s' },
@@ -1559,9 +1559,9 @@
                     }
                 }
 
-                // 🌟 3. กวาดเปลี่ยนรูปโปรไฟล์ "ทุกจุด" บนหน้าเว็บ (รวมถึงหน้าแอดมินและหน้าช่าง)
-                const allAvatars = document.querySelectorAll('#user-avatar, .user-avatar-img, .admin-avatar-display, img[alt*="ช่าง"], img[src*="postimg"]');
-                allAvatars.forEach(img => {
+                // 🌟 3. [แก้ไขจุดที่ผิดพลาด]: เจาะจงเปลี่ยนเฉพาะรูปอวาตาร์ของระบบและช่างหลัก (b1) เท่านั้น ไม่ไปโดนรูปทรงผม
+                const adminAvatars = document.querySelectorAll('#user-avatar, .user-avatar-img, .admin-avatar-display, img.barber-avatar-img, [data-barber-id="b1"] img');
+                adminAvatars.forEach(img => {
                     if (latestAvatar && img.src !== latestAvatar) {
                         img.src = latestAvatar;
                     }
