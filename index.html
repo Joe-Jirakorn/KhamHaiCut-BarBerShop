@@ -3733,16 +3733,14 @@
 
                 const newPhone = phoneInput ? phoneInput.value.trim() : '';
                 const newBirthdate = birthdateInput ? birthdateInput.value : '';
-                const newName = nameInput ? nameInput.value.trim() : (state.currentUser.name || 'ช่างก้อง');
+                const newName = nameInput ? nameInput.value.trim() : (state.currentUser.name || '');
 
                 let currentAvatar = state.currentUser.avatar || state.currentUser.photoURL || 'https://i.postimg.cc/8FR1mMtP/858525001-1129326712975883-8607776798710260414-n.jpg';
 
-                // 🌟 1. ระบบย่อและบีบอัดขนาดรูปภาพอัตโนมัติ
+                // 1. ระบบย่อและบีบอัดขนาดรูปภาพอัตโนมัติ
                 if (avatarInput && avatarInput.files && avatarInput.files[0]) {
                     try {
                         const file = avatarInput.files[0];
-                        console.log("📁 [DEBUG] กำลังย่อขนาดรูปภาพ:", file.name, "ขนาดเดิม:", Math.round(file.size / 1024), "KB");
-
                         currentAvatar = await new Promise((resolve, reject) => {
                             const reader = new FileReader();
                             reader.onload = (e) => {
@@ -3770,8 +3768,7 @@
                                     const ctx = canvas.getContext('2d');
                                     ctx.drawImage(img, 0, 0, width, height);
 
-                                    const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
-                                    resolve(dataUrl);
+                                    resolve(canvas.toDataURL('image/jpeg', 0.7));
                                 };
                                 img.onerror = reject;
                                 img.src = e.target.result;
@@ -3779,9 +3776,8 @@
                             reader.onerror = reject;
                             reader.readAsDataURL(file);
                         });
-                        console.log("✅ [DEBUG] ย่อและแปลงรูปภาพเสร็จสิ้น พร้อมส่งขึ้นคลาวด์!");
                     } catch (err) {
-                        console.error("❌ [DEBUG] Error compressing image:", err);
+                        console.error("Error compressing image:", err);
                     }
                 }
 
@@ -3792,6 +3788,7 @@
                     }
                 } catch (e) { }
 
+                // อัปเดตข้อมูลใน state ของบัญชีปัจจุบัน
                 state.currentUser.name = newName;
                 state.currentUser.phone = newPhone;
                 state.currentUser.birthdate = newBirthdate;
@@ -3802,11 +3799,11 @@
                     localStorage.setItem('barber_current_user', JSON.stringify(state.currentUser));
                 } catch (e) { }
 
-                // 🌟 ตรวจสอบสิทธิ์ว่าบัญชีนี้เป็นแอดมินหรือช่าง (b1) หรือไม่
+                // 🌟 ตรวจสอบสิทธิ์ว่าเป็นแอดมินหรือช่าง (b1) หรือไม่
                 const userRole = state.currentUser.role ? state.currentUser.role.toLowerCase() : '';
                 const isAdminOrBarber = userRole === 'admin' || userRole === 'barber' || state.currentUser.isAdmin === true || state.currentUser.email === 'phongsakorn2115@gmail.com' || state.currentUser.id === 'b1';
 
-                // ถ้าระบบนี้เป็นแอดมิน/ช่าง ถึงจะอัปเดต state.barbers[0] ด้วย
+                // ถ้าเป็นแอดมิน/ช่าง ถึงจะอัปเดต state.barbers[0] ด้วย
                 if (isAdminOrBarber && state.barbers && state.barbers.length > 0) {
                     state.barbers[0].avatar = currentAvatar;
                     try {
@@ -3833,7 +3830,7 @@
                         } catch (err) { }
                     }
 
-                    // 🌟 เงื่อนไขสำคัญ: อัปเดตขึ้น barbers/b1 เฉพาะกรณีที่เป็นแอดมินหรือช่างเท่านั้น! ห้ามให้ User ธรรมดาอัปเดตเด็ดขาด
+                    // 🌟 เงื่อนไขสำคัญ: อัปเดตขึ้น barbers/b1 เฉพาะกรณีที่เป็นแอดมินหรือช่างเท่านั้น! ห้ามให้ User ทั่วไปอัปเดตเด็ดขาด
                     if (isAdminOrBarber) {
                         const barberRef = doc(window.db, "barbers", "b1");
                         await setDoc(barberRef, {
@@ -3844,7 +3841,7 @@
                             updatedAt: new Date().toISOString()
                         }, { merge: true });
 
-                        console.log("🔥 [DEBUG] อัปโหลดรูปใหม่ขึ้น barbers/b1 สำเร็จเรียบร้อย (สิทธิ์แอดมิน/ช่าง)");
+                        console.log("🔥 [DEBUG] อัปโหลดรูปใหม่ขึ้น barbers/b1 สำเร็จ (สิทธิ์แอดมิน/ช่าง)");
                     } else {
                         console.log("🛡️ [DEBUG] บัญชี User ทั่วไปบันทึกข้อมูลสำเร็จ (ไม่กระทบรูปช่าง b1)");
                     }
