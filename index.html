@@ -1545,16 +1545,27 @@
                 }
             }
 
-            // 🌟 2. [จุดที่แก้ไข]: ถ้า Account นี้เป็นแอดมินหรือช่าง (b1) ให้ดึงรูปจาก state.barbers ล่าสุด (ที่ซิงค์ Real-time มาแล้ว) มาใช้ทันที
-            if (state.currentUser && (state.currentUser.role === 'admin' || state.currentUser.isAdmin === true || String(state.currentUser.id) === 'b1')) {
+            // 🌟 2. ดึงรูปจาก state.barbers หรือ currentUser ล่าสุดมาซิงค์ให้ตรงกันเสมอ
+            if (state.currentUser) {
+                let latestAvatar = state.currentUser.avatar || state.currentUser.photoURL;
+
+                // ถ้าเป็นแอดมินหรือช่างหลัก (b1) ให้ดึงจาก state.barbers ตัวล่าสุด
                 if (state.barbers && state.barbers.length > 0) {
-                    const barberB1 = state.barbers.find(b => b.id === 'b1');
+                    const barberB1 = state.barbers.find(b => b.id === 'b1' || b.email === state.currentUser.email);
                     if (barberB1 && barberB1.avatar) {
-                        state.currentUser.avatar = barberB1.avatar;
-                        // อัปเดตเก็บลง LocalStorage ให้เป็นปัจจุบันเสมอ
+                        latestAvatar = barberB1.avatar;
+                        state.currentUser.avatar = latestAvatar;
                         localStorage.setItem('barber_current_user', JSON.stringify(state.currentUser));
                     }
                 }
+
+                // 🌟 3. กวาดเปลี่ยนรูปโปรไฟล์ "ทุกจุด" บนหน้าเว็บ (รวมถึงหน้าแอดมินและหน้าช่าง)
+                const allAvatars = document.querySelectorAll('#user-avatar, .user-avatar-img, .admin-avatar-display, img[alt*="ช่าง"], img[src*="postimg"]');
+                allAvatars.forEach(img => {
+                    if (latestAvatar && img.src !== latestAvatar) {
+                        img.src = latestAvatar;
+                    }
+                });
             }
 
             const authBtns = document.getElementById('auth-buttons');
@@ -1565,16 +1576,11 @@
                 // 🟢 กรณีเข้าสู่ระบบสำเร็จ
                 if (authBtns) {
                     authBtns.classList.add('hidden');
-                    authBtns.style.display = 'none'; // บังคับซ่อน
+                    authBtns.style.display = 'none';
                 }
                 if (userMenu) {
                     userMenu.classList.remove('hidden');
-                    userMenu.style.display = 'flex'; // บังคับแสดงผล
-                }
-
-                const avatarImg = document.getElementById('user-avatar');
-                if (avatarImg) {
-                    avatarImg.src = state.currentUser.avatar || 'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=100&auto=format&fit=crop&q=80';
+                    userMenu.style.display = 'flex';
                 }
 
                 const displayName = document.getElementById('user-display-name');
@@ -1598,17 +1604,19 @@
                 const nameInput = document.getElementById('cust-name');
                 if (nameInput) nameInput.value = state.currentUser.name || '';
 
-                // แสดงสวิตช์โหมดเฉพาะแอดมินหรือช่าง
+                // 🌟 4. ตรวจสอบสิทธิ์แอดมินหรือช่าง (ครอบคลุมทั้ง role และ isAdmin)
+                const userRole = state.currentUser.role ? state.currentUser.role.toLowerCase() : '';
+                const isAdminAccount = userRole === 'admin' || state.currentUser.isAdmin === true || state.currentUser.email === 'phongsakorn2115@gmail.com';
+                const isBarberAccount = userRole === 'barber' || isAdminAccount;
+
                 if (roleSwitcher) {
-                    const userRole = state.currentUser.role ? state.currentUser.role.toLowerCase() : 'customer';
-                    if (userRole === 'admin' || userRole === 'barber') {
+                    if (isAdminAccount || isBarberAccount) {
                         roleSwitcher.classList.remove('hidden');
                         roleSwitcher.style.display = 'flex';
 
                         const adminBtn = roleSwitcher.querySelector('[onclick*="admin"]') || roleSwitcher.querySelector('.btn-admin');
-
                         if (adminBtn) {
-                            if (userRole === 'barber') {
+                            if (userRole === 'barber' && !isAdminAccount) {
                                 adminBtn.style.display = 'none';
                             } else {
                                 adminBtn.style.display = 'inline-block';
@@ -1636,7 +1644,6 @@
                 }
             }
         }
-
 
         function logout() {
             // 1. ลบข้อมูลผู้ใช้ออกจาก LocalStorage ทุกคีย์ที่เกี่ยวข้องเพื่อความชัวร์ (ป้องกันข้อมูลตีกัน)
@@ -4609,7 +4616,182 @@
             }
         }
 
+        // 🌟 รวมฟังก์ชันซิงค์เรียลไทม์ทั้งหมดไว้ที่จุดเดียว (ทั้งคิวจอง และรูปโปรไฟล์ช่าง/แอดมิน)
+        function initAllRealtimeSystems() {
+            if (!window.db || !window.firebaseModules) {
+                console.warn("Firebase ยังไม่พร้อมใช้งาน");
+                return;
+            }
 
+            const { doc, collection, onSnapshot } = window.firebaseModules;
+
+            // ==========================================
+            // 1. ระบบซิงค์รูปโปรไฟล์และข้อมูลช่าง/แอดมิน (แก้ปัญหารูปไม่เปลี่ยนบนมือถือ/เว็บอื่น)
+            // ==========================================
+            const barberRef = doc(window.db, "barbers", "b1");
+            onSnapshot(barberRef, (docSnap) => {
+                if (docSnap.exists()) {
+                    const barberData = docSnap.data();
+                    console.log("🔄 [Realtime Sync] พบการอัปเดตข้อมูลช่าง:", barberData);
+
+                    if (state.barbers && state.barbers.length > 0) {
+                        state.barbers[0].avatar = barberData.avatar;
+                        state.barbers[0].name = barberData.name || state.barbers[0].name;
+                        localStorage.setItem('barber_shop_barbers', JSON.stringify(state.barbers));
+                    }
+
+                    // ถ้า currentUser เป็นแอดมินคนเดียวกัน ให้ซิงค์รูปตามไปด้วยทันที
+                    if (state.currentUser && (state.currentUser.email === 'phongsakorn2115@gmail.com' || state.currentUser.id === 'b1')) {
+                        state.currentUser.avatar = barberData.avatar;
+                        localStorage.setItem('barber_current_user', JSON.stringify(state.currentUser));
+                    }
+
+                    // อัปเดต UI ทุกลำดับหน้าจอ
+                    if (typeof updateUserUI === 'function') updateUserUI();
+                    if (typeof renderFullBarbersList === 'function') renderFullBarbersList();
+                    if (typeof renderBarbersHomeStatus === 'function') renderBarbersHomeStatus();
+                    if (typeof renderBarberSelectGrid === 'function') renderBarberSelectGrid();
+                }
+            });
+
+
+            // ==========================================
+            // 2. ระบบซิงค์คิวจอง (initRealtimeBookings ของก้องเอง)
+            // ==========================================
+            const cachedBookings = localStorage.getItem('khamhai_cached_bookings');
+            if (cachedBookings && typeof state !== 'undefined') {
+                try {
+                    state.bookings = JSON.parse(cachedBookings);
+                    if (typeof renderUserBookingsTable === 'function') {
+                        renderUserBookingsTable();
+                    } else if (typeof renderUserBookings === 'function') {
+                        renderUserBookings();
+                    }
+                } catch (e) {
+                    console.error("Failed to parse cached bookings:", e);
+                }
+            }
+
+            let lastBookingCount = null;
+
+            onSnapshot(collection(window.db, "bookings"), (snapshot) => {
+                const newBookings = [];
+                snapshot.forEach((doc) => {
+                    newBookings.push({ firestoreId: doc.id, ...doc.data() });
+                });
+
+                newBookings.sort((a, b) => {
+                    const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+                    const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+                    return timeA - timeB;
+                });
+
+                const currentUser = (typeof state !== 'undefined' && state.currentUser) ? state.currentUser : null;
+                const isAdminOrBarber = currentUser && (
+                    currentUser.role === 'admin' ||
+                    currentUser.isAdmin === true ||
+                    String(currentUser.id) === 'b1'
+                );
+
+                if (lastBookingCount !== null && newBookings.length > lastBookingCount && isAdminOrBarber) {
+                    console.log("🔔 [NOTIFICATION] มีรายการจองคิวใหม่เข้ามา!");
+
+                    try {
+                        const AudioContext = window.AudioContext || window.webkitAudioContext;
+                        if (AudioContext) {
+                            const ctx = new AudioContext();
+                            const playBeep = (time, freq, vol = 0.8) => {
+                                const osc = ctx.createOscillator();
+                                const gain = ctx.createGain();
+                                osc.type = 'sine';
+                                osc.frequency.value = freq;
+                                gain.gain.setValueAtTime(vol, time);
+                                gain.gain.exponentialRampToValueAtTime(0.001, time + 0.25);
+                                osc.connect(gain);
+                                gain.connect(ctx.destination);
+                                osc.start(time);
+                                osc.stop(time + 0.25);
+                            };
+
+                            const now = ctx.currentTime;
+                            playBeep(now, 800, 0.9);
+                            playBeep(now + 0.12, 1000, 0.9);
+                            playBeep(now + 0.24, 1200, 1.0);
+                            playBeep(now + 0.36, 1400, 1.0);
+                        }
+                    } catch (err) {
+                        console.warn("ไม่สามารถเล่นเสียงได้:", err);
+                    }
+
+                    const latestBooking = newBookings[newBookings.length - 1] || {};
+                    const customerName = latestBooking.customerName || latestBooking.name || latestBooking.userName || 'ลูกค้าทั่วไป';
+                    const haircutStyle = latestBooking.styleName || latestBooking.service || latestBooking.haircutStyle || latestBooking.haircut || 'ตัดผม/บริการ';
+                    const bookingTime = latestBooking.time || latestBooking.bookingTime || '';
+                    const bookingDate = latestBooking.date || latestBooking.bookingDate || '';
+                    const fullDateTime = (bookingDate && bookingTime) ? `${bookingDate} ${bookingTime}` : (bookingTime || bookingDate || 'เร็วๆ นี้');
+
+                    const alertBox = document.createElement('div');
+                    alertBox.id = 'active-booking-popup-modal';
+                    alertBox.className = 'fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm animate-fade-in p-4';
+                    alertBox.innerHTML = `
+                <div class="bg-dark-800 border-2 border-amber-500 rounded-2xl p-6 w-full max-w-md text-white shadow-2xl relative animate-scale-up text-center">
+                    <div class="absolute -top-6 left-1/2 -translate-x-1/2 w-12 h-12 bg-amber-500 rounded-full flex items-center justify-center text-dark-900 text-xl shadow-lg">
+                        <i class="fa-solid fa-bell animate-bounce"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-amber-400 mt-3 mb-1">🔔 มีรายการจองคิวใหม่เข้ามา!</h3>
+                    <p class="text-xs text-gray-400 mb-4">ระบบบันทึกคิวเรียบร้อยแล้ว หน้าต่างจะปิดอัตโนมัติใน 3 วินาที...</p>
+                    
+                    <div class="bg-dark-900/80 border border-dark-700 rounded-xl p-4 text-left space-y-2 mb-2 text-sm">
+                        <div class="flex justify-between">
+                            <span class="text-gray-400">👤 ชื่อลูกค้า:</span>
+                            <span class="font-semibold text-white">${customerName}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-400">✂️ ทรงผม/บริการ:</span>
+                            <span class="font-semibold text-amber-400">${haircutStyle}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-400">📅 เวลา/วันที่:</span>
+                            <span class="font-semibold text-white">${fullDateTime}</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+                    const oldPopup = document.getElementById('active-booking-popup-modal');
+                    if (oldPopup) oldPopup.remove();
+                    document.body.appendChild(alertBox);
+
+                    if (window.popupAutoCloseTimer) clearTimeout(window.popupAutoCloseTimer);
+                    window.popupAutoCloseTimer = setTimeout(() => {
+                        const modal = document.getElementById('active-booking-popup-modal');
+                        if (modal) modal.remove();
+                    }, 3000);
+                }
+
+                lastBookingCount = newBookings.length;
+
+                if (typeof state !== 'undefined') {
+                    state.bookings = newBookings;
+                    localStorage.setItem('khamhai_cached_bookings', JSON.stringify(newBookings));
+
+                    if (currentUser && currentUser.email) {
+                        state.userBookings = newBookings.filter(b =>
+                            b.customerEmail === currentUser.email || b.email === currentUser.email || b.userEmail === currentUser.email ||
+                            b.customerPhone === currentUser.phone || b.phone === currentUser.phone || b.userPhone === currentUser.phone
+                        );
+                    } else {
+                        state.userBookings = [];
+                    }
+                }
+
+                window.isBookingsLoaded = true;
+
+                if (typeof renderAdminBookingsTable === 'function') renderAdminBookingsTable();
+                if (typeof renderUserBookings === 'function') renderUserBookings();
+                if (typeof updateRevenueStats === 'function') updateRevenueStats();
+            });
+        }
 
     </script>
     <!-- Modal ข้อมูลส่วนตัว -->
