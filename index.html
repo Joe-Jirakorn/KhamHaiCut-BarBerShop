@@ -2397,13 +2397,20 @@
 
                     querySnapshot.forEach((docSnap) => {
                         const existing = docSnap.data();
-                        if (existing.status !== 'cancelled') {
+
+                        // 🌟 ปรับปรุงการเช็กสถานะให้ครอบคลุม (รองรับทั้งยกเลิกและเสร็จสิ้น ทั้งอังกฤษ/ไทย)
+                        const status = (existing.status || 'pending').toLowerCase().trim();
+                        const isCancelled = status.includes('cancel') || status.includes('ยกเลิก');
+                        const isCompleted = status.includes('complet') || status.includes('เสร็จ');
+
+                        // 🛑 จะบล็อกก็ต่อเมื่อคิวนั้นยังรอดำเนินการอยู่จริง ๆ เท่านั้น
+                        if (!isCancelled && !isCompleted) {
                             hasConflict = true;
                         }
                     });
 
                     if (hasConflict) {
-                        alert(`ติดจอง! ช่วงเวลา ${time} ในวันที่ ${date} กับช่าง ${selectedBarberObj.name} มีผู้จองไปแล้ว กรุณาเลือกช่วงเวลาอื่นครับ`);
+                        alert(`ติดจอง! ช่วงเวลา ${time} ในวันที่ ${date} กับช่าง ${selectedBarberObj.name} มีผู้จองที่กำลังรอดำเนินการอยู่ กรุณาเลือกช่วงเวลาอื่นครับ`);
                         return;
                     }
                 }
@@ -3633,55 +3640,67 @@
         async function validateAndSubmitBooking(bookingData) {
             if (!window.db || !window.firebaseModules) {
                 showToast('ระบบฐานข้อมูลยังไม่พร้อมใช้งาน', 'error');
-                return;
+                return false;
             }
 
             const { collection, getDocs, query, where } = window.firebaseModules;
             const bookingsRef = collection(window.db, "bookings");
 
             try {
-                // 1. ดึงข้อมูลการจองทั้งหมดในวันที่ลูกค้าเลือก และช่างคนเดียวกัน (ถ้ามีการเลือกช่าง)
-                // เพื่อนำมาเช็กช่วงเวลาว่าชนกันหรือไม่
+                console.log("🔍 [DEBUG] กำลังตรวจสอบการจองสำหรับ:", bookingData);
+
                 const q = query(
                     bookingsRef,
                     where("date", "==", bookingData.date),
-                    where("barberId", "==", bookingData.barberId) // ตัดบรรทัดนี้ออกถ้าไม่ได้แยกช่าง
+                    where("barberId", "==", bookingData.barberId)
                 );
 
                 const querySnapshot = await getDocs(q);
                 let isConflict = false;
 
-                // แปลงช่วงเวลาที่ลูกค้าเลือกใหม่เป็นนาทีตั้งแต่เที่ยงคืน เพื่อให้เทียบช่วงเวลาง่ายขึ้น
-                // สมมติ bookingData เก็บเวลาเริ่ม เช่น "16:00" และเวลาสิ้นสุด "17:00"
-                const newStartMin = timeToMinutes(bookingData.startTime); // เช่น 16:00 -> 960 นาที
-                const newEndMin = timeToMinutes(bookingData.endTime);     // เช่น 17:00 -> 1020 นาที
+                const newStartMin = timeToMinutes(bookingData.startTime);
+                const newEndMin = timeToMinutes(bookingData.endTime);
+                console.log(`⏱️ เวลาใหม่ (นาที): ${newStartMin} ถึง ${newEndMin}`);
 
                 querySnapshot.forEach((docSnap) => {
                     const existingBooking = docSnap.data();
+                    console.log(`📄 พบเอกสารใน Firebase [ID: ${docSnap.id}]:`, existingBooking);
 
-                    // ข้ามรายการที่ถูกยกเลิกไปแล้ว (ถ้ามีสถานะ cancelled)
-                    if (existingBooking.status === 'cancelled') return;
+                    // เช็กสถานะ
+                    const existingStatus = (existingBooking.status || 'pending').toLowerCase().trim();
+                    console.log(`📌 สถานะเดิมในระบบ: "${existingStatus}"`);
 
-                    const existStartMin = timeToMinutes(existingBooking.startTime);
-                    const existEndMin = timeToMinutes(existingBooking.endTime);
+                    const isCancelled = existingStatus === 'cancelled' || existingStatus.includes('ยกเลิก');
+                    const isCompleted = existingStatus === 'completed' || existingStatus.includes('เสร็จ');
 
-                    // 🛑 เช็กเงื่อนไขเวลาทับซ้อน (Overlap Logic)
-                    // สูตร: (เวลาเริ่มใหม่ < เวลาสิ้นสุดเดิม) และ (เวลาสิ้นสุดใหม่ > เวลาเริ่มเดิม)
+                    if (isCancelled || isCompleted) {
+                        console.log(`✅ ข้ามคิวนี้ [ID: ${docSnap.id}] เพราะถือว่าจบ/ยกเลิกแล้ว`);
+                        return;
+                    }
+
+                    // รองรับทั้งฟิลด์ startTime/endTime หรือฟิลด์ time แบบเดิม
+                    const rawStartTime = existingBooking.startTime || existingBooking.time?.split('-')[0] || '09:00';
+                    const rawEndTime = existingBooking.endTime || existingBooking.time?.split('-')[1] || '10:00';
+
+                    const existStartMin = timeToMinutes(rawStartTime);
+                    const existEndMin = timeToMinutes(rawEndTime);
+
+                    console.log(`⏰ เทียบเวลาชน - คิวเดิม: ${rawStartTime} (${existStartMin}) - ${rawEndTime} (${existEndMin})`);
+
+                    // เช็กเวลาทับซ้อน
                     if (newStartMin < existEndMin && newEndMin > existStartMin) {
+                        console.warn(`❌ พบเวลาชนกันจิงๆ กับคิว ID: ${docSnap.id}`);
                         isConflict = true;
                     }
                 });
 
                 if (isConflict) {
-                    // แจ้งเตือนผู้ใช้ว่าเวลานี้ถูกจองไปแล้ว
                     showToast('ช่วงเวลานี้ถูกจองไปแล้ว กรุณาเลือกช่วงเวลาอื่นครับ', 'error');
-                    alert('ติดจอง! ช่วงเวลาตั้งแต่ ' + bookingData.startTime + ' ถึง ' + bookingData.endTime + ' มีผู้จองไปแล้ว กรุณาเลือกเวลาอื่น');
-                    return false; // ยกเลิกการจอง
+                    alert('ติดจอง! ช่วงเวลาตั้งแต่ ' + bookingData.startTime + ' ถึง ' + bookingData.endTime + ' มีผู้จองที่กำลังรอดำเนินการอยู่ กรุณาเลือกเวลาอื่นครับ');
+                    return false;
                 }
 
-                // 2. ถ้าไม่ชน สามารถบันทึกการจองลง Firebase ต่อได้ตามปกติ
-                // await addDoc(bookingsRef, bookingData);
-                // showToast('จองคิวสำเร็จ!', 'success');
+                console.log("✨ ผ่านการตรวจสอบ เวลาว่างสามารถจองได้!");
                 return true;
 
             } catch (error) {
@@ -4579,6 +4598,7 @@
         `;
             }).join('');
         }
+
 
 
     </script>
