@@ -4411,11 +4411,29 @@
             const phoneInput = document.getElementById('profile-phone');
             const birthdateInput = document.getElementById('profile-birthdate');
             const nameInput = document.getElementById('profile-name');
+            const avatarInput = document.getElementById('profile-avatar-input'); // ช่องเลือกไฟล์รูปภาพ (ถ้ามี)
 
             const newPhone = phoneInput ? phoneInput.value.trim() : '';
             const newBirthdate = birthdateInput ? birthdateInput.value : '';
             const newName = nameInput ? nameInput.value.trim() : state.currentUser.name;
-            const currentAvatar = state.currentUser.avatar || state.currentUser.photoURL || '';
+
+            // 🌟 จัดการเรื่องรูปภาพ: ถ้ามีการอัปโหลดไฟล์ใหม่ ให้แปลงเป็น Base64 หรือลิงก์กลางเพื่อให้อุปกรณ์อื่นมองเห็นเหมือนกัน
+            let currentAvatar = state.currentUser.avatar || state.currentUser.photoURL || '';
+
+            if (avatarInput && avatarInput.files && avatarInput.files[0]) {
+                try {
+                    const file = avatarInput.files[0];
+                    // แปลงไฟล์รูปเป็น Base64 String เพื่อให้สามารถเก็บลง Firebase และแสดงผลข้ามเครื่องได้ทันที
+                    currentAvatar = await new Promise((resolve, reject) => {
+                        const reader = new FileReader();
+                        reader.onload = () => resolve(reader.result);
+                        reader.onerror = error => reject(error);
+                        reader.readAsDataURL(file);
+                    });
+                } catch (err) {
+                    console.error("Error reading avatar file:", err);
+                }
+            }
 
             // คำนวณอายุอัตโนมัติจากวันเกิดที่เลือก
             const calculatedAge = calculateAge(newBirthdate);
@@ -4425,11 +4443,14 @@
             state.currentUser.phone = newPhone;
             state.currentUser.birthdate = newBirthdate;
             state.currentUser.age = calculatedAge;
+            if (currentAvatar) {
+                state.currentUser.avatar = currentAvatar;
+            }
 
             // บันทึกลง LocalStorage
             localStorage.setItem('barber_current_user', JSON.stringify(state.currentUser));
 
-            // 🌟 บันทึกลง Firebase Firestore
+            // 🌟 บันทึกลง Firebase Firestore แบบแชร์กลางทุกอุปกรณ์
             try {
                 if (window.firebaseModules && window.db) {
                     const { doc, updateDoc, setDoc } = window.firebaseModules;
@@ -4447,30 +4468,22 @@
                         });
                     }
 
-                    // 🌟 2. ตรวจสอบสิทธิ์: ถ้า Account ที่กำลังกดบันทึกเป็นแอดมินหรือช่าง (b1) ให้ซิงค์ชื่อและรูปภาพลง collection "barbers" (b1) ทันที
-                    const isAdminOrBarber = state.currentUser.role === 'admin' ||
-                        state.currentUser.isAdmin === true ||
-                        String(state.currentUser.id) === 'b1' ||
-                        newName.includes('ก้อง'); // หรือเช็กชื่อช่างก้อง
+                    // 🌟 2. บันทึกทับลง collection "barbers" (Document ID: "b1") ทันที
+                    // จุดนี้ทำให้คอมพิวเตอร์และมือถือเครื่องอื่นที่เปิด Real-time ฟังอยู่ ได้รับรูปใหม่พร้อมกันทันที!
+                    const barberRef = doc(window.db, "barbers", "b1");
+                    const existingBarber = (state.barbers && state.barbers.find(b => b.id === 'b1')) || {};
+                    const currentBarberStatus = existingBarber.status || 'available';
 
-                    if (isAdminOrBarber) {
-                        const barberRef = doc(window.db, "barbers", "b1");
-
-                        // ดึงข้อมูลสถานะเดิมของช่างมาเก็บไว้ เพื่อไม่ให้สถานะเพี้ยน
-                        const existingBarber = (state.barbers && state.barbers.find(b => b.id === 'b1')) || {};
-                        const currentBarberStatus = existingBarber.status || 'available';
-
-                        await setDoc(barberRef, {
-                            id: 'b1',
-                            name: newName, // อัปเดตชื่อตามแอดมิน
-                            avatar: currentAvatar, // อัปเดตรูปตามแอดมินเป๊ะๆ
-                            status: currentBarberStatus,
-                            updatedAt: new Date().toISOString()
-                        }, { merge: true });
-                    }
+                    await setDoc(barberRef, {
+                        id: 'b1',
+                        name: newName,
+                        avatar: currentAvatar, // ส่งรูปภาพกลางขึ้น Firebase
+                        status: currentBarberStatus,
+                        updatedAt: new Date().toISOString()
+                    }, { merge: true });
                 }
 
-                alert('บันทึกข้อมูลส่วนตัวและซิงค์เรียบร้อยแล้ว!');
+                alert('บันทึกข้อมูลส่วนตัวและซิงค์รูปภาพข้ามอุปกรณ์เรียบร้อยแล้ว!');
 
                 // อัปเดตหน้าจอ UI ทั้งหมดทันที
                 if (typeof updateUserUI === 'function') updateUserUI();
@@ -4482,88 +4495,6 @@
                 console.error("Error saving user profile: ", error);
                 alert("เกิดข้อผิดพลาดในการบันทึกข้อมูล");
             }
-        }
-
-        function renderUserBookingsTable() {
-            // 🛑 1. ตรวจสอบความถูกต้องของ state.bookings ที่ซิงค์มาจาก Firebase Real-time
-            if (!Array.isArray(state.bookings)) {
-                state.bookings = [];
-            }
-
-            // 2. ค้นหาตารางโดยอ้างอิงจาก id="user-bookings-table-body" ใน HTML
-            const tableContainer = document.getElementById('user-bookings-table-body');
-
-            if (!tableContainer) {
-                console.warn("ไม่พบ Element ที่มี id='user-bookings-table-body'");
-                return;
-            }
-
-            // เคลียร์ข้อมูลเก่าทิ้งก่อนเรนเดอร์ใหม่
-            tableContainer.innerHTML = '';
-
-            // 🌟 3. กรองเลือกเฉพาะรายการจองที่มีสถานะเป็น 'pending' (รอดำเนินการ) เท่านั้น
-            const userBookings = state.bookings.filter(booking => booking.status === 'pending');
-
-            // ถ้าไม่มีรายการจองที่รอดำเนินการในระบบ
-            if (userBookings.length === 0) {
-                tableContainer.innerHTML = `
-            <tr>
-                <td colspan="7" class="text-center py-8 text-gray-400">
-                    ไม่มีรายการจองคิวที่รอดำเนินการ
-                </td>
-            </tr>
-        `;
-                return;
-            }
-
-            // 4. วนลูปสร้างแถวข้อมูลเฉพาะรายการที่รอดำเนินการ
-            userBookings.forEach(booking => {
-                const row = document.createElement('tr');
-                row.className = 'border-b border-dark-700 hover:bg-dark-900/50 transition-colors';
-
-                // สถานะจะเป็นรอดำเนินการเสมอเพราะเรากรองมาแล้ว
-                const statusBadge = '<span class="px-2 py-1 bg-yellow-500/20 text-yellow-400 rounded-full text-xs">รอดำเนินการ</span>';
-
-                // 🛑 ตรวจสอบสิทธิ์ความเป็นเจ้าของคิว เพื่อจำกัดสิทธิ์ปุ่มยกเลิกเฉพาะเจ้าของคิวหรือแอดมิน/ช่าง
-                const currentUser = state.currentUser;
-                const currentUserId = currentUser ? (currentUser.id || currentUser.firestoreId || '') : '';
-                const currentUserEmail = currentUser && currentUser.email ? currentUser.email.trim().toLowerCase() : '';
-                const currentUserRole = currentUser && currentUser.role ? currentUser.role.toLowerCase() : 'customer';
-
-                const isOwnerById = currentUserId && (booking.userId === currentUserId || booking.firestoreId === currentUserId);
-                const isOwnerByEmail = currentUserEmail && (booking.userEmail === currentUserEmail || booking.email === currentUserEmail);
-
-                const savedGuestBookingIds = JSON.parse(localStorage.getItem('my_guest_booking_ids') || '[]');
-                const isGuestOwner = savedGuestBookingIds.includes(booking.id);
-
-                const isOwner = isOwnerById || isOwnerByEmail || isGuestOwner;
-                const isAdminOrBarber = currentUserRole === 'admin' || currentUserRole === 'barber';
-
-                let actionButtonHTML = '';
-                // แสดงปุ่มยกเลิกเฉพาะคิวของตัวเอง หรือแอดมิน/ช่างเท่านั้น เพื่อความปลอดภัย
-                if (isOwner || isAdminOrBarber) {
-                    actionButtonHTML = `
-                    <button onclick="cancelBooking('${booking.id || booking.firestoreId}')" class="px-3 py-1 bg-red-600/30 hover:bg-red-600 text-red-300 hover:text-white rounded text-xs transition-colors">
-                        ยกเลิก
-                    </button>
-                `;
-                } else {
-                    actionButtonHTML = `<span class="text-gray-500 text-xs">-</span>`;
-                }
-
-                row.innerHTML = `
-            <td class="px-6 py-4 font-mono text-sm text-amber-400">${booking.id}</td>
-            <td class="px-6 py-4 text-gray-200">${booking.styleName || '-'} <span class="text-xs text-gray-400">(${booking.ageGroupLabel || '-'})</span></td>
-            <td class="px-6 py-4 text-gray-200">${booking.barberName || '-'}</td>
-            <td class="px-6 py-4 text-gray-300">${booking.date || ''} ${booking.time || ''}</td>
-            <td class="px-6 py-4 text-green-400 font-semibold">฿${booking.price || 0}</td>
-            <td class="px-6 py-4">${statusBadge}</td>
-            <td class="px-6 py-4 text-center">
-                ${actionButtonHTML}
-            </td>
-        `;
-                tableContainer.appendChild(row);
-            });
         }
 
     </script>
