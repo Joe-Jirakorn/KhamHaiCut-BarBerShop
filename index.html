@@ -541,7 +541,7 @@
                 <h1 class="text-3xl font-extrabold text-white flex items-center gap-3">
                     <i class="fa-solid fa-id-card-clip text-amber-500"></i> ช่างของเรา
                 </h1>
-                <p class="text-gray-400 mt-1">ตารางช่างพร้อมสถานะการรับคิวแบบ Real-time</p>
+                <p class="text-gray-400 mt-1">ตารางช่างพร้อมสถานะการรับคิว</p>
             </div>
 
             <div id="full-barbers-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -1083,6 +1083,15 @@
             if (typeof initRealtimeBookings === 'function') {
                 initRealtimeBookings();
             }
+
+            // 🌟 เพิ่มคำสั่งหน่วงเวลาเล็กน้อย เพื่อบังคับเรนเดอร์หน้าประวัติการจองซ้ำทันทีหลังดึงข้อมูลจาก Firebase สำเร็จ
+            setTimeout(() => {
+                if (typeof renderUserBookingsTable === 'function') {
+                    renderUserBookingsTable();
+                } else if (typeof renderUserBookings === 'function') {
+                    renderUserBookings();
+                }
+            }, 600);
         });
 
         /* ================= NAVIGATION & ROUTING ================= */
@@ -1160,7 +1169,7 @@
                 }
             }
 
-            // 4. ประวัติการจอง (🌟 เปิดให้ Guest และทุกคนสามารถเข้าดูหน้าประวัติได้ปกติ)
+            // 4. ประวัติการจอง (🌟 แก้ไขให้เรียก renderUserBookings() ตัวจริงที่แสดงตารางรอดำเนินการ)
             else if (target === 'my-bookings') {
                 hideAdminView();
                 hideAllUserViews();
@@ -1169,8 +1178,9 @@
                     historySection.style.display = 'block';
                     historySection.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
-                    if (typeof renderUserBookingsPage === 'function') {
-                        renderUserBookingsPage();
+                    // 🌟 เรียกใช้ฟังก์ชัน renderUserBookings ให้ตรงกันที่นี่ครับ
+                    if (typeof renderUserBookings === 'function') {
+                        renderUserBookings();
                     } else if (typeof renderUserBookingsTable === 'function') {
                         renderUserBookingsTable();
                     }
@@ -2177,39 +2187,63 @@
             const tbody = document.getElementById('user-bookings-table-body');
             if (!tbody) return;
 
-            // 🌟 1. กรองเฉพาะการจองของผู้ใช้ปัจจุบัน และต้องมีสถานะเป็น 'pending' เท่านั้น
-            const userBookings = state.bookings.filter(b => {
-                const isUserMatch = state.currentUser
-                    ? (b.userId === state.currentUser.id || b.userName === state.currentUser.name)
-                    : true; // ถ้าไม่ได้ล็อกอิน ให้แสดงทั้งหมด (หรือปรับตามต้องการ)
+            const bookings = state.bookings || [];
 
-                const isPending = b.status === 'pending'; // กรองเอาเฉพาะสถานะรอรับบริการ/รอดำเนินการ
+            if (bookings.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" class="px-6 py-8 text-center text-gray-500">ยังไม่มีข้อมูลการจองคิวในระบบ</td></tr>`;
+                return;
+            }
 
-                return isUserMatch && isPending;
+            // 🌟 ปรับปรุงการกรองให้ครอบคลุมทุกเครื่องและทุกกรณี:
+            // หากข้อมูลไม่มีฟิลด์ status หรือสถานะเป็นค่าว่าง หรือมีคำว่า 'รอ' / 'pending' ให้ดึงมาแสดงทั้งหมดทันที
+            const pendingBookings = bookings.filter(b => {
+                const status = (b.status || '').toLowerCase().trim();
+
+                // ถือว่าเป็นคิวที่ต้องแสดง หากสถานะเป็น pending, รอดำเนินการ, มีคำว่า 'รอ', หรือแม้แต่ "ยังไม่มีการกำหนดสถานะ (!b.status)"
+                const isPending = status === 'pending' ||
+                    status === 'รอดำเนินการ' ||
+                    status.includes('รอ') ||
+                    !b.status ||
+                    b.status === '';
+
+                return isPending;
             });
 
-            if (userBookings.length === 0) {
+            if (pendingBookings.length === 0) {
                 tbody.innerHTML = `<tr><td colspan="7" class="px-6 py-8 text-center text-gray-500">ไม่มีประวัติการจองคิวที่รอดำเนินการ</td></tr>`;
                 return;
             }
 
-            tbody.innerHTML = userBookings.map(b => `
-        <tr class="hover:bg-dark-700/50 transition">
-            <td class="px-6 py-4 font-mono text-amber-400 font-semibold">${b.id}</td>
-            <td class="px-6 py-4 text-white">${b.styleName}</td>
-            <td class="px-6 py-4">${b.barberName}</td>
-            <td class="px-6 py-4">${b.date} (${b.time})</td>
-            <td class="px-6 py-4 font-semibold text-amber-500">฿${b.price}</td>
-            <td class="px-6 py-4">
-                <span class="px-2.5 py-1 rounded-full text-xs font-medium bg-blue-500/10 text-blue-400 border border-blue-500/30">
-                    รอรับบริการ
-                </span>
-            </td>
-            <td class="px-6 py-4 text-center">
-                <button onclick="cancelBooking('${b.id}')" class="text-xs text-red-400 hover:underline">ยกเลิก</button>
-            </td>
-        </tr>
-    `).join('');
+            tbody.innerHTML = pendingBookings.map(b => {
+                const bookingId = b.id || (b.firestoreId ? b.firestoreId.slice(0, 6) : 'KH-0000');
+                const styleName = b.styleName || b.service || b.haircutStyle || 'ตัดผม/บริการ';
+                const barberName = b.barberName || 'ช่างก้อง (เจ้าของร้าน)';
+                const dateStr = b.date || b.bookingDate || '-';
+                const timeStr = b.time || b.bookingTime || '-';
+                const priceVal = b.price || '160';
+                const docId = b.firestoreId || b.id;
+
+                return `
+            <tr class="hover:bg-dark-700/50 transition">
+                <td class="px-6 py-4 font-mono text-amber-400 font-semibold">${bookingId}</td>
+                <td class="px-6 py-4 text-white">${styleName}</td>
+                <td class="px-6 py-4 text-gray-300">${barberName}</td>
+                <td class="px-6 py-4 text-gray-300">${dateStr} (${timeStr})</td>
+                <td class="px-6 py-4 font-semibold text-amber-500">฿${priceVal}</td>
+                <td class="px-6 py-4">
+                    <span class="px-2.5 py-1 rounded-full text-xs font-medium bg-amber-500/10 text-amber-400 border border-amber-500/30">
+                        รอดำเนินการ
+                    </span>
+                </td>
+                <td class="px-6 py-4 text-center">
+                    <button onclick="cancelBooking('${docId}')" 
+                        class="px-3 py-1 rounded-full text-xs font-medium bg-red-500/10 text-red-400 border border-red-500/30 hover:bg-red-500/20 transition">
+                        ยกเลิก
+                    </button>
+                </td>
+            </tr>
+        `;
+            }).join('');
         }
 
         async function cancelBooking(id) {
@@ -3092,44 +3126,6 @@
             initBookingForm();
         });
 
-        function renderUserBookings() {
-            const tbody = document.getElementById('user-bookings-table-body');
-            if (!tbody) return;
-
-            // 🌟 1. กรองเฉพาะการจองของผู้ใช้ปัจจุบัน และต้องมีสถานะเป็น 'pending' (รอดำเนินการ) เท่านั้น
-            const userBookings = state.bookings.filter(b => {
-                const isUserMatch = state.currentUser
-                    ? (b.userId === state.currentUser.id || b.userName === state.currentUser.name)
-                    : true;
-
-                const isPending = b.status === 'pending'; // กรองเอาเฉพาะที่รอดำเนินการ
-
-                return isUserMatch && isPending;
-            });
-
-            if (userBookings.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="7" class="px-6 py-8 text-center text-gray-500">ไม่มีประวัติการจองคิวที่รอดำเนินการ</td></tr>`;
-                return;
-            }
-
-            tbody.innerHTML = userBookings.map(b => `
-        <tr class="hover:bg-dark-700/50 transition">
-            <td class="px-6 py-4 font-mono text-amber-400 font-semibold">${b.id}</td>
-            <td class="px-6 py-4 text-white">${b.styleName}</td>
-            <td class="px-6 py-4">${b.barberName}</td>
-            <td class="px-6 py-4">${b.date} (${b.time})</td>
-            <td class="px-6 py-4 font-semibold text-amber-500">฿${b.price}</td>
-            <td class="px-6 py-4">
-                <span class="px-2.5 py-1 rounded-full text-xs font-medium bg-blue-500/10 text-blue-400 border border-blue-500/30">
-                    รอรับบริการ
-                </span>
-            </td>
-            <td class="px-6 py-4 text-center">
-                <button onclick="cancelBooking('${b.id}')" class="text-xs text-red-400 hover:underline">ยกเลิก</button>
-            </td>
-        </tr>
-    `).join('');
-        }
 
         async function updateBookingStatus(bookingId, newStatus) {
             // 1. ค้นหารายการจองจาก state.bookings โดยเช็คทั้ง id ทั่วไป หรือ firestoreId
@@ -3293,224 +3289,161 @@
                 return;
             }
 
+            // 🌟 โหลดข้อมูลจาก LocalStorage มาแสดงผลล่วงหน้าทันทีเพื่อแก้ปัญหาดีเรย์ตอนเปิดเว็บ
+            const cachedBookings = localStorage.getItem('khamhai_cached_bookings');
+            if (cachedBookings && typeof state !== 'undefined') {
+                try {
+                    state.bookings = JSON.parse(cachedBookings);
+                    state.userBookings = state.bookings;
+                    if (typeof renderUserBookingsTable === 'function') {
+                        renderUserBookingsTable();
+                    } else if (typeof renderUserBookings === 'function') {
+                        renderUserBookings();
+                    }
+                } catch (e) {
+                    console.error("Failed to parse cached bookings:", e);
+                }
+            }
+
+            let lastBookingCount = null;
+
             // ดึงข้อมูลจาก Collection "bookings" แบบเรียลไทม์
             window.firebaseModules.onSnapshot(
                 window.firebaseModules.collection(window.db, "bookings"),
                 (snapshot) => {
-                    state.bookings = [];
+                    const newBookings = [];
                     snapshot.forEach((doc) => {
-                        state.bookings.push({ firestoreId: doc.id, ...doc.data() });
+                        newBookings.push({ firestoreId: doc.id, ...doc.data() });
                     });
 
-                    // สั่งอัปเดตตารางและสถิติในหน้าจอทันที
+                    // 🌟 จัดเรียงคิวใหม่ตามเวลาที่สร้าง (createdAt) จากเก่าไปใหม่
+                    newBookings.sort((a, b) => {
+                        const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+                        const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+                        return timeA - timeB;
+                    });
+
+                    // ตรวจสอบความปลอดภัยของบัญชีผู้ใช้ปัจจุบัน
+                    const currentUser = (typeof state !== 'undefined' && state.currentUser) ? state.currentUser : null;
+                    const isAdminOrBarber = currentUser && (
+                        currentUser.role === 'admin' ||
+                        currentUser.isAdmin === true ||
+                        String(currentUser.id) === 'b1'
+                    );
+
+                    // 🔔 เงื่อนไขการแจ้งเตือนเฉพาะเมื่อมีคิวเพิ่มขึ้นจริง และผู้ใช้เป็นแอดมินหรือช่าง
+                    if (lastBookingCount !== null && newBookings.length > lastBookingCount && isAdminOrBarber) {
+                        console.log("🔔 [NOTIFICATION] มีรายการจองคิวใหม่เข้ามา!");
+
+                        // 1. 🔊 เล่นเสียงเตือน 5 จังหวะ (ความดังชัดเจน)
+                        try {
+                            const AudioContext = window.AudioContext || window.webkitAudioContext;
+                            if (AudioContext) {
+                                const ctx = new AudioContext();
+                                const playBeep = (time, freq) => {
+                                    const osc = ctx.createOscillator();
+                                    const gain = ctx.createGain();
+                                    osc.type = 'sine';
+                                    osc.frequency.value = freq;
+                                    gain.gain.setValueAtTime(0.5, time);
+                                    gain.gain.exponentialRampToValueAtTime(0.001, time + 0.2);
+                                    osc.connect(gain);
+                                    gain.connect(ctx.destination);
+                                    osc.start(time);
+                                    osc.stop(time + 0.2);
+                                };
+
+                                const now = ctx.currentTime;
+                                playBeep(now, 700);
+                                playBeep(now + 0.15, 850);
+                                playBeep(now + 0.30, 1000);
+                                playBeep(now + 0.45, 1150);
+                                playBeep(now + 0.60, 1350);
+                            }
+                        } catch (err) {
+                            console.warn("ไม่สามารถเล่นเสียงได้:", err);
+                        }
+
+                        // 2. ✨ ดึงข้อมูลการจองล่าสุดที่เพิ่งกดเข้ามาจริงๆ (ตัวท้ายสุด)
+                        const latestBooking = newBookings[newBookings.length - 1] || {};
+
+                        const customerName = latestBooking.customerName || latestBooking.name || latestBooking.userName || 'ลูกค้าทั่วไป';
+                        const haircutStyle = latestBooking.service || latestBooking.haircutStyle || latestBooking.haircut || 'ตัดผม/บริการ';
+                        const bookingTime = latestBooking.time || latestBooking.bookingTime || '';
+                        const bookingDate = latestBooking.date || latestBooking.bookingDate || '';
+                        const fullDateTime = (bookingDate && bookingTime) ? `${bookingDate} ${bookingTime}` : (bookingTime || bookingDate || 'เร็วๆ นี้');
+
+                        // สร้างกล่อง Alert สีเหลืองกลางจอ
+                        const alertBox = document.createElement('div');
+                        alertBox.className = 'fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm animate-fade-in p-4';
+                        alertBox.innerHTML = `
+                    <div class="bg-dark-800 border-2 border-amber-500 rounded-2xl p-6 w-full max-w-md text-white shadow-2xl relative animate-scale-up text-center">
+                        <div class="absolute -top-6 left-1/2 -translate-x-1/2 w-12 h-12 bg-amber-500 rounded-full flex items-center justify-center text-dark-900 text-xl shadow-lg">
+                            <i class="fa-solid fa-bell animate-bounce"></i>
+                        </div>
+                        <h3 class="text-xl font-bold text-amber-400 mt-3 mb-1">🔔 มีรายการจองคิวใหม่เข้ามา!</h3>
+                        <p class="text-xs text-gray-400 mb-4">ระบบบันทึกคิวเรียบร้อยแล้ว กรุณาตรวจสอบข้อมูล</p>
+                        
+                        <div class="bg-dark-900/80 border border-dark-700 rounded-xl p-4 text-left space-y-2 mb-5 text-sm">
+                            <div class="flex justify-between">
+                                <span class="text-gray-400">👤 ชื่อลูกค้า:</span>
+                                <span class="font-semibold text-white">${customerName}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-400">✂️ ทรงผม/บริการ:</span>
+                                <span class="font-semibold text-amber-400">${haircutStyle}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-400">📅 เวลา/วันที่:</span>
+                                <span class="font-semibold text-white">${fullDateTime}</span>
+                            </div>
+                        </div>
+
+                        <button onclick="this.closest('.fixed').remove()" 
+                            class="w-full bg-amber-500 hover:bg-amber-600 text-dark-900 font-bold py-2.5 rounded-xl transition shadow-md">
+                            รับทราบ / ปิดหน้าต่าง
+                        </button>
+                    </div>
+                `;
+                        document.body.appendChild(alertBox);
+                    }
+
+                    lastBookingCount = newBookings.length;
+
+                    // 🌟 อัปเดต State และบันทึกแคชลง LocalStorage ทันทีที่ดึงข้อมูลสำเร็จ
+                    if (typeof state !== 'undefined') {
+                        state.bookings = newBookings;
+                        localStorage.setItem('khamhai_cached_bookings', JSON.stringify(newBookings));
+
+                        if (currentUser && currentUser.email) {
+                            const filtered = newBookings.filter(b => {
+                                return (b.customerEmail === currentUser.email || b.email === currentUser.email || b.userEmail === currentUser.email);
+                            });
+                            state.userBookings = filtered.length > 0 ? filtered : newBookings;
+                        } else {
+                            state.userBookings = newBookings;
+                        }
+                    }
+
+                    // 🌟 สั่งอัปเดตตารางหน้าจอทันทีทุกครั้งที่มีข้อมูลวิ่งมาถึง
                     if (typeof renderAdminBookingsTable === 'function') {
                         renderAdminBookingsTable();
                     }
                     if (typeof renderUserBookingsTable === 'function') {
                         renderUserBookingsTable();
+                    } else if (typeof renderUserBookings === 'function') {
+                        renderUserBookings();
                     }
                     if (typeof updateRevenueStats === 'function') {
                         updateRevenueStats();
                     }
 
-                    console.log("ซิงค์ข้อมูลเรียลไทม์สำเร็จ จำนวนคิวทั้งหมด:", state.bookings.length);
+                    console.log("ซิงค์ข้อมูลเรียลไทม์สำเร็จ จำนวนคิวทั้งหมด:", newBookings.length);
                 },
                 (error) => {
                     console.error("เกิดข้อผิดพลาดในการดึงข้อมูลเรียลไทม์:", error);
                 }
             );
-        }
-        window.addEventListener('DOMContentLoaded', () => {
-            setTimeout(() => {
-                initRealtimeBookings();
-            }, 1000);
-        });
-
-        async function updateBarberStatus(barberDocId, newStatus) {
-            // 🛑 บรรทัดนี้สำคัญมาก! ถ้ากดแล้วข้อความนี้ไม่ขึ้นใน Console แปลว่า HTML ยังไม่ได้ผูกปุ่มนี้
-            console.log("🔥 กดปุ่มเปลี่ยนสถานะแล้ว! ID:", barberDocId, "สถานะใหม่:", newStatus);
-
-            if (!barberDocId) {
-                console.error("❌ ไม่พบรหัส Document ID ของช่าง (barberDocId เป็นค่าว่าง)");
-                alert("ไม่พบข้อมูลช่าง กรุณารีเฟรชหน้าจอแล้วลองใหม่ครับ");
-                return;
-            }
-
-            if (!window.db || !window.firebaseModules) {
-                alert("ระบบฐานข้อมูลยังไม่พร้อมใช้งาน");
-                return;
-            }
-
-            try {
-                const { doc, updateDoc } = window.firebaseModules;
-
-                // 🚀 1. อัปเดต State และเรนเดอร์หน้าจอทันที (Optimistic Update)
-                if (Array.isArray(state.barbers)) {
-                    const targetBarber = state.barbers.find(b => b.id === barberDocId);
-                    if (targetBarber) {
-                        targetBarber.status = newStatus;
-                    }
-                }
-
-                if (typeof renderBarbers === 'function') renderBarbers();
-                if (typeof renderBarberSelectGrid === 'function') renderBarberSelectGrid();
-
-                // ☁️ 2. ส่งคำสั่งอัปเดตจริงลง Firebase Firestore
-                const barberRef = doc(window.db, "barbers", barberDocId);
-                await updateDoc(barberRef, {
-                    status: newStatus, // 'available' หรือ 'busy'
-                    updatedAt: new Date().toISOString()
-                });
-
-                console.log(`✅ อัปเดตสถานะช่าง ${barberDocId} เป็น ${newStatus} สำเร็จ`);
-
-                if (typeof showToast === 'function') {
-                    showToast(`เปลี่ยนสถานะช่างเป็น '${newStatus === 'available' ? 'คิวว่าง' : 'ติดคิว'}' สำเร็จ`, 'success');
-                }
-
-            } catch (error) {
-                console.error("❌ เกิดข้อผิดพลาดในการอัปเดตสถานะช่าง:", error);
-                alert("ไม่สามารถเปลี่ยนสถานะช่างได้: " + error.message);
-
-                if (typeof fetchBarbers === 'function') {
-                    fetchBarbers();
-                }
-            }
-        }
-
-        // ฟังก์ชันฟังสถานะช่างแบบเรียลไทม์ฝั่ง User
-        function initRealtimeBarbers() {
-            if (!window.db || !window.firebaseModules) return;
-
-            const { doc, onSnapshot } = window.firebaseModules;
-
-            try {
-                const barberRef = doc(window.db, "barbers", "b1");
-
-                console.log("📡 [REALTIME] เริ่มเชื่อมฟังข้อมูลช่าง b1...");
-
-                onSnapshot(barberRef, (docSnap) => {
-                    if (typeof state === 'undefined') {
-                        window.state = {};
-                    }
-
-                    // รูป URL ตั้งต้นของช่างก้อง
-                    const defaultAvatar = 'https://i.postimg.cc/8FR1mMtP/858525001-1129326712975883-8607776798710260414-n.jpg';
-
-                    let masterBarber = {
-                        id: 'b1',
-                        name: 'ช่างก้อง (เจ้าของร้าน)',
-                        exp: 'ช่างก้อง (เจ้าของร้าน)',
-                        bio: 'ประสบการณ์ตัดผม 1 ปี ชอบการเฟดและเซ็ตผม',
-                        status: 'available',
-                        avatar: defaultAvatar
-                    };
-
-                    if (docSnap.exists()) {
-                        const fbData = docSnap.data();
-                        console.log("📥 [REALTIME] ได้รับข้อมูลใหม่จาก Firebase:", fbData);
-
-                        masterBarber.status = fbData.status || 'available';
-                        if (fbData.name) masterBarber.name = fbData.name;
-
-                        // 🌟 แก้ไขจุดสำคัญ: ถ้ารูปจาก Firebase มีค่า (ไม่ว่างเปล่า) ให้ใช้รูปล่าสุดนั้นทันที ถ้าไม่มีค่อยใช้ defaultAvatar
-                        if (fbData.avatar && fbData.avatar.trim() !== '') {
-                            masterBarber.avatar = fbData.avatar;
-                        } else {
-                            masterBarber.avatar = defaultAvatar;
-                        }
-
-                        if (fbData.exp) masterBarber.exp = fbData.exp;
-                        if (fbData.bio) masterBarber.bio = fbData.bio;
-
-                        // ซิงค์รูปลงใน currentUser ของแอดมินทันที
-                        if (state.currentUser && (state.currentUser.role === 'admin' || state.currentUser.isAdmin === true || String(state.currentUser.id) === 'b1')) {
-                            state.currentUser.avatar = masterBarber.avatar;
-                            localStorage.setItem('barber_current_user', JSON.stringify(state.currentUser));
-                        }
-                    }
-
-                    // บังคับให้ state.barbers มีแค่ช่างก้อง b1 ตัวจริง
-                    state.barbers = [masterBarber];
-
-                    // บันทึกทับ LocalStorage ทันที
-                    try {
-                        localStorage.setItem('barber_shop_barbers', JSON.stringify(state.barbers));
-                    } catch (e) { }
-
-                    console.log("✨ [REALTIME] อัปเดต state.barbers สำเร็จ:", state.barbers);
-
-                    // 🛑 สั่งเรนเดอร์หน้าจอทุกส่วนทันทีแบบสดๆ ทุกเครื่อง
-                    if (typeof updateUserUI === 'function') updateUserUI();
-                    if (typeof renderBarbersHomeStatus === 'function') renderBarbersHomeStatus();
-                    if (typeof renderBarberSelectGrid === 'function') renderBarberSelectGrid();
-                    if (typeof renderAdminBarberControls === 'function') renderAdminBarberControls();
-                    if (typeof renderFullBarbersList === 'function') renderFullBarbersList();
-
-                }, (error) => {
-                    console.error("❌ [REALTIME ERROR]:", error);
-                });
-            } catch (e) {
-                console.error("❌ [INIT ERROR]:", e);
-            }
-        }
-
-        async function loadBarbersFromFirebase() {
-            if (!window.db || !window.firebaseModules) return;
-
-            try {
-                const { collection, getDocs } = window.firebaseModules;
-                const querySnapshot = await getDocs(collection(window.db, "barbers"));
-
-                const defaultAvatar = 'https://i.postimg.cc/8FR1mMtP/858525001-1129326712975883-8607776798710260414-n.jpg';
-
-                querySnapshot.forEach((docSnap) => {
-                    const firebaseData = docSnap.data();
-                    const docId = docSnap.id; // เช่น 'b1'
-
-                    // ค้นหาช่างใน state.barbers
-                    const targetBarber = state.barbers.find(b => b.id === docId);
-                    if (targetBarber) {
-                        targetBarber.status = firebaseData.status || 'available';
-
-                        // 🌟 [จุดที่แก้ไข]: ดึงและอัปเดต avatar, name, exp, bio จาก Firebase ลงมาด้วยทุกครั้งที่โหลดเว็บ
-                        if (firebaseData.name) targetBarber.name = firebaseData.name;
-                        targetBarber.avatar = firebaseData.avatar || targetBarber.avatar || defaultAvatar;
-                        if (firebaseData.exp) targetBarber.exp = firebaseData.exp;
-                        if (firebaseData.bio) targetBarber.bio = firebaseData.bio;
-                    } else {
-                        // ถ้ายังไม่มีใน state ให้เพิ่มเข้าไปใหม่เลย
-                        state.barbers.push({
-                            id: docId,
-                            name: firebaseData.name || 'ช่างก้อง (เจ้าของร้าน)',
-                            avatar: firebaseData.avatar || defaultAvatar,
-                            status: firebaseData.status || 'available',
-                            exp: firebaseData.exp || 'ช่างก้อง (เจ้าของร้าน)',
-                            bio: firebaseData.bio || 'ประสบการณ์ตัดผม 1 ปี ชอบการเฟดและเซ็ตผม'
-                        });
-                    }
-                });
-
-                // 🌟 กรองให้มั่นใจว่ามีเฉพาะช่างก้อง (b1) เท่านั้น
-                state.barbers = state.barbers.filter(b => b.id === 'b1');
-
-                // บันทึกสำรองลง LocalStorage ทันที เพื่อให้มือถือและคอมพิวเตอร์จำค่ารูปล่าสุดไว้ใช้ตอนรีเฟรช
-                try {
-                    localStorage.setItem('barber_shop_barbers', JSON.stringify(state.barbers));
-                } catch (e) { }
-
-                console.log("โหลดและซิงค์ข้อมูลช่างจาก Firebase สำเร็จตอนเริ่มเว็บ:", state.barbers);
-
-                // สั่งเรนเดอร์หน้าจอทุกส่วนให้อัปเดตตามทันที
-                if (typeof updateUserUI === 'function') updateUserUI();
-                if (typeof renderBarbersHomeStatus === 'function') renderBarbersHomeStatus();
-                if (typeof renderBarberSelectGrid === 'function') renderBarberSelectGrid();
-                if (typeof renderAdminBarberControls === 'function') renderAdminBarberControls();
-                if (typeof renderFullBarbersList === 'function') renderFullBarbersList();
-
-            } catch (error) {
-                console.error("เกิดข้อผิดพลาดในการโหลดสถานะช่างจาก Firebase:", error);
-            }
         }
 
         function renderAddonsGrid() {
@@ -3848,104 +3781,155 @@
 
         // 3. บันทึกข้อมูลส่วนตัวที่แก้ไข (อัปเดตลง State, LocalStorage และ Firebase Firestore)
         async function updateProfileData(event) {
-            event.preventDefault();
+            if (event) event.preventDefault();
 
-            if (!state.currentUser) return;
+            console.log("🟡 [DEBUG] เริ่มกระบวนการบันทึกโปรไฟล์...");
 
-            // 🌟 1. ดึงปุ่มบันทึกมาเปลี่ยนสถานะเป็น Loading (หมุนๆ)
-            const saveBtn = document.getElementById('save-profile-btn');
-            let originalBtnText = '';
-            if (saveBtn) {
-                originalBtnText = saveBtn.innerHTML;
-                saveBtn.disabled = true;
-                saveBtn.innerHTML = `
-            <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white inline-block" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-            </svg>
-            กำลังบันทึก...
-        `;
+            if (!state.currentUser) {
+                alert("กรุณาเข้าสู่ระบบก่อนบันทึกข้อมูล");
+                return;
+            }
+
+            const submitBtn = document.getElementById('save-profile-btn');
+            let originalBtnText = 'บันทึกการแก้ไข';
+            if (submitBtn) {
+                originalBtnText = submitBtn.innerHTML;
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = `<i class="fa-solid fa-spinner animate-spin mr-2"></i> กำลังบันทึก...`;
             }
 
             try {
-                // 🌟 ดึงค่าจากฟอร์ม
-                const newName = state.currentUser.name;
-                const newPhone = document.getElementById('profile-phone').value.trim(); // เบอร์โทรศัพท์
-
-                // 🌟 ดึงค่าวันเกิดจาก Input และคำนวณอายุใหม่
+                const phoneInput = document.getElementById('profile-phone');
                 const birthdateInput = document.getElementById('profile-birthdate');
-                const newBirthdate = birthdateInput ? birthdateInput.value : (state.currentUser.birthdate || '');
-                const newAge = typeof calculateAge === 'function' ? calculateAge(newBirthdate) : (state.currentUser.age || 0);
+                const nameInput = document.getElementById('profile-name');
+                const avatarInput = document.getElementById('profile-image-input');
 
-                // อัปเดตค่าลงใน Object state.currentUser ปัจจุบัน
+                const newPhone = phoneInput ? phoneInput.value.trim() : '';
+                const newBirthdate = birthdateInput ? birthdateInput.value : '';
+                const newName = nameInput ? nameInput.value.trim() : (state.currentUser.name || 'ช่างก้อง');
+
+                let currentAvatar = state.currentUser.avatar || state.currentUser.photoURL || 'https://i.postimg.cc/8FR1mMtP/858525001-1129326712975883-8607776798710260414-n.jpg';
+
+                // 🌟 1. ระบบย่อและบีบอัดขนาดรูปภาพอัตโนมัติ (ให้เร็วปรื๊ด ไม่หน่วง)
+                if (avatarInput && avatarInput.files && avatarInput.files[0]) {
+                    try {
+                        const file = avatarInput.files[0];
+                        console.log("📁 [DEBUG] กำลังย่อขนาดรูปภาพ:", file.name, "ขนาดเดิม:", Math.round(file.size / 1024), "KB");
+
+                        currentAvatar = await new Promise((resolve, reject) => {
+                            const reader = new FileReader();
+                            reader.onload = (e) => {
+                                const img = new Image();
+                                img.onload = () => {
+                                    const canvas = document.createElement('canvas');
+                                    let width = img.width;
+                                    let height = img.height;
+
+                                    // กำหนดขนาด maxWidth / maxHeight ไม่ให้เกิน 400px (ความคมชัดกำลังดีสำหรับรูปโปรไฟล์ และขนาดไฟล์เล็กมาก)
+                                    const MAX_SIZE = 400;
+                                    if (width > height) {
+                                        if (width > MAX_SIZE) {
+                                            height *= MAX_SIZE / width;
+                                            width = MAX_SIZE;
+                                        }
+                                    } else {
+                                        if (height > MAX_SIZE) {
+                                            width *= MAX_SIZE / height;
+                                            height = MAX_SIZE;
+                                        }
+                                    }
+
+                                    canvas.width = width;
+                                    canvas.height = height;
+                                    const ctx = canvas.getContext('2d');
+                                    ctx.drawImage(img, 0, 0, width, height);
+
+                                    // บีบอัดเป็น JPEG คุณภาพ 0.7 (ขนาดจะลดลงเหลือไม่กี่ KB อัปโหลดไวทันใจ)
+                                    const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+                                    resolve(dataUrl);
+                                };
+                                img.onerror = reject;
+                                img.src = e.target.result;
+                            };
+                            reader.onerror = reject;
+                            reader.readAsDataURL(file);
+                        });
+                        console.log("✅ [DEBUG] ย่อและแปลงรูปภาพเสร็จสิ้น พร้อมส่งขึ้นคลาวด์!");
+                    } catch (err) {
+                        console.error("❌ [DEBUG] Error compressing image:", err);
+                    }
+                }
+
+                let calculatedAge = state.currentUser.age || 25;
+                try {
+                    if (typeof calculateAge === 'function' && newBirthdate) {
+                        calculatedAge = calculateAge(newBirthdate);
+                    }
+                } catch (e) { }
+
+                state.currentUser.name = newName;
                 state.currentUser.phone = newPhone;
                 state.currentUser.birthdate = newBirthdate;
-                state.currentUser.age = newAge;
+                state.currentUser.age = calculatedAge;
+                state.currentUser.avatar = currentAvatar;
 
-                if (tempProfileAvatarBase64) {
-                    state.currentUser.avatar = tempProfileAvatarBase64;
-                }
+                try {
+                    localStorage.setItem('barber_current_user', JSON.stringify(state.currentUser));
+                } catch (e) { }
 
-                // 🌟 1. บันทึกลง LocalStorage ของ User ก่อนทันที (ป้องกันข้อมูลหายเวลาเปิดดูรอบหน้าหรือรีเฟรช)
-                localStorage.setItem('barber_current_user', JSON.stringify(state.currentUser));
+                // 2. บันทึกขึ้น Firebase Firestore
+                if (window.firebaseModules && window.db) {
+                    const { doc, setDoc, updateDoc } = window.firebaseModules;
 
-                // 2. ซิงก์ข้อมูลลงใน Local state.barbers
-                state.barbers = JSON.parse(localStorage.getItem('barber_shop_barbers')) || state.barbers;
-
-                if (state.barbers && Array.isArray(state.barbers)) {
-                    let matched = false;
-                    for (let barber of state.barbers) {
-                        const barberEmail = barber.email ? barber.email.trim().toLowerCase() : '';
-                        const userEmail = state.currentUser.email ? state.currentUser.email.trim().toLowerCase() : '';
-
-                        const isEmailMatch = barberEmail && userEmail && barberEmail === userEmail;
-                        const isIdMatch = barber.id === state.currentUser.id || barber.id === state.currentUser.barberId;
-
-                        if (isEmailMatch || isIdMatch) {
-                            barber.name = state.currentUser.name;
-                            barber.avatar = state.currentUser.avatar;
-                            barber.phone = state.currentUser.phone;
-                            matched = true;
-                        }
+                    if (state.currentUser.firestoreId) {
+                        try {
+                            const userRef = doc(window.db, "users", state.currentUser.firestoreId);
+                            await updateDoc(userRef, {
+                                name: newName,
+                                phone: newPhone,
+                                birthdate: newBirthdate,
+                                age: calculatedAge,
+                                avatar: currentAvatar,
+                                updatedAt: new Date().toISOString()
+                            });
+                        } catch (err) { }
                     }
 
-                    localStorage.setItem('barber_shop_barbers', JSON.stringify(state.barbers));
-                }
-
-                // 3. อัปเดตข้อมูล User ลง Firebase Firestore (เพื่อให้เครื่องอื่นๆ ซิงก์แบบเรียลไทม์)
-                if (window.db && window.firebaseModules && state.currentUser.firestoreId) {
-                    const { doc, updateDoc } = window.firebaseModules;
-                    const userDocRef = doc(window.db, "users", state.currentUser.firestoreId);
-                    await updateDoc(userDocRef, {
-                        name: newName,
-                        phone: newPhone,
-                        birthdate: newBirthdate,
-                        age: newAge,
-                        avatar: state.currentUser.avatar,
+                    const barberRef = doc(window.db, "barbers", "b1");
+                    await setDoc(barberRef, {
+                        id: 'b1',
+                        name: 'ช่างก้อง (เจ้าของร้าน)',
+                        avatar: currentAvatar,
+                        status: 'available',
                         updatedAt: new Date().toISOString()
-                    });
+                    }, { merge: true });
+
+                    console.log("🔥 [DEBUG] อัปโหลดรูปใหม่ขึ้น barbers/b1 สำเร็จเรียบร้อย!");
                 }
 
-                // อัปเดตหน้าจอ UI ทั้งหมดทันทีแบบ Real-time
-                updateUserUI();
+                // 3. ปิด Modal ทันทีเมื่ออัปโหลดเสร็จ
+                const profileModal = document.getElementById('profile-modal');
+                if (profileModal) {
+                    profileModal.classList.remove('flex');
+                    profileModal.classList.add('hidden');
+                }
 
-                if (typeof renderAgeGroupsGrid === 'function') renderAgeGroupsGrid();
-                if (typeof renderBarberSelectGrid === 'function') renderBarberSelectGrid();
-                if (typeof renderBarbers === 'function') renderBarbers();
+                if (typeof closeModal === 'function') {
+                    try { closeModal('profile-modal'); } catch (e) { }
+                }
+
+                if (typeof updateUserUI === 'function') updateUserUI();
+                if (typeof renderFullBarbersList === 'function') renderFullBarbersList();
                 if (typeof renderBarbersHomeStatus === 'function') renderBarbersHomeStatus();
-
-                showToast('บันทึกข้อมูลส่วนตัวและอายุสำเร็จ!', 'success');
-                closeModal('profile-modal');
+                if (typeof renderBarberSelectGrid === 'function') renderBarberSelectGrid();
 
             } catch (error) {
-                console.error("Error updating profile:", error);
-                showToast('เกิดข้อผิดพลาดในการซิงก์ข้อมูลออนไลน์ แต่บันทึกในเครื่องแล้ว', 'warning');
-                closeModal('profile-modal');
+                console.error("❌ [DEBUG ERROR]:", error);
+                alert("เกิดข้อผิดพลาดในการบันทึกข้อมูล: " + error.message);
             } finally {
-                // 🌟 4. คืนค่าปุ่มกลับมาเป็นปกติเสมอ ไม่ว่าจะสำเร็จหรือพัง
-                if (saveBtn) {
-                    saveBtn.disabled = false;
-                    saveBtn.innerHTML = originalBtnText;
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalBtnText;
                 }
             }
         }
@@ -4425,75 +4409,68 @@
         async function saveUserProfile(event) {
             if (event) event.preventDefault();
 
-            console.log("🟡 [DEBUG - SAVE] เริ่มต้นกระบวนการบันทึกโปรไฟล์...");
-
             if (!state.currentUser) {
-                console.warn("❌ [DEBUG - SAVE] ไม่พบข้อมูล state.currentUser กรุณาเข้าสู่ระบบก่อน");
                 alert("กรุณาเข้าสู่ระบบก่อนบันทึกข้อมูล");
                 return;
             }
 
-            // ดึงค่าจากฟอร์ม Input
             const phoneInput = document.getElementById('profile-phone');
             const birthdateInput = document.getElementById('profile-birthdate');
             const nameInput = document.getElementById('profile-name');
-            const avatarInput = document.getElementById('profile-avatar-input'); // ช่องเลือกไฟล์รูปภาพ
+
+            // 🌟 ค้นหาช่องอัปโหลดไฟล์ (รองรับทั้ง id="profile-avatar-input" หรือ input type="file" ตัวแรกในฟอร์มโปรไฟล์)
+            const avatarInput = document.getElementById('profile-avatar-input') || document.querySelector('input[type="file"]');
 
             const newPhone = phoneInput ? phoneInput.value.trim() : '';
             const newBirthdate = birthdateInput ? birthdateInput.value : '';
             const newName = nameInput ? nameInput.value.trim() : state.currentUser.name;
 
-            // 🌟 จัดการเรื่องรูปภาพ
-            let currentAvatar = state.currentUser.avatar || state.currentUser.photoURL || '';
+            // 🌟 ตั้งต้นด้วยรูปปัจจุบันที่มีอยู่
+            let currentAvatar = state.currentUser.avatar || state.currentUser.photoURL || 'https://i.postimg.cc/8FR1mMtP/858525001-1129326712975883-8607776798710260414-n.jpg';
 
+            // 🌟 ตรวจสอบว่ามีการเลือกไฟล์รูปใหม่จริงๆ หรือไม่
             if (avatarInput && avatarInput.files && avatarInput.files[0]) {
                 try {
                     const file = avatarInput.files[0];
-                    console.log("📁 [DEBUG - FILE] พบไฟล์รูปภาพใหม่ที่เลือก:", file.name, "ขนาด:", Math.round(file.size / 1024), "KB");
+                    console.log("📁 พบไฟล์รูปใหม่:", file.name, "ขนาด:", file.size);
 
-                    // 🛑 เช็กขนาดไฟล์ไม่ให้เกิน 700KB
                     if (file.size > 700 * 1024) {
-                        console.warn("⚠️ [DEBUG - FILE] ไฟล์มีขนาดใหญ่เกิน 700KB");
                         alert('รูปภาพมีขนาดใหญ่เกินไป กรุณาเลือกรูปภาพที่มีขนาดต่ำกว่า 700KB ครับ');
                         return;
                     }
 
+                    // แปลงไฟล์เป็น Base64 ทันที
                     currentAvatar = await new Promise((resolve, reject) => {
                         const reader = new FileReader();
                         reader.onload = () => resolve(reader.result);
                         reader.onerror = error => reject(error);
                         reader.readAsDataURL(file);
                     });
-                    console.log("✅ [DEBUG - FILE] แปลงไฟล์รูปเป็น Base64 สำเร็จ!");
+                    console.log("✅ แปลงไฟล์รูปใหม่เป็น Base64 สำเร็จ!");
                 } catch (err) {
-                    console.error("❌ [DEBUG - FILE ERROR] เกิดข้อผิดพลาดในการอ่านไฟล์รูป:", err);
+                    console.error("❌ Error reading avatar file:", err);
                 }
             } else {
-                console.log("ℹ️ [DEBUG - FILE] ไม่พบการเลือกไฟล์รูปใหม่ ใช้รูปเดิมที่มีอยู่");
+                console.log("ℹ️ ไม่พบการเลือกไฟล์ใหม่ จะใช้รูปเดิมที่มีอยู่");
             }
 
-            // คำนวณอายุอัตโนมัติจากวันเกิดที่เลือก
             const calculatedAge = calculateAge(newBirthdate);
 
-            // อัปเดตข้อมูลลงใน state.currentUser
+            // อัปเดตข้อมูลลง state
             state.currentUser.name = newName;
             state.currentUser.phone = newPhone;
             state.currentUser.birthdate = newBirthdate;
             state.currentUser.age = calculatedAge;
-            if (currentAvatar) {
-                state.currentUser.avatar = currentAvatar;
-            }
+            state.currentUser.avatar = currentAvatar;
 
-            // บันทึกลง LocalStorage ของเครื่องนี้
+            // บันทึกลง LocalStorage
             localStorage.setItem('barber_current_user', JSON.stringify(state.currentUser));
-            console.log("💾 [DEBUG - STORAGE] บันทึก state.currentUser ลง LocalStorage สำเร็จ");
 
-            // 🌟 บันทึกลง Firebase Firestore แบบแชร์กลางทุกอุปกรณ์
+            // 🌟 ส่งขึ้น Firebase Firestore ทั้ง collection users และ barbers/b1 พร้อมกัน
             try {
                 if (window.firebaseModules && window.db) {
                     const { doc, updateDoc, setDoc } = window.firebaseModules;
 
-                    // 1. อัปเดตข้อมูลผู้ใช้ใน collection "users"
                     if (state.currentUser.firestoreId) {
                         const userRef = doc(window.db, "users", state.currentUser.firestoreId);
                         await updateDoc(userRef, {
@@ -4504,53 +4481,96 @@
                             avatar: currentAvatar,
                             updatedAt: new Date().toISOString()
                         });
-                        console.log("☁️ [DEBUG - FIREBASE] อัปเดตข้อมูลใน collection 'users' สำเร็จ");
                     }
 
-                    // 🌟 2. อัปเดตข้อมูลช่างก้อง (Document ID: "b1") ใน collection "barbers"
-                    const isAdminOrBarber = state.currentUser.role === 'admin' ||
-                        state.currentUser.isAdmin === true ||
-                        String(state.currentUser.id) === 'b1' ||
-                        newName.includes('ก้อง');
+                    // อัปเดตรูปลง barbers/b1 เพื่อให้ Real-time กระจายไปทุกเครื่องทุกหน้าจอทันที
+                    const barberRef = doc(window.db, "barbers", "b1");
+                    const existingBarber = (state.barbers && state.barbers.find(b => b.id === 'b1')) || {};
+                    const currentBarberStatus = existingBarber.status || 'available';
 
-                    if (isAdminOrBarber) {
-                        const barberRef = doc(window.db, "barbers", "b1");
-                        const existingBarber = (state.barbers && state.barbers.find(b => b.id === 'b1')) || {};
-                        const currentBarberStatus = existingBarber.status || 'available';
+                    console.log("🚀 กำลังส่งรูปล่าสุดขึ้น Firebase ที่ barbers/b1...");
 
-                        console.log("🚀 [DEBUG - FIREBASE UPLOAD] กำลังส่งรูปล่าสุดขึ้น Firebase ที่ barbers/b1...");
+                    await setDoc(barberRef, {
+                        id: 'b1',
+                        name: 'ช่างก้อง (เจ้าของร้าน)',
+                        avatar: currentAvatar, // บันทึกรูปใหม่ (Base64) ขึ้นคลาวด์
+                        status: currentBarberStatus,
+                        updatedAt: new Date().toISOString()
+                    }, { merge: true });
 
-                        await setDoc(barberRef, {
-                            id: 'b1',
-                            name: 'ช่างก้อง (เจ้าของร้าน)', // ล็อกชื่อช่างให้คงที่
-                            avatar: currentAvatar,          // ส่งรูปล่าสุดขึ้นคลาวด์
-                            status: currentBarberStatus,
-                            updatedAt: new Date().toISOString()
-                        }, { merge: true });
-
-                        console.log("🔥 [DEBUG - FIREBASE SUCCESS] ส่งข้อมูลขึ้น barbers/b1 สำเร็จ! มือถือและคอมพิวเตอร์เครื่องอื่นต้องได้รับสัญญาณเรียลไทม์ทันที");
-                    } else {
-                        console.warn("⚠️ [DEBUG - PERMISSION] Account นี้ไม่ใช่ Admin/Barber b1 จึงไม่ได้อัปเดต barbers/b1");
-                    }
-                } else {
-                    console.warn("⚠️ [DEBUG - FIREBASE] ไม่พบ window.db หรือ window.firebaseModules");
+                    console.log("🔥 อัปโหลดรูปใหม่ขึ้น barbers/b1 สำเร็จเรียบร้อย!");
                 }
 
-                alert('บันทึกข้อมูลส่วนตัวและซิงค์รูปภาพข้ามอุปกรณ์เรียบร้อยแล้ว!');
+                alert('บันทึกข้อมูลส่วนตัวและอัปเดตรูปภาพสำเร็จ!');
 
-                // อัปเดตหน้าจอ UI ทั้งหมดทันทีในเครื่องนี้
+                // สั่งอัปเดตหน้าจอ UI ทันที
                 if (typeof updateUserUI === 'function') updateUserUI();
                 if (typeof renderFullBarbersList === 'function') renderFullBarbersList();
                 if (typeof renderBarbersHomeStatus === 'function') renderBarbersHomeStatus();
                 if (typeof renderBarberSelectGrid === 'function') renderBarberSelectGrid();
 
-                console.log("🎨 [DEBUG - RENDER] อัปเดตหน้าจอ UI ในเครื่องนี้เรียบร้อย");
-
             } catch (error) {
-                console.error("❌ [DEBUG - ERROR] เกิดข้อผิดพลาดในการบันทึกข้อมูล:", error);
-                alert("เกิดข้อผิดพลาดในการบันทึกข้อมูล (ขนาดไฟล์ภาพอาจใหญ่เกินไป)");
+                console.error("❌ Error saving user profile: ", error);
+                alert("เกิดข้อผิดพลาดในการบันทึกข้อมูล");
             }
         }
+
+        // 1. ฟังก์ชันหลักสำหรับแสดงประวัติการจองฝั่ง User (ดึงจากคิวทั้งหมดในระบบมาแสดงผลทันที)
+        function renderUserBookingsTable() {
+            const tbody = document.getElementById('user-bookings-table-body');
+            if (!tbody) return;
+
+            const bookings = state.bookings || [];
+
+            if (bookings.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" class="px-6 py-8 text-center text-amber-400/80 animate-pulse"><i class="fa-solid fa-spinner fa-spin mr-2"></i> กำลังซิงค์ข้อมูลคิวจากระบบ...</td></tr>`;
+                return;
+            }
+
+            // 🌟 กรองเฉพาะรายการที่สถานะเป็น "รอดำเนินการ" เท่านั้น
+            const pendingBookings = bookings.filter(b => {
+                const status = (b.status || 'pending').toLowerCase().trim();
+                return status === 'pending' || status.includes('รอ') || status === 'รอดำเนินการ' || !b.status;
+            });
+
+            if (pendingBookings.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" class="px-6 py-8 text-center text-gray-500">ไม่มีประวัติการจองคิวที่รอดำเนินการ</td></tr>`;
+                return;
+            }
+
+            // 🌟 วนลูปแสดงผลเฉพาะคิวที่รอดำเนินการ
+            tbody.innerHTML = pendingBookings.map(b => {
+                const bookingId = b.id || (b.firestoreId ? b.firestoreId.slice(0, 6) : 'KH-0000');
+                const styleName = b.styleName || b.service || b.haircutStyle || 'ตัดผม/บริการ';
+                const barberName = b.barberName || 'ช่างก้อง (เจ้าของร้าน)';
+                const dateStr = b.date || b.bookingDate || '-';
+                const timeStr = b.time || b.bookingTime || '-';
+                const priceVal = b.price || '160';
+                const docId = b.firestoreId || b.id;
+
+                return `
+            <tr class="hover:bg-dark-700/50 transition">
+                <td class="px-6 py-4 font-mono text-amber-400 font-semibold">${bookingId}</td>
+                <td class="px-6 py-4 text-white">${styleName}</td>
+                <td class="px-6 py-4 text-gray-300">${barberName}</td>
+                <td class="px-6 py-4 text-gray-300">${dateStr} (${timeStr})</td>
+                <td class="px-6 py-4 font-semibold text-amber-500">฿${priceVal}</td>
+                <td class="px-6 py-4">
+                    <span class="px-2.5 py-1 rounded-full text-xs font-medium bg-amber-500/10 text-amber-400 border border-amber-500/30">
+                        รอดำเนินการ
+                    </span>
+                </td>
+                <td class="px-6 py-4 text-center">
+                    <button onclick="cancelBooking('${docId}')" 
+                        class="px-3 py-1 rounded-full text-xs font-medium bg-red-500/10 text-red-400 border border-red-500/30 hover:bg-red-500/20 transition">
+                        ยกเลิก
+                    </button>
+                </td>
+            </tr>
+        `;
+            }).join('');
+        }
+
 
     </script>
     <!-- Modal ข้อมูลส่วนตัว -->
@@ -4628,7 +4648,6 @@
             </form>
         </div>
     </div>
-    <script src="script.js?v=2.0"></script>
     <!-- เครื่องมือดูคอนโซลบนมือถือ (Eruda) -->
     <!-- <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
     <script>eruda.init();</script> -->
