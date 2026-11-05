@@ -1345,6 +1345,12 @@
         async function handleEmailAuth(event, type) {
             event.preventDefault();
 
+            // 🌟 ป้องกัน Error: ตรวจสอบและสร้างตัวแปร state สำรองไว้ใช้งานทันทีภายในฟังก์ชัน
+            if (typeof window.state === 'undefined') {
+                window.state = { bookingForm: {} };
+            }
+            const state = window.state;
+
             // กำหนดอีเมลแอดมินและช่างตัดผม
             const ADMIN_EMAILS = ["phongsakorn2115@gmail.com"];
             const BARBER_EMAILS = ["phongsakorn7420@gmail.com"];
@@ -1480,6 +1486,7 @@
             }
 
             // 1️⃣ ตั้งค่าโหมดเริ่มต้นตามสิทธิ์ของ User
+            if (!state.currentUser) return;
             const userRole = state.currentUser.role ? state.currentUser.role.toLowerCase() : 'customer';
             if (userRole === 'admin') {
                 state.currentMode = 'admin';
@@ -1495,6 +1502,7 @@
             }
 
             // 3️⃣ 🛑 เคลียร์ค่าเลือกกลุ่มอายุเก่าทิ้ง แล้วสั่งเรนเดอร์คำนวณใหม่ตามอายุผู้ใช้ปัจจุบันทันที
+            if (!state.bookingForm) state.bookingForm = {};
             state.bookingForm.selectedAgeId = null;
             const ageInput = document.getElementById('cust-age');
             if (ageInput && state.currentUser && state.currentUser.age) {
@@ -1511,11 +1519,11 @@
             }
 
             // 5️⃣ อัปเดตหน้าจอ UI ปิดโมดัล สลับโหมดหลังบ้าน
-            updateUserUI();
-            closeModal('auth-modal');
+            if (typeof updateUserUI === 'function') updateUserUI();
+            if (typeof closeModal === 'function') closeModal('auth-modal');
 
-            if (typeof renderUserBookingsTable === 'function') {
-                renderUserBookingsTable();
+            if (typeof renderUserBookings === 'function') {
+                renderUserBookings();
             }
 
             if (typeof switchRole === 'function') {
