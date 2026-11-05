@@ -4431,7 +4431,7 @@
             // บันทึกลง LocalStorage
             localStorage.setItem('barber_current_user', JSON.stringify(state.currentUser));
 
-            // 🌟 บันทึกลง Firebase Firestore (บังคับระบุ Document ID เป็น "b1" ชัดเจน เพื่อให้ Real-time ทำงานตรงกันทุกอุปกรณ์)
+            // 🌟 บันทึกลง Firebase Firestore
             try {
                 if (window.firebaseModules && window.db) {
                     const { doc, updateDoc, setDoc } = window.firebaseModules;
@@ -4449,15 +4449,27 @@
                         });
                     }
 
-                    // 🌟 2. อัปเดตข้อมูลช่างลงใน collection "barbers" โดยบังคับใช้ Document ID เป็น "b1"
-                    const barberRef = doc(window.db, "barbers", "b1");
-                    await setDoc(barberRef, {
-                        id: 'b1',
-                        name: newName,
-                        avatar: currentAvatar,
-                        status: (state.barbers.find(b => b.id === 'b1') || {}).status || 'available',
-                        updatedAt: new Date().toISOString()
-                    }, { merge: true });
+                    // 🌟 2. ตรวจสอบสิทธิ์: ถ้า Account ที่กำลังกดบันทึกเป็นแอดมินหรือช่าง (b1) ให้ซิงค์ชื่อและรูปภาพลง collection "barbers" (b1) ทันที
+                    const isAdminOrBarber = state.currentUser.role === 'admin' ||
+                        state.currentUser.isAdmin === true ||
+                        String(state.currentUser.id) === 'b1' ||
+                        newName.includes('ก้อง'); // หรือเช็กชื่อช่างก้อง
+
+                    if (isAdminOrBarber) {
+                        const barberRef = doc(window.db, "barbers", "b1");
+
+                        // ดึงข้อมูลสถานะเดิมของช่างมาเก็บไว้ เพื่อไม่ให้สถานะเพี้ยน
+                        const existingBarber = (state.barbers && state.barbers.find(b => b.id === 'b1')) || {};
+                        const currentBarberStatus = existingBarber.status || 'available';
+
+                        await setDoc(barberRef, {
+                            id: 'b1',
+                            name: newName, // อัปเดตชื่อตามแอดมิน
+                            avatar: currentAvatar, // อัปเดตรูปตามแอดมินเป๊ะๆ
+                            status: currentBarberStatus,
+                            updatedAt: new Date().toISOString()
+                        }, { merge: true });
+                    }
                 }
 
                 alert('บันทึกข้อมูลส่วนตัวและซิงค์เรียบร้อยแล้ว!');
