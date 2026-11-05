@@ -898,16 +898,19 @@
                     email: 'phongsakorn2115@gmail.com',
                     status: 'available',
                     exp: 'ประสบการณ์ 1 ปี ชื่นชอบด้านการเฟด',
-                    avatar: 'https://i.postimg.cc/8FR1mMtP/858525001-1129326712975883-8607776798710260414-n.jpg'
-                },
-                {
-                    id: 'b2',
-                    name: 'ช่างโจ (ช่างประจำร้าน)',
-                    email: 'phongsakorn7420@gmail.com',
-                    status: 'available',
-                    exp: 'ประสบการณ์ 5 ปี เชี่ยวชาญเฟดสายอเมริกัน',
-                    avatar: 'https://i.postimg.cc/qMrLWY3v/863844196-1134350642473490-5849783856972700037-n.jpg'
+                    // 🌟 เปลี่ยนมาดึงรูปจาก Account แอดมิน/currentUser ก่อน ถ้าไม่มีค่อยใช้รูปสำรอง
+                    avatar: (typeof state !== 'undefined' && state.currentUser && (state.currentUser.role === 'admin' || state.currentUser.isAdmin === true))
+                        ? (state.currentUser.avatar || state.currentUser.photoURL || 'https://i.postimg.cc/8FR1mMtP/858525001-1129326712975883-8607776798710260414-n.jpg')
+                        : 'https://i.postimg.cc/8FR1mMtP/858525001-1129326712975883-8607776798710260414-n.jpg'
                 }
+                // {
+                //     id: 'b2',
+                //     name: 'ช่างโจ (ช่างประจำร้าน)',
+                //     email: 'phongsakorn7420@gmail.com',
+                //     status: 'available',
+                //     exp: 'ประสบการณ์ 5 ปี เชี่ยวชาญเฟดสายอเมริกัน',
+                //     avatar: 'https://i.postimg.cc/qMrLWY3v/863844196-1134350642473490-5849783856972700037-n.jpg'
+                // }
             ],
 
             isShopOpen: true,
