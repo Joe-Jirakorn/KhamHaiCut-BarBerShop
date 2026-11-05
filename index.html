@@ -4793,6 +4793,41 @@
             });
         }
 
+        // 🌟 ฟังชันก์ฟังการอัปเดตข้อมูลช่าง (รวมถึงรูปโปรไฟล์) จาก Firebase แบบเรียลไทม์ข้ามอุปกรณ์
+        function initRealtimeBarbers() {
+            if (!window.db || !window.firebaseModules) return;
+
+            const { doc, onSnapshot } = window.firebaseModules;
+            const barberRef = doc(window.db, "barbers", "b1");
+
+            // เมื่อไหร่ก็ตามที่มีการเปลี่ยนรูปหรือข้อมูลช่าง b1 จากที่ไหนก็ตาม (เช่น มือถือหรือคอมอีกเครื่อง)
+            onSnapshot(barberRef, (docSnap) => {
+                if (docSnap.exists()) {
+                    const barberData = docSnap.data();
+                    console.log("🔄 [Realtime Barbers] พบการเปลี่ยนแปลงข้อมูลช่างจากอุปกรณ์อื่น:", barberData);
+
+                    // 1. อัปเดตข้อมูลใน state.barbers ทันที
+                    if (state.barbers && state.barbers.length > 0) {
+                        state.barbers[0].avatar = barberData.avatar;
+                        state.barbers[0].name = barberData.name || state.barbers[0].name;
+                        localStorage.setItem('barber_shop_barbers', JSON.stringify(state.barbers));
+                    }
+
+                    // 2. ถ้าเครื่องนี้ล็อกอินเป็นแอดมินคนเดียวกัน ให้ซิงค์รูปใน currentUser ด้วย
+                    if (state.currentUser && (state.currentUser.email === 'phongsakorn2115@gmail.com' || state.currentUser.id === 'b1')) {
+                        state.currentUser.avatar = barberData.avatar;
+                        localStorage.setItem('barber_current_user', JSON.stringify(state.currentUser));
+                    }
+
+                    // 3. สั่งอัปเดตหน้าจอและรีเฟรชรูปภาพทุกจุดทั่วทั้งเว็บทันที
+                    if (typeof updateUserUI === 'function') updateUserUI();
+                    if (typeof renderFullBarbersList === 'function') renderFullBarbersList();
+                    if (typeof renderBarbersHomeStatus === 'function') renderBarbersHomeStatus();
+                    if (typeof renderBarberSelectGrid === 'function') renderBarberSelectGrid();
+                }
+            });
+        }
+
     </script>
     <!-- Modal ข้อมูลส่วนตัว -->
     <div id="profile-modal"
