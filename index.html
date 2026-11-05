@@ -3394,9 +3394,9 @@
                         window.state = {};
                     }
 
+                    // รูป URL ตั้งต้นของช่างก้อง
                     const defaultAvatar = 'https://i.postimg.cc/8FR1mMtP/858525001-1129326712975883-8607776798710260414-n.jpg';
 
-                    // 🌟 ข้อมูลมาตรฐานของช่างก้อง (บังคับฟิกซ์ค่าตรงนี้เพื่อความชัวร์ไม่ให้ชื่อเพี้ยน)
                     let masterBarber = {
                         id: 'b1',
                         name: 'ช่างก้อง (เจ้าของร้าน)',
@@ -3412,30 +3412,35 @@
 
                         masterBarber.status = fbData.status || 'available';
                         if (fbData.name) masterBarber.name = fbData.name;
-                        if (fbData.avatar) masterBarber.avatar = fbData.avatar;
+
+                        // 🌟 แก้ไขจุดสำคัญ: ถ้ารูปจาก Firebase มีค่า (ไม่ว่างเปล่า) ให้ใช้รูปล่าสุดนั้นทันที ถ้าไม่มีค่อยใช้ defaultAvatar
+                        if (fbData.avatar && fbData.avatar.trim() !== '') {
+                            masterBarber.avatar = fbData.avatar;
+                        } else {
+                            masterBarber.avatar = defaultAvatar;
+                        }
+
                         if (fbData.exp) masterBarber.exp = fbData.exp;
                         if (fbData.bio) masterBarber.bio = fbData.bio;
 
                         // ซิงค์รูปลงใน currentUser ของแอดมินทันที
                         if (state.currentUser && (state.currentUser.role === 'admin' || state.currentUser.isAdmin === true || String(state.currentUser.id) === 'b1')) {
-                            if (fbData.avatar) {
-                                state.currentUser.avatar = fbData.avatar;
-                                localStorage.setItem('barber_current_user', JSON.stringify(state.currentUser));
-                            }
+                            state.currentUser.avatar = masterBarber.avatar;
+                            localStorage.setItem('barber_current_user', JSON.stringify(state.currentUser));
                         }
                     }
 
-                    // 🌟 บังคับให้ state.barbers มีแค่ช่างก้อง b1 ตัวจริงตัวเดียวเท่านั้น ห้ามมีช่างอื่นปนเปื้อน
+                    // บังคับให้ state.barbers มีแค่ช่างก้อง b1 ตัวจริง
                     state.barbers = [masterBarber];
 
-                    // 🌟 เคลียร์และบันทึกทับ LocalStorage ทันที เพื่อป้องกันข้อมูลเก่าค้างในเครื่อง
+                    // บันทึกทับ LocalStorage ทันที
                     try {
                         localStorage.setItem('barber_shop_barbers', JSON.stringify(state.barbers));
                     } catch (e) { }
 
                     console.log("✨ [REALTIME] อัปเดต state.barbers สำเร็จ:", state.barbers);
 
-                    // 🛑 สั่งเรนเดอร์หน้าจอทุกส่วนในเว็บทันทีแบบสดๆ
+                    // 🛑 สั่งเรนเดอร์หน้าจอทุกส่วนทันทีแบบสดๆ ทุกเครื่อง
                     if (typeof updateUserUI === 'function') updateUserUI();
                     if (typeof renderBarbersHomeStatus === 'function') renderBarbersHomeStatus();
                     if (typeof renderBarberSelectGrid === 'function') renderBarberSelectGrid();
@@ -4625,8 +4630,8 @@
     </div>
     <script src="script.js?v=2.0"></script>
     <!-- เครื่องมือดูคอนโซลบนมือถือ (Eruda) -->
-    <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
-    <script>eruda.init();</script>
+    <!-- <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
+    <script>eruda.init();</script> -->
 </body>
 
 </html>
