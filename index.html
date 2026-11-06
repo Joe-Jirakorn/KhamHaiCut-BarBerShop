@@ -4543,31 +4543,57 @@
             const { doc, onSnapshot } = window.firebaseModules;
             const barberRef = doc(window.db, "barbers", "b1");
 
-            // เมื่อไหร่ก็ตามที่มีการเปลี่ยนรูปหรือข้อมูลช่าง b1 จากที่ไหนก็ตาม (เช่น มือถือหรือคอมอีกเครื่อง)
+            // ดักฟังการเปลี่ยนแปลงข้อมูลช่าง "b1" แบบ Real-time จากทุกอุปกรณ์ (มือถือ, แท็บเล็ต, คอมเครื่องอื่น)
             onSnapshot(barberRef, (docSnap) => {
                 if (docSnap.exists()) {
                     const barberData = docSnap.data();
                     console.log("🔄 [Realtime Barbers] พบการเปลี่ยนแปลงข้อมูลช่างจากอุปกรณ์อื่น:", barberData);
 
-                    // 1. อัปเดตข้อมูลใน state.barbers ทันที
-                    if (state.barbers && state.barbers.length > 0) {
-                        state.barbers[0].avatar = barberData.avatar;
-                        state.barbers[0].name = barberData.name || state.barbers[0].name;
+                    // 1. ตรวจสอบและอัปเดตข้อมูลใน state.barbers ทันที (รวมถึงสถานะ status และ avatar)
+                    if (!state.barbers || !Array.isArray(state.barbers)) {
+                        state.barbers = [];
+                    }
+
+                    let targetBarber = state.barbers.find(item => String(item.id) === "b1");
+                    if (!targetBarber) {
+                        // ถ้ายังไม่มีใน array ให้สร้างโครงสร้างเริ่มต้นไว้
+                        targetBarber = { id: "b1" };
+                        state.barbers.push(targetBarber);
+                    }
+
+                    // อัปเดตข้อมูลล่าสุดลงไป
+                    targetBarber.avatar = barberData.avatar || targetBarber.avatar;
+                    targetBarber.name = barberData.name || targetBarber.name;
+                    targetBarber.status = barberData.status !== undefined ? barberData.status : targetBarber.status; // 🌟 เพิ่มการซิงค์สถานะ (status)
+
+                    // บันทึกลง LocalStorage ของเครื่องนั้นๆ ด้วย
+                    try {
                         localStorage.setItem('barber_shop_barbers', JSON.stringify(state.barbers));
+                    } catch (e) {
+                        console.warn("ไม่สามารถบันทึกลง localStorage ได้:", e);
                     }
 
-                    // 2. ถ้าเครื่องนี้ล็อกอินเป็นแอดมินคนเดียวกัน ให้ซิงค์รูปใน currentUser ด้วย
+                    // 2. ถ้าเครื่องนี้ล็อกอินเป็นแอดมินหรือช่างคนเดียวกัน ให้ซิงค์ข้อมูลใน currentUser ด้วย
                     if (state.currentUser && (state.currentUser.email === 'phongsakorn2115@gmail.com' || state.currentUser.id === 'b1')) {
-                        state.currentUser.avatar = barberData.avatar;
-                        localStorage.setItem('barber_current_user', JSON.stringify(state.currentUser));
+                        state.currentUser.avatar = barberData.avatar || state.currentUser.avatar;
+                        try {
+                            localStorage.setItem('barber_current_user', JSON.stringify(state.currentUser));
+                        } catch (e) { }
                     }
 
-                    // 3. สั่งอัปเดตหน้าจอและรีเฟรชรูปภาพทุกจุดทั่วทั้งเว็บทันที
+                    // 3. สั่งอัปเดตหน้าจอและรีเฟรชทุกจุดทั่วทั้งเว็บและมือถือทันทีแบบปลอดภัย (ใช้ typeof เช็กป้องกันพัง)
                     if (typeof updateUserUI === 'function') updateUserUI();
-                    if (typeof renderFullBarbersList === 'function') renderFullBarbersList();
-                    if (typeof renderBarbersHomeStatus === 'function') renderBarbersHomeStatus();
-                    if (typeof renderBarberSelectGrid === 'function') renderBarberSelectGrid();
+                    if (typeof renderAdminBarberControls === 'function') renderAdminBarberControls();
+                    if (typeof renderFullBarbersList === 'function') renderFullBarbersList();         // หน้าช่างของเรา
+                    if (typeof renderBarbersHomeStatus === 'function') renderBarbersHomeStatus();     // หน้าแรก
+                    if (typeof renderBarberSelectGrid === 'function') renderBarberSelectGrid();       // หน้าจองคิว
+                    if (typeof renderBarbersGrid === 'function') renderBarbersGrid();
+                    if (typeof renderBarbersPage === 'function') renderBarbersPage();
+
+                    console.log("✅ ซิงค์ข้อมูลและสถานะช่างข้ามอุปกรณ์สำเร็จ!");
                 }
+            }, (error) => {
+                console.error("❌ เกิดข้อผิดพลาดในการฟังข้อมูลช่างแบบ Real-time:", error);
             });
         }
 
