@@ -2201,7 +2201,6 @@
                 state.barbers = [];
             }
 
-            // 🌟 ใช้ตัวแปร b ให้ตรงกันตลอดทั้งฟังก์ชัน
             const b = state.barbers.find(item => String(item.id) === String(id));
             if (!b) {
                 console.error("❌ ไม่พบข้อมูลช่าง ID:", id, "ใน state.barbers");
@@ -2220,58 +2219,39 @@
 
             const newStatus = isCurrentlyAvailable ? 'busy' : 'available';
 
+            // 🌟 1. เปลี่ยนแปลงข้อมูลใน State ท้องถิ่นและ LocalStorage ทันที (ไม่ต้องรอ Firebase)
+            b.status = newStatus;
             try {
-                // 1. บันทึกลงบน Firebase Firestore
-                if (window.db && window.firebaseModules) {
-                    const { doc, updateDoc } = window.firebaseModules;
+                localStorage.setItem('barber_shop_barbers', JSON.stringify(state.barbers));
+            } catch (e) {
+                console.warn("ไม่สามารถบันทึกลง localStorage ได้:", e);
+            }
 
-                    if (!doc || !updateDoc) {
-                        console.error("❌ Firebase modules (doc, updateDoc) ไม่พร้อมใช้งาน");
-                        alert("เกิดข้อผิดพลาด: ฟังก์ชัน Firebase ไม่พร้อมใช้งาน");
-                        return;
-                    }
+            // 🌟 2. สั่งรีเฟรชหน้าจอทุกส่วนทันที 0 วิ! (ปุ่มเปลี่ยนสีและข้อความเปลี่ยนทันทีโดยไม่มีดีเลย์)
+            if (typeof renderAdminBarberControls === 'function') renderAdminBarberControls();
+            if (typeof renderBarbersHomeStatus === 'function') renderBarbersHomeStatus();
+            if (typeof renderFullBarbersList === 'function') renderFullBarbersList();
+            if (typeof renderBarberSelectGrid === 'function') renderBarberSelectGrid();
+            if (typeof renderBarbersGrid === 'function') renderBarbersGrid();
+            if (typeof renderBarbersPage === 'function') renderBarbersPage();
 
-                    console.log(`🚀 กำลังอัปเดต Document ID: "${id}" บน Firebase เป็นสถานะ: "${newStatus}"`);
+            if (typeof showToast === 'function') {
+                showToast(`เปลี่ยนสถานะเป็น '${newStatus === 'available' ? 'คิวว่าง' : 'ติดคิว'}' เรียบร้อยแล้ว`, 'success');
+            }
 
-                    const barberRef = doc(window.db, "barbers", String(id));
-                    await updateDoc(barberRef, {
-                        status: newStatus,
-                        updatedAt: new Date().toISOString()
-                    });
+            // 🌟 3. ปล่อยให้ Firebase ทำงานเบื้องหลัง (Background Sync) โดยไม่ต้องใช้ await บล็อกหน้าจอ
+            if (window.db && window.firebaseModules) {
+                const { doc, updateDoc } = window.firebaseModules;
+                const barberRef = doc(window.db, "barbers", String(id));
 
-                    console.log(`✅ อัปเดตสถานะช่าง ${id} บน Firebase สำเร็จ!`);
-                } else {
-                    console.warn("⚠️ window.db หรือ window.firebaseModules ยังไม่ถูกกำหนดค่า");
-                    alert("ยังไม่ได้เชื่อมต่อฐานข้อมูล Firebase");
-                    return;
-                }
-
-                // 2. อัปเดตใน state ท้องถิ่น
-                b.status = newStatus;
-
-                // 3. บันทึกลง LocalStorage
-                try {
-                    localStorage.setItem('barber_shop_barbers', JSON.stringify(state.barbers));
-                } catch (e) {
-                    console.warn("ไม่สามารถบันทึกลง localStorage ได้:", e);
-                }
-
-                // 4. สั่งรีเฟรชหน้าจอทุกส่วน (รวมหน้าแรกและหน้าช่างของเราแบบ Real-time)
-                if (typeof renderAdminBarberControls === 'function') renderAdminBarberControls();
-                if (typeof renderBarbersHomeStatus === 'function') renderBarbersHomeStatus();     // 🌟 อัปเดตหน้าแรกทันที
-                if (typeof renderFullBarbersList === 'function') renderFullBarbersList();         // 🌟 อัปเดตหน้าช่างของเราทันที
-                if (typeof renderBarberSelectGrid === 'function') renderBarberSelectGrid();       // หน้าจองคิว
-                if (typeof renderBarbersGrid === 'function') renderBarbersGrid();
-                if (typeof renderBarbersPage === 'function') renderBarbersPage();
-
-                // แจ้งเตือนสำเร็จ
-                if (typeof showToast === 'function') {
-                    showToast(`เปลี่ยนสถานะของ ${b.name} เป็น '${newStatus === 'available' ? 'คิวว่าง' : 'ติดคิว'}' เรียบร้อยแล้ว`, 'success');
-                }
-
-            } catch (error) {
-                console.error("❌ เกิดข้อผิดพลาดในการเปลี่ยนสถานะช่าง:", error);
-                alert("ไม่สามารถบันทึกสถานะช่างลงคลาวด์ได้: " + error.message);
+                updateDoc(barberRef, {
+                    status: newStatus,
+                    updatedAt: new Date().toISOString()
+                }).then(() => {
+                    console.log(`✅ ซิงค์สถานะช่าง ${id} บน Firebase สำเร็จเป็น: ${newStatus}`);
+                }).catch((error) => {
+                    console.error("❌ เกิดข้อผิดพลาดในการซิงค์ Firebase:", error);
+                });
             }
         }
 
