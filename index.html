@@ -788,21 +788,43 @@
         };
         const state = window.state;
         window.addEventListener('DOMContentLoaded', async () => {
+            // 1. โหลดข้อมูลผู้ใช้จาก localStorage
             const savedUser = localStorage.getItem('barber_current_user');
             if (savedUser) {
                 try {
                     state.currentUser = JSON.parse(savedUser);
+
+                    // 🌟 เพิ่มส่วนนี้: กำหนดโหมดการใช้งาน (currentMode) ให้ตรงกับสิทธิ์ของผู้ใช้ที่ค้างอยู่
+                    if (state.currentUser && state.currentUser.role) {
+                        const userRole = state.currentUser.role.toLowerCase();
+                        if (userRole === 'admin') {
+                            state.currentMode = 'admin';
+                        } else if (userRole === 'barber') {
+                            state.currentMode = 'barber';
+                        } else {
+                            state.currentMode = 'user';
+                        }
+                    } else {
+                        state.currentMode = 'user';
+                    }
+
                 } catch (e) {
                     console.error("Failed to parse saved user:", e);
                     state.currentUser = null;
+                    state.currentMode = 'user';
+                    localStorage.removeItem('barber_current_user'); // ล้างข้อมูลทิ้งถ้าพัง
                 }
             } else {
                 state.currentUser = null;
+                state.currentMode = 'user';
             }
+
             const bookingDateInput = document.getElementById('booking-date');
             if (bookingDateInput) {
                 const todayStr = new Date().toISOString().split('T')[0];
-                bookingDateInput.value = state.bookingForm.date;
+                // ป้องกันกรณี state.bookingForm ยังไม่ถูกสร้าง
+                if (!state.bookingForm) state.bookingForm = {};
+                bookingDateInput.value = state.bookingForm.date || '';
                 bookingDateInput.min = todayStr;
                 bookingDateInput.addEventListener('change', (e) => {
                     const selectedDate = e.target.value;
@@ -827,6 +849,7 @@
                     }
                 });
             }
+
             const nameInput = document.getElementById('cust-name');
             const phoneInput = document.getElementById('cust-phone');
             const ageInput = document.getElementById('cust-age');
@@ -866,7 +889,9 @@
                     }
                 });
             }
+
             const savedShopStatus = localStorage.getItem('barber_shop_open_status');
+            let isShopOpen = true; // กำหนดค่าเริ่มต้นเผื่อไว้
             if (savedShopStatus !== null) {
                 isShopOpen = savedShopStatus === 'true';
                 const btn = document.getElementById('shop-status-toggle-btn');
@@ -885,6 +910,7 @@
                     }
                 }
             }
+
             const closedBanner = document.getElementById('shop-closed-banner');
             if (closedBanner) {
                 if (!isShopOpen) {
@@ -893,6 +919,8 @@
                     closedBanner.classList.add('hidden');
                 }
             }
+
+            // อัปเดต UI ทั่วไป
             if (typeof updateUserUI === 'function') updateUserUI();
             if (typeof renderUI === 'function') renderUI();
             if (typeof renderHairstylesGrid === 'function') renderHairstylesGrid();
@@ -906,6 +934,12 @@
             if (typeof renderFullBarbersList === 'function') renderFullBarbersList();
             if (typeof renderBarberSelectGrid === 'function') renderBarberSelectGrid();
             if (typeof renderBarbersHomeStatus === 'function') renderBarbersHomeStatus();
+
+            // 🌟 เพิ่มส่วนนี้: เรียกฟังก์ชันสลับโหมด/สิทธิ์ (เช่น ถ้าเปิดค้างในโหมดแอดมิน เมนูแอดมินจะแสดงขึ้นมาทันที)
+            if (typeof switchRole === 'function') {
+                switchRole(state.currentMode);
+            }
+
             if (typeof initRealtimeBarbers === 'function') {
                 initRealtimeBarbers();
             }
@@ -915,6 +949,7 @@
             if (typeof initRealtimeBookings === 'function') {
                 initRealtimeBookings();
             }
+
             setTimeout(() => {
                 if (typeof renderUserBookingsTable === 'function') {
                     renderUserBookingsTable();
@@ -2673,9 +2708,9 @@
         }
 
         // อย่าลืมเรียกใช้ฟังก์ชันนี้ตอนโหลดหน้าเว็บ หรือตอนเปลี่ยนหน้ามาที่หน้าจอง (navigateTo('booking'))
-        window.addEventListener('DOMContentLoaded', () => {
-            initBookingForm();
-        });
+        // window.addEventListener('DOMContentLoaded', () => {
+        //     initBookingForm();
+        // });
 
 
         async function updateBookingStatus(bookingId, newStatus) {
