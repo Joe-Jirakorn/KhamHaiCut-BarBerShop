@@ -2256,10 +2256,12 @@
                     console.warn("ไม่สามารถบันทึกลง localStorage ได้:", e);
                 }
 
-                // 4. สั่งรีเฟรชหน้าจอทุกส่วน
+                // 4. สั่งรีเฟรชหน้าจอทุกส่วน (รวมหน้าแรกและหน้าช่างของเราแบบ Real-time)
                 if (typeof renderAdminBarberControls === 'function') renderAdminBarberControls();
+                if (typeof renderBarbersHomeStatus === 'function') renderBarbersHomeStatus();     // 🌟 อัปเดตหน้าแรกทันที
+                if (typeof renderFullBarbersList === 'function') renderFullBarbersList();         // 🌟 อัปเดตหน้าช่างของเราทันที
+                if (typeof renderBarberSelectGrid === 'function') renderBarberSelectGrid();       // หน้าจองคิว
                 if (typeof renderBarbersGrid === 'function') renderBarbersGrid();
-                if (typeof renderBarberSelectGrid === 'function') renderBarberSelectGrid();
                 if (typeof renderBarbersPage === 'function') renderBarbersPage();
 
                 // แจ้งเตือนสำเร็จ
